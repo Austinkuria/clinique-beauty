@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App.jsx';
-// import Home from './features/home/Home.jsx';
+import Home from './features/home/Home.jsx';
 // import ProductList from './features/products/ProductList.jsx';
 // import ProductDetail from './features/products/ProductDetail.jsx';
 import Cart from './features/cart/Cart.jsx';
@@ -17,7 +17,7 @@ const router = createBrowserRouter([
         element: <App />,
         children: [
             // Uncomment routes as needed
-            // { path: '/', element: <Home /> },
+            { path: '/', element: <Home /> },
             // { path: '/products', element: <ProductList /> },
             // { path: '/products/:id', element: <ProductDetail /> },
             { path: '/cart', element: <Cart /> },
