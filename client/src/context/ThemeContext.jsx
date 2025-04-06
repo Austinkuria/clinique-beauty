@@ -12,6 +12,7 @@ export const ThemeProvider = ({ children }) => {
             sectionBg: 'bg-white', // Section background
             textPrimary: 'text-gray-900', // Main text
             textSecondary: 'text-gray-600', // Subtext
+            textHover: 'hover:text-gray-900', // Added hover text color
             buttonBg: 'bg-pink-600', // Button background
             buttonText: 'text-white', // Button text
             buttonHoverBg: 'hover:bg-pink-700', // Button hover
@@ -23,6 +24,7 @@ export const ThemeProvider = ({ children }) => {
             sectionBg: 'bg-gray-800', // Section background
             textPrimary: 'text-white', // Main text
             textSecondary: 'text-gray-300', // Subtext
+            textHover: 'hover:text-white', // Added hover text color
             buttonBg: 'bg-pink-500', // Button background
             buttonText: 'text-white', // Button text
             buttonHoverBg: 'hover:bg-pink-600', // Button hover

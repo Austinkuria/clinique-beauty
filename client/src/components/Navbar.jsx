@@ -17,16 +17,16 @@ function Navbar() {
 
                 {/* Desktop Menu */}
                 <div className="hidden md:flex items-center space-x-6">
-                    <Link to="/products" className={`${colors.textSecondary} hover:${colors.textPrimary} transition-colors duration-200`}>
+                    <Link to="/products" className={`${colors.textSecondary} ${colors.textHover} transition-colors duration-200`}>
                         Products
                     </Link>
-                    <Link to="/cart" className={`${colors.textSecondary} hover:${colors.textPrimary} flex items-center gap-1 transition-colors duration-200`}>
+                    <Link to="/cart" className={`${colors.textSecondary} ${colors.textHover} flex items-center gap-1 transition-colors duration-200`}>
                         <ShoppingCartIcon className="w-5 h-5" /> Cart
                     </Link>
-                    <Link to="/profile" className={`${colors.textSecondary} hover:${colors.textPrimary} flex items-center gap-1 transition-colors duration-200`}>
+                    <Link to="/profile" className={`${colors.textSecondary} ${colors.textHover} flex items-center gap-1 transition-colors duration-200`}>
                         <UserIcon className="w-5 h-5" /> Profile
                     </Link>
-                    <Link to="/login" className={`${colors.textSecondary} hover:${colors.textPrimary} transition-colors duration-200`}>
+                    <Link to="/login" className={`${colors.textSecondary} ${colors.textHover} transition-colors duration-200`}>
                         Login
                     </Link>
                     <button
@@ -51,16 +51,16 @@ function Navbar() {
                 className={`md:hidden ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'} ${colors.sectionBg} overflow-hidden transition-all duration-300 ease-in-out`}
             >
                 <div className="flex flex-col items-center space-y-4 py-4">
-                    <Link to="/products" className={`${colors.textSecondary} hover:${colors.textPrimary}`} onClick={() => setIsOpen(false)}>
+                    <Link to="/products" className={`${colors.textSecondary} ${colors.textHover}`} onClick={() => setIsOpen(false)}>
                         Products
                     </Link>
-                    <Link to="/cart" className={`${colors.textSecondary} hover:${colors.textPrimary} flex items-center gap-1`} onClick={() => setIsOpen(false)}>
+                    <Link to="/cart" className={`${colors.textSecondary} ${colors.textHover} flex items-center gap-1`} onClick={() => setIsOpen(false)}>
                         <ShoppingCartIcon className="w-5 h-5" /> Cart
                     </Link>
-                    <Link to="/profile" className={`${colors.textSecondary} hover:${colors.textPrimary} flex items-center gap-1`} onClick={() => setIsOpen(false)}>
+                    <Link to="/profile" className={`${colors.textSecondary} ${colors.textHover} flex items-center gap-1`} onClick={() => setIsOpen(false)}>
                         <UserIcon className="w-5 h-5" /> Profile
                     </Link>
-                    <Link to="/login" className={`${colors.textSecondary} hover:${colors.textPrimary}`} onClick={() => setIsOpen(false)}>
+                    <Link to="/login" className={`${colors.textSecondary} ${colors.textHover}`} onClick={() => setIsOpen(false)}>
                         Login
                     </Link>
                     <button
