@@ -39,7 +39,7 @@ function Navbar() {
                             style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
                             <UserIcon className="w-5 h-5" /> Profile
                         </Link>
-                        <Link to="/login"
+                        <Link to="auth/login"
                             className={linkClass}
                             style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
                             Login

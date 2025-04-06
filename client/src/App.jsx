@@ -1,16 +1,17 @@
-import { Outlet } from 'react-router-dom';
-import Navbar from './components/Navbar.jsx';
-import Footer from './components/Footer.jsx';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import MainLayout from './layouts/MainLayout';
+import Home from './features/home/Home';
+// Import other pages as needed
 
 function App() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      <main className="flex-grow">
-        <Outlet />
-      </main>
-      <Footer />
-    </div>
+    <Routes>
+      <Route path="/" element={<MainLayout />}>
+        <Route index element={<Home />} />
+        {/* Add other routes here */}
+      </Route>
+    </Routes>
   );
 }
 
