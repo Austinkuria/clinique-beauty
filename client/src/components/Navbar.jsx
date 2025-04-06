@@ -8,14 +8,14 @@ function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <nav className={`sticky top-0 z-50 ${colors.sectionBg} ${colors.shadow} transition-all duration-300`}>
+        <nav className={`sticky top-0 z-50 ${colors.navbarBg} ${colors.shadow} transition-all duration-300`}>
             <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 flex items-center justify-between">
                 {/* Logo */}
                 <Link to="/" className={`text-2xl md:text-3xl font-bold ${colors.textPrimary} flex items-center gap-2`}>
                     <HomeIcon className="w-6 h-6" /> Clinique Beauty
                 </Link>
 
-                {/* Desktop Menu */}
+                {/* Desktop Menu - Horizontal Alignment */}
                 <div className="hidden md:flex items-center space-x-6">
                     <Link to="/products" className={`${colors.textSecondary} ${colors.textHover} transition-colors duration-200`}>
                         Products
@@ -46,9 +46,9 @@ function Navbar() {
                 </button>
             </div>
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Vertical Alignment */}
             <div
-                className={`md:hidden ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'} ${colors.sectionBg} overflow-hidden transition-all duration-300 ease-in-out`}
+                className={`md:hidden ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'} ${colors.navbarBg} overflow-hidden transition-all duration-300 ease-in-out`}
             >
                 <div className="flex flex-col items-center space-y-4 py-4">
                     <Link to="/products" className={`${colors.textSecondary} ${colors.textHover}`} onClick={() => setIsOpen(false)}>
