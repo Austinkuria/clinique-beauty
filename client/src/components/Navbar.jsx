@@ -1,114 +1,144 @@
 import React, { useContext, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { ThemeContext } from '../context/ThemeContext.jsx';
-import { HomeIcon, ShoppingCartIcon, UserIcon, Bars3Icon, XMarkIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import {
+    AppBar,
+    Box,
+    Toolbar,
+    IconButton,
+    Typography,
+    Button,
+    Drawer,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemText,
+    useMediaQuery,
+    useTheme,
+    Switch,
+    Badge
+} from '@mui/material';
+import {
+    Menu as MenuIcon,
+    ShoppingCart as CartIcon,
+    Person as UserIcon,
+    Home as HomeIcon,
+    DarkMode as DarkModeIcon,
+    LightMode as LightModeIcon
+} from '@mui/icons-material';
 
 function Navbar() {
-    const { colors, toggleTheme, theme } = useContext(ThemeContext);
-    const [isOpen, setIsOpen] = useState(false);
+    const { theme, toggleTheme } = useContext(ThemeContext);
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const muiTheme = useTheme();
+    const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
 
-    // Define better contrast colors for navbar links
-    const linkClass = theme === 'dark' 
-        ? "text-white hover:text-pink-300 transition-colors duration-200 font-medium" 
-        : "text-gray-800 hover:text-pink-600 transition-colors duration-200 font-medium";
+    const navItems = [
+        { name: 'Products', path: '/products' },
+        { name: 'Cart', path: '/cart', icon: <CartIcon /> },
+        { name: 'Profile', path: '/profile', icon: <UserIcon /> },
+        { name: 'Login', path: '/auth/login' }
+    ];
+
+    const toggleDrawer = (open) => (event) => {
+        if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+            return;
+        }
+        setDrawerOpen(open);
+    };
+
+    const drawer = (
+        <Box
+            onClick={toggleDrawer(false)}
+            onKeyDown={toggleDrawer(false)}
+            sx={{ width: 250 }}
+            role="presentation"
+        >
+            <List>
+                {navItems.map((item) => (
+                    <ListItem key={item.name} disablePadding>
+                        <ListItemButton component={RouterLink} to={item.path}>
+                            {item.icon && <Box mr={1}>{item.icon}</Box>}
+                            <ListItemText primary={item.name} />
+                        </ListItemButton>
+                    </ListItem>
+                ))}
+                <ListItem>
+                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <LightModeIcon />
+                        <Switch checked={theme === 'dark'} onChange={toggleTheme} />
+                        <DarkModeIcon />
+                    </Box>
+                </ListItem>
+            </List>
+        </Box>
+    );
 
     return (
-        <nav className={`sticky top-0 z-50 ${colors.navbarBg} ${colors.shadow} transition-all duration-300 w-full`}>
-            {/* Removed container mx-auto and reduced padding to eliminate space on both sides */}
-            <div className="flex items-center justify-between px-2 py-4 w-full">
-                {/* Logo - removed left padding */}
-                <Link to="/" className={`text-2xl md:text-3xl font-bold ${colors.navbarTextPrimary} flex items-center gap-2`}>
-                    <HomeIcon className="w-6 h-6" /> Clinique Beauty
-                </Link>
+        <AppBar position="sticky" color="default" elevation={2}>
+            <Toolbar>
+                <RouterLink to="/" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
+                    <HomeIcon sx={{ mr: 1 }} />
+                    <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+                        Clinique Beauty
+                    </Typography>
+                </RouterLink>
 
-                {/* Desktop Menu - Adjusted spacing and removed unwanted margin */}
-                <div className="hidden lg:flex items-center" style={{ display: 'flex', '@media (max-width: 768px)': { display: 'none' } }}>
-                    <div className="flex items-center space-x-6 mr-6">
-                        <Link to="/products"
-                            className={linkClass}
-                            style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
-                            Products
-                        </Link>
-                        <Link to="/cart"
-                            className={`${linkClass} flex items-center gap-1`}
-                            style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
-                            <ShoppingCartIcon className="w-5 h-5" /> Cart
-                        </Link>
-                        <Link to="/profile"
-                            className={`${linkClass} flex items-center gap-1`}
-                            style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
-                            <UserIcon className="w-5 h-5" /> Profile
-                        </Link>
-                        <Link to="auth/login"
-                            className={linkClass}
-                            style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
-                            Login
-                        </Link>
-                    </div>
-                    <button
-                        onClick={toggleTheme}
-                        className={`${colors.buttonBg} ${colors.buttonText} ${colors.buttonHoverBg} p-2 rounded-full transition-transform duration-200 hover:scale-105 flex items-center justify-center`}
-                        aria-label="Toggle theme"
-                        title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-                    >
-                        {theme === 'light' ? 
-                            <MoonIcon className="w-5 h-5" /> : 
-                            <SunIcon className="w-5 h-5" />
-                        }
-                    </button>
-                </div>
+                <Box sx={{ flexGrow: 1 }} />
 
-                {/* Mobile Menu Toggle */}
-                <button
-                    className="lg:hidden text-2xl focus:outline-none"
-                    onClick={() => setIsOpen(!isOpen)}>
-                    {isOpen ? <XMarkIcon className={`${colors.navbarTextPrimary} w-6 h-6`} /> : <Bars3Icon className={`${colors.navbarTextPrimary} w-6 h-6`} />}
-                </button>
-            </div>
+                {/* Desktop menu */}
+                {!isMobile && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {navItems.map((item) => (
+                            <Button
+                                key={item.name}
+                                component={RouterLink}
+                                to={item.path}
+                                sx={{ mx: 1 }}
+                                startIcon={item.icon}
+                            >
+                                {item.name}
+                            </Button>
+                        ))}
+                        <IconButton onClick={toggleTheme} color="inherit">
+                            {theme === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+                        </IconButton>
+                    </Box>
+                )}
 
-            {/* Mobile Menu - Vertical Alignment */}
-            <div
-                className={`md:hidden ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'} ${colors.navbarBg} overflow-hidden transition-all duration-300 ease-in-out`}
-            >
-                <div className="flex flex-col items-center space-y-4 py-4">
-                    <Link to="/products" 
-                        className={linkClass}
-                        onClick={() => setIsOpen(false)}
-                        style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
-                        Products
-                    </Link>
-                    <Link to="/cart" 
-                        className={`${linkClass} flex items-center gap-1`}
-                        onClick={() => setIsOpen(false)}
-                        style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
-                        <ShoppingCartIcon className="w-5 h-5" /> Cart
-                    </Link>
-                    <Link to="/profile" 
-                        className={`${linkClass} flex items-center gap-1`}
-                        onClick={() => setIsOpen(false)}
-                        style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
-                        <UserIcon className="w-5 h-5" /> Profile
-                    </Link>
-                    <Link to="/login" 
-                        className={linkClass}
-                        onClick={() => setIsOpen(false)}
-                        style={{ color: theme === 'dark' ? '#ffffff' : 'inherit' }}>
-                        Login
-                    </Link>
-                    <button
-                        onClick={() => { toggleTheme(); setIsOpen(false); }}
-                        className={`${colors.buttonBg} ${colors.buttonText} ${colors.buttonHoverBg} p-2 rounded-full transition-transform duration-200 hover:scale-105 flex items-center justify-center`}
-                        aria-label="Toggle theme"
-                        title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-                    >
-                        {theme === 'light' ? 
-                            <MoonIcon className="w-5 h-5" /> : 
-                            <SunIcon className="w-5 h-5" />
-                        }
-                    </button>
-                </div>
-            </div>
-        </nav>
+                {/* Mobile menu */}
+                {isMobile && (
+                    <>
+                        <IconButton
+                            color="inherit"
+                            aria-label="cart"
+                            component={RouterLink}
+                            to="/cart"
+                            sx={{ mr: 2 }}
+                        >
+                            <Badge badgeContent={0} color="primary">
+                                <CartIcon />
+                            </Badge>
+                        </IconButton>
+                        <IconButton
+                            color="inherit"
+                            aria-label="open drawer"
+                            edge="end"
+                            onClick={toggleDrawer(true)}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                        <Drawer
+                            anchor="right"
+                            open={drawerOpen}
+                            onClose={toggleDrawer(false)}
+                        >
+                            {drawer}
+                        </Drawer>
+                    </>
+                )}
+            </Toolbar>
+        </AppBar>
     );
 }
 

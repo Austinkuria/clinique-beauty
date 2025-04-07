@@ -1,46 +1,126 @@
-import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
-import { ThemeContext } from '../../../context/ThemeContext.jsx';
+import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import {
+    Container,
+    Typography,
+    Grid,
+    Card,
+    CardMedia,
+    CardContent,
+    CardActions,
+    Button,
+    Box
+} from '@mui/material';
 
 function FeaturedProducts() {
-    const { theme } = useContext(ThemeContext);
-    const products = [{
-        id: 1, name: 'Moisturizer',
-        price: 29.99,
-        image: '/assets/images/products/moisturizer.jpg'
-    },
-    {
-        id: 2,
-        name: 'Cleanser',
-        price: 19.99,
-        image: '/assets/images/products/cleanser.jpg'
-    },
-    {
-        id: 3,
-        name: 'Serum',
-        price: 39.99,
-        image: '/assets/images/products/serum.jpg'
-    }];
+    const products = [
+        {
+            id: 1,
+            name: 'Moisturizer',
+            price: 29.99,
+            image: '/assets/images/products/moisturizer.jpg',
+            description: 'Deeply hydrating formula for all skin types'
+        },
+        {
+            id: 2,
+            name: 'Cleanser',
+            price: 19.99,
+            image: '/assets/images/products/cleanser.jpg',
+            description: 'Gentle daily cleanser that removes impurities'
+        },
+        {
+            id: 3,
+            name: 'Serum',
+            price: 39.99,
+            image: '/assets/images/products/serum.jpg',
+            description: 'Advanced anti-aging formula with peptides'
+        }
+    ];
+
     return (
-        <section className={'py-16'}>
-            <div className='container mx-auto px-4'>
-                <h2 className='text-3xl font-bold text-center mb-8'>
+        <Box sx={{ py: 8, bgcolor: 'background.default' }}>
+            <Container>
+                <Typography
+                    variant="h3"
+                    component="h2"
+                    align="center"
+                    sx={{
+                        mb: 6,
+                        fontWeight: 600,
+                        position: 'relative',
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            width: '60px',
+                            height: '3px',
+                            bgcolor: 'primary.main',
+                            bottom: -2,
+                            left: '50%',
+                            transform: 'translateX(-50%)'
+                        }
+                    }}
+                >
                     Featured Products
-                </h2>
-                <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
-                    {products.map(product => (
-                        <div key={product.id} className={'p-4 rounded-lg shadow-md'}>
-                            <img src={product.image} alt={product.name} className='w-full h-48 object-cover rounded-lg mb-4' />
-                            <h3 className='text-xl font-semibold'>{product.name}</h3>
-                            <p className='text-lg mb-4'>${product.price}</p>
-                            <Link to={`/products/${product.id}`} className={'inline-block px-4 py-2 rounded-full font-semibold transition'}>
-                                View Product
-                            </Link>
-                        </div>
+                </Typography>
+
+                <Grid container spacing={4}>
+                    {products.map((product) => (
+                        <Grid item key={product.id} xs={12} sm={6} md={4}>
+                            <Card
+                                elevation={2}
+                                sx={{
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    transition: 'transform 0.3s, box-shadow 0.3s',
+                                    '&:hover': {
+                                        transform: 'translateY(-5px)',
+                                        boxShadow: 6
+                                    }
+                                }}
+                            >
+                                <CardMedia
+                                    component="img"
+                                    height="200"
+                                    image={product.image}
+                                    alt={product.name}
+                                />
+                                <CardContent sx={{ flexGrow: 1 }}>
+                                    <Typography gutterBottom variant="h5" component="h3">
+                                        {product.name}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {product.description}
+                                    </Typography>
+                                    <Typography variant="h6" color="primary" sx={{ mt: 2 }}>
+                                        ${product.price.toFixed(2)}
+                                    </Typography>
+                                </CardContent>
+                                <CardActions>
+                                    <Button
+                                        size="medium"
+                                        component={RouterLink}
+                                        to={`/products/${product.id}`}
+                                        fullWidth
+                                    >
+                                        View Details
+                                    </Button>
+                                    <Button
+                                        size="medium"
+                                        color="primary"
+                                        variant="contained"
+                                        fullWidth
+                                    >
+                                        Add to Cart
+                                    </Button>
+                                </CardActions>
+                            </Card>
+                        </Grid>
                     ))}
-                </div>
-            </div>
-        </section>
+                </Grid>
+            </Container>
+        </Box>
     );
 }
+
 export default FeaturedProducts;
