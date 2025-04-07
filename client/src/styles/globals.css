@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .animate-banner-slide {
+        animation: slide-in 0.5s ease-out forwards;
+    }
+
+    /* Remove the problematic class entirely */
+}
+
+@keyframes slide-in {
+    0% {
+        transform: translateY(-100%);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
