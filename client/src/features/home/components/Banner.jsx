@@ -27,18 +27,24 @@ function Banner() {
 
     if (!isVisible) return null;
 
+    // Using direct color values instead of potentially problematic Tailwind classes
+    const bannerClasses = {
+        container: "relative w-full py-2 text-center transition-all duration-300",
+        light: "bg-[#db2777] text-white", // Using direct HEX for pink-600
+        dark: "bg-[#9d174d] text-[#fbcfe8]" // Using direct HEX for pink-800 and pink-100
+    };
+
     return (
-        <div className={`relative w-full py-2 text-center transition-all duration-300 ${theme === 'light' ? 'bg-pink-600 text-white' : 'bg-pink-800 text-pink-100'
-            }`}>
+        <div className={`${bannerClasses.container} ${theme === 'light' ? bannerClasses.light : bannerClasses.dark}`}>
             <div className="container mx-auto px-4 flex items-center justify-center">
-                <div className="animate-fade-in-down">
+                <div className="animate-pulse"> {/* Simple animation that's supported in Tailwind */}
                     <Link
                         to={promos[currentPromo].link}
                         className="font-medium hover:underline inline-flex items-center"
                     >
-                        <span className="mr-2">✨</span>
-                        {promos[currentPromo].text}
-                        <span className="ml-2 text-xs font-bold">SHOP NOW →</span>
+                        <span className="mr-2 text-lg">✨</span>
+                        <span className="text-sm sm:text-base font-semibold">{promos[currentPromo].text}</span>
+                        <span className="ml-2 text-xs font-bold hidden sm:inline-block bg-white bg-opacity-20 px-2 py-1 rounded">SHOP NOW →</span>
                     </Link>
                 </div>
 
