@@ -9,7 +9,10 @@ function Hero() {
             sx={{
                 backgroundImage: `url(${heroImage})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: {
+                    xs: 'center',
+                    md: 'center 30%' // Adjust position on medium/large screens to show more of the top
+                },
                 position: 'relative',
                 minHeight: {
                     xs: '70vh',
@@ -36,7 +39,8 @@ function Hero() {
                     position: 'relative',
                     zIndex: 2,
                     textAlign: 'center',
-                    color: 'white'
+                    color: 'white',
+                    pt: { xs: 2, md: 8 } // Add more top padding on larger screens
                 }}
             >
                 <Typography
