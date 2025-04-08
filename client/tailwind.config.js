@@ -33,7 +33,22 @@ export default {
       fontFamily: {
         sans: ['Poppins', 'Roboto', 'sans-serif'],
       },
+      gradientColorStops: theme => ({
+        ...theme('colors')
+      }),
+      backgroundImage: {
+        'gradient-light': 'linear-gradient(135deg, #f8e8ff 0%, #ffffff 100%)',
+        'gradient-dark': 'linear-gradient(135deg, #2d3748 0%, #1a202c 100%)'
+      }
     }
   },
-  plugins: []
+  plugins: [],
+  mode: 'jit',
+  variants: {
+    extend: {
+      backgroundColor: ['hover', 'focus'],
+      textColor: ['hover', 'focus'],
+      borderColor: ['hover', 'focus'],
+    }
+  }
 };
