@@ -6,12 +6,12 @@ export const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
     const [mode, setMode] = useState('light');
 
-    // Simplified Tailwind theme definitions
+    // Tailwind theme definitions
     const tailwindThemes = {
         light: {
-            background: 'theme-bg-light',
-            navbarBg: 'theme-navbar-light',
-            sectionBg: 'theme-section-light',
+            background: 'bg-gradient-to-r from-pink-50 to-white',
+            navbarBg: 'bg-white',
+            sectionBg: 'bg-white',
             textPrimary: 'text-gray-900',
             textSecondary: 'text-gray-600',
             navbarTextPrimary: 'text-pink-600',
@@ -24,9 +24,9 @@ export const ThemeProvider = ({ children }) => {
             shadow: 'shadow-md',
         },
         dark: {
-            background: 'theme-bg-dark',
-            navbarBg: 'theme-navbar-dark',
-            sectionBg: 'theme-section-dark',
+            background: 'bg-gray-900',
+            navbarBg: 'bg-gray-800',
+            sectionBg: 'bg-gray-800',
             textPrimary: 'text-white',
             textSecondary: 'text-gray-300',
             navbarTextPrimary: 'text-pink-300',

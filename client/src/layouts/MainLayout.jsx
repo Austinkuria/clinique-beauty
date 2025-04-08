@@ -5,11 +5,10 @@ import Navbar from '../components/Navbar';
 import Banner from '../features/home/components/Banner';
 
 function MainLayout() {
-    const { theme } = useContext(ThemeContext);
-    const bgClass = theme === 'light' ? 'theme-bg-light' : 'theme-bg-dark';
+    const { colors } = useContext(ThemeContext);
 
     return (
-        <div className={`flex flex-col min-h-screen ${bgClass}`}>
+        <div className={`flex flex-col min-h-screen ${colors.background}`}>
             <Banner />
             <Navbar />
             <main className="flex-1">
