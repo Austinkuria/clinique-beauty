@@ -22,6 +22,16 @@ export const ThemeProvider = ({ children }) => {
             buttonHoverBg: 'hover:bg-pink-700',
             accent: 'bg-pink-500',
             shadow: 'shadow-md',
+            // Footer specific styles
+            footerBg: 'bg-gray-50',
+            footerText: 'text-gray-700',
+            footerHeading: 'text-pink-600 font-semibold',
+            footerLink: 'text-gray-600',
+            footerLinkHover: 'hover:text-pink-500',
+            footerBorder: 'border-gray-200',
+            footerSocial: 'text-pink-500 hover:text-pink-700',
+            footerInput: 'bg-white border border-gray-300 focus:ring-pink-500 focus:border-pink-500',
+            footerButton: 'bg-pink-600 hover:bg-pink-700 text-white',
         },
         dark: {
             background: 'bg-gray-900',
@@ -37,6 +47,16 @@ export const ThemeProvider = ({ children }) => {
             buttonHoverBg: 'hover:bg-pink-600',
             accent: 'bg-pink-600',
             shadow: 'shadow-lg',
+            // Footer specific styles
+            footerBg: 'bg-gray-800',
+            footerText: 'text-gray-300',
+            footerHeading: 'text-pink-300 font-semibold',
+            footerLink: 'text-gray-400',
+            footerLinkHover: 'hover:text-pink-300',
+            footerBorder: 'border-gray-700',
+            footerSocial: 'text-pink-400 hover:text-pink-300',
+            footerInput: 'bg-gray-700 border border-gray-600 focus:ring-pink-400 focus:border-pink-400 text-white',
+            footerButton: 'bg-pink-500 hover:bg-pink-600 text-white',
         },
     };
 
