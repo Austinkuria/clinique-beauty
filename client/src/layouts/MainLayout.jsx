@@ -1,20 +1,18 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { ThemeContext } from '../context/ThemeContext';
 import Navbar from '../components/Navbar';
-import Banner from '../features/home/components/Banner';
+import Footer from '../components/Footer'; // Import the Footer component
+import { Box } from '@mui/material';
 
 function MainLayout() {
-    const { colors } = useContext(ThemeContext);
-
     return (
-        <div className={`flex flex-col min-h-screen ${colors.background}`}>
-            <Banner />
+        <Box>
             <Navbar />
-            <main className="flex-1">
+            <Box sx={{ minHeight: 'calc(100vh - 64px - 200px)' }}>
                 <Outlet />
-            </main>
-        </div>
+            </Box>
+            <Footer /> 
+        </Box>
     );
 }
 

@@ -16,7 +16,7 @@ function App() {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Home />} />
-          {/* Add other routes here */}
+          
         </Route>
       </Routes>
     </MUIThemeProvider>
