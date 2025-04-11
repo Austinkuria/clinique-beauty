@@ -30,7 +30,7 @@ import {
     Search as SearchIcon,
 } from '@mui/icons-material';
 import { UserButton, useAuth } from '@clerk/clerk-react';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/CartContext'; // Assuming CartContext exists
 
 function Navbar() {
     const { theme, toggleTheme, colors, colorValues } = useContext(ThemeContext);
@@ -40,13 +40,12 @@ function Navbar() {
     const { isSignedIn } = useAuth();
     const { cartItems } = useCart(); // Fetch cart items from context
 
-    // Expanded navigation items for a beauty e-commerce site
+    // Navigation items without the cart and without Profile button
     const navItems = [
         { name: 'Skincare', path: '/products/skincare' },
         { name: 'Makeup', path: '/products/makeup' },
         { name: 'Fragrance', path: '/products/fragrance' },
-        { name: 'Cart', path: '/cart', icon: <CartIcon /> },
-        ...(isSignedIn ? [{ name: 'Profile', path: '/profile' }] : []),
+        // Removed the profile button since Clerk's UserButton handles this
     ];
 
     // Clerk UserButton styling
@@ -86,14 +85,35 @@ function Navbar() {
                         <ListItemButton
                             component={RouterLink}
                             to={item.path}
-                            onClick={toggleDrawer(false)} // Close on navigation
+                            onClick={toggleDrawer(false)}
                             className={`${colors.navbarTextSecondary} ${colors.textHover}`}
                         >
-                            {item.icon && <Box mr={1}>{item.icon}</Box>}
                             <ListItemText primary={item.name} />
                         </ListItemButton>
                     </ListItem>
                 ))}
+                {/* Cart in drawer */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        component={RouterLink}
+                        to="/cart"
+                        onClick={toggleDrawer(false)}
+                        className={`${colors.navbarTextSecondary} ${colors.textHover}`}
+                    >
+                        <Badge
+                            badgeContent={cartItems.length}
+                            sx={{
+                                '& .MuiBadge-badge': {
+                                    backgroundColor: colorValues.primary,
+                                    color: 'white',
+                                },
+                            }}
+                        >
+                            <CartIcon sx={{ mr: 1 }} />
+                        </Badge>
+                        <ListItemText primary="Cart" />
+                    </ListItemButton>
+                </ListItem>
                 {!isSignedIn && (
                     <>
                         <ListItem disablePadding>
@@ -124,7 +144,7 @@ function Navbar() {
                         <Switch
                             checked={theme === 'dark'}
                             onChange={toggleTheme}
-                            onClick={(e) => e.stopPropagation()} // Prevent drawer close
+                            onClick={(e) => e.stopPropagation()}
                         />
                         <DarkModeIcon className={colors.navbarTextSecondary} />
                     </Box>
@@ -197,7 +217,6 @@ function Navbar() {
                                 key={item.name}
                                 component={RouterLink}
                                 to={item.path}
-                                startIcon={item.icon}
                                 sx={{
                                     mx: 1,
                                     color: colorValues.textPrimary,
@@ -246,9 +265,10 @@ function Navbar() {
                                     backgroundColor: colorValues.buttonHover,
                                 },
                             }}
+                            aria-label={`Cart with ${cartItems.length} items`}
                         >
                             <Badge
-                                badgeContent={cartItems.length} // Dynamic cart count
+                                badgeContent={cartItems.length}
                                 sx={{
                                     '& .MuiBadge-badge': {
                                         backgroundColor: colorValues.primary,
@@ -305,13 +325,13 @@ function Navbar() {
                 {isMobile && (
                     <>
                         <IconButton
-                            aria-label="cart"
                             component={RouterLink}
                             to="/cart"
                             sx={{ mr: 2, color: colorValues.textPrimary }}
+                            aria-label={`Cart with ${cartItems.length} items`}
                         >
                             <Badge
-                                badgeContent={cartItems.length} // Dynamic cart count
+                                badgeContent={cartItems.length}
                                 sx={{
                                     '& .MuiBadge-badge': {
                                         backgroundColor: colorValues.primary,

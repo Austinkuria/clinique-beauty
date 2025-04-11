@@ -32,6 +32,15 @@ const router = createBrowserRouter([
                         path: '/auth/login',
                         element: <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
                     },
+                    // Add support for Clerk's multi-factor authentication 
+                    {
+                        path: '/auth/login/factor-one',
+                        element: <ClerkVerification type="factorOne" />
+                    },
+                    {
+                        path: '/auth/login/factor-two',
+                        element: <ClerkVerification type="factorTwo" />
+                    },
                     {
                         path: '/auth/register',
                         element: <RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>

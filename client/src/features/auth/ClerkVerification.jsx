@@ -13,6 +13,8 @@ const ClerkVerification = ({ type }) => {
                     {type === 'verifyEmail' && 'Verify Email Address'}
                     {type === 'resetPassword' && 'Reset Your Password'}
                     {type === 'verify' && 'Verification'}
+                    {type === 'factorOne' && 'Two-Step Verification'}
+                    {type === 'factorTwo' && 'Additional Verification'}
                 </Typography>
                 <Paper elevation={3} sx={{ p: 3, width: '100%' }}>
                     {type === 'verifyEmail' && (
@@ -36,6 +38,16 @@ const ClerkVerification = ({ type }) => {
                             signUpUrl="/auth/register"
                             fallbackRedirectUrl="/"
                             initialStep="forgot_password"
+                        />
+                    )}
+
+                    {/* Add support for factor-one authentication */}
+                    {(type === 'factorOne' || type === 'factorTwo') && (
+                        <SignIn
+                            path="/auth/login"
+                            routing="path"
+                            signUpUrl="/auth/register"
+                            fallbackRedirectUrl="/"
                         />
                     )}
 
