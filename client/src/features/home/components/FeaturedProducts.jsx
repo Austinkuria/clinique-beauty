@@ -11,6 +11,7 @@ import {
     Button,
     Box
 } from '@mui/material';
+import moisturizer from '../../../assets/images/products/moisturizer.webp';
 
 function FeaturedProducts() {
     const products = [
@@ -18,7 +19,7 @@ function FeaturedProducts() {
             id: 1,
             name: 'Moisturizer',
             price: 29.99,
-            image: '/assets/images/products/moisturizer.jpg',
+            image: moisturizer,
             description: 'Deeply hydrating formula for all skin types'
         },
         {

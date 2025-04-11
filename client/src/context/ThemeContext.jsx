@@ -6,6 +6,36 @@ export const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
     const [mode, setMode] = useState('light');
 
+    // Common color palette for both Tailwind and MUI
+    const colorPalette = {
+        light: {
+            primary: '#e91e63',          // Main pink
+            primaryLight: '#f48fb1',      // Lighter pink
+            primaryDark: '#c2185b',       // Darker pink
+            secondary: '#9c27b0',        // Purple
+            secondaryLight: '#ba68c8',    // Lighter purple
+            bgDefault: '#fafafa',        // Light background
+            bgPaper: '#ffffff',          // White paper background
+            textPrimary: '#212121',      // Nearly black text
+            textSecondary: '#757575',    // Dark gray text
+            navbarBg: '#ffffff',         // White navbar
+            buttonHover: 'rgba(233,30,99,0.08)', // Pink hover with opacity
+        },
+        dark: {
+            primary: '#f48fb1',          // Lighter pink for dark mode
+            primaryLight: '#f8bbd0',      // Even lighter pink
+            primaryDark: '#c2185b',      // Darker pink
+            secondary: '#ce93d8',        // Light purple
+            secondaryLight: '#e1bee7',   // Even lighter purple
+            bgDefault: '#121212',        // Dark background
+            bgPaper: '#1e1e1e',          // Slightly lighter dark paper
+            textPrimary: '#ffffff',      // White text
+            textSecondary: '#b0b0b0',    // Light gray text
+            navbarBg: '#1e1e1e',         // Dark navbar
+            buttonHover: 'rgba(244,143,177,0.15)', // Pink hover with opacity
+        }
+    };
+
     // Tailwind theme definitions
     const tailwindThemes = {
         light: {
@@ -65,18 +95,22 @@ export const ThemeProvider = ({ children }) => {
         palette: {
             mode: currentMode,
             primary: {
-                main: currentMode === 'light' ? '#e91e63' : '#f48fb1',
-                light: '#f48fb1',
-                dark: '#c2185b',
+                main: colorPalette[currentMode].primary,
+                light: colorPalette[currentMode].primaryLight,
+                dark: colorPalette[currentMode].primaryDark,
             },
             secondary: {
-                main: currentMode === 'light' ? '#9c27b0' : '#ce93d8',
-                light: '#ba68c8',
-                dark: '#7b1fa2',
+                main: colorPalette[currentMode].secondary,
+                light: colorPalette[currentMode].secondaryLight,
+                dark: currentMode === 'light' ? '#7b1fa2' : '#8e24aa',
             },
             background: {
-                default: currentMode === 'light' ? '#fafafa' : '#121212',
-                paper: currentMode === 'light' ? '#ffffff' : '#1e1e1e',
+                default: colorPalette[currentMode].bgDefault,
+                paper: colorPalette[currentMode].bgPaper,
+            },
+            text: {
+                primary: colorPalette[currentMode].textPrimary,
+                secondary: colorPalette[currentMode].textSecondary,
             },
         },
         typography: {
@@ -90,6 +124,20 @@ export const ThemeProvider = ({ children }) => {
                     root: {
                         borderRadius: '50px',
                         textTransform: 'none',
+                    },
+                },
+            },
+            MuiAppBar: {
+                styleOverrides: {
+                    root: {
+                        backgroundColor: colorPalette[currentMode].navbarBg,
+                    },
+                },
+            },
+            MuiIconButton: {
+                styleOverrides: {
+                    root: {
+                        color: colorPalette[currentMode].textPrimary,
                     },
                 },
             },
@@ -121,6 +169,7 @@ export const ThemeProvider = ({ children }) => {
             value={{
                 theme: mode,
                 colors: tailwindThemes[mode],
+                colorValues: colorPalette[mode], // Provide direct color values for MUI styling
                 toggleTheme,
                 muiTheme
             }}
