@@ -100,7 +100,8 @@ function Hero() {
                     backgroundColor: 'rgba(0, 0, 0, 0.5)', // Slightly darker overlay
                     zIndex: 1
                 },
-                marginBottom: 4
+                marginBottom: 0,
+                marginTop: { xs: '-20px', md: '-30px' }
             }}
         >
             <Container
@@ -113,28 +114,26 @@ function Hero() {
                     zIndex: 2,
                     textAlign: 'center',
                     color: 'white',
-                    pt: { xs: 1, md: 4 }, // Reduced top padding
+                    pt: { xs: 0, md: 2 }, // Reduced top padding
                     minHeight: { xs: '300px', md: '400px' }
                 }}
             >
-                <Box sx={{ mt: { xs: 0, md: 0 } }}> {/* Add Box with no top margin */}
-                    <AnimatePresence mode="wait">
-                        <RouterLink to="/products/collections/limited-edition" style={{ textDecoration: 'none' }}>
-                            <Chip
-                                label="LIMITED EDITION"
-                                color="secondary"
-                                clickable
-                                sx={{
-                                    mb: 3,
-                                    fontWeight: 'bold',
-                                    fontSize: '0.9rem',
-                                    py: 0.5,
-                                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
-                                }}
-                            />
-                        </RouterLink>
-                    </AnimatePresence>
-                </Box>
+                <AnimatePresence mode="wait">
+                    <RouterLink to="/products/collections/limited-edition" style={{ textDecoration: 'none' }}>
+                        <Chip
+                            label="LIMITED EDITION"
+                            color="secondary"
+                            clickable
+                            sx={{
+                                mb: 2,
+                                fontWeight: 'bold',
+                                fontSize: '0.9rem',
+                                py: 0.5,
+                                boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+                            }}
+                        />
+                    </RouterLink>
+                </AnimatePresence>
 
                 <Box sx={{ mb: 2 }}>
                     <motion.div
@@ -207,7 +206,7 @@ function Hero() {
                     }}
                 >
                     {/* Isolate each button in its own fixed-width container */}
-                    <Box 
+                    <Box
                         sx={{
                             position: 'relative',
                             width: { xs: '100%', sm: '160px' }, // Fixed width on desktop
@@ -250,7 +249,7 @@ function Hero() {
                         </motion.div>
                     </Box>
 
-                    <Box 
+                    <Box
                         sx={{
                             position: 'relative',
                             width: { xs: '100%', sm: '160px' }, // Fixed width on desktop

@@ -58,7 +58,14 @@ function FeaturedProducts() {
     };
 
     return (
-        <Box sx={{ py: 8, bgcolor: 'background.default' }}>
+        <Box
+            sx={{
+                mt: { xs: -2, md: -4 }, // Negative top margin to reduce space
+                pt: { xs: 3, md: 5 },   // Add some padding inside to maintain internal spacing
+                py: 8,
+                bgcolor: 'background.default'
+            }}
+        >
             <Container>
                 <Typography
                     variant="h3"
