@@ -21,7 +21,6 @@ import {
 import {
     Menu as MenuIcon,
     ShoppingCart as CartIcon,
-    Person as UserIcon,
     Home as HomeIcon,
     DarkMode as DarkModeIcon,
     LightMode as LightModeIcon
@@ -36,11 +35,12 @@ function Navbar() {
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const { isSignedIn } = useAuth();
 
+    // Reordered navigation items - authentication related items first
     const navItems = [
         { name: 'Products', path: '/products' },
         { name: 'Cart', path: '/cart', icon: <CartIcon /> },
-        { name: 'Profile', path: '/profile', icon: <UserIcon /> },
-        { name: 'Login', path: '/auth/login' }
+        // Only show Profile when user is signed in
+        ...(isSignedIn ? [{ name: 'Profile', path: '/profile' }] : [])
     ];
 
     const toggleDrawer = (open) => (event) => {
@@ -66,6 +66,20 @@ function Navbar() {
                         </ListItemButton>
                     </ListItem>
                 ))}
+                {!isSignedIn && (
+                    <>
+                        <ListItem disablePadding>
+                            <ListItemButton component={RouterLink} to="/auth/login">
+                                <ListItemText primary="Sign In" />
+                            </ListItemButton>
+                        </ListItem>
+                        <ListItem disablePadding>
+                            <ListItemButton component={RouterLink} to="/auth/register">
+                                <ListItemText primary="Sign Up" />
+                            </ListItemButton>
+                        </ListItem>
+                    </>
+                )}
                 <ListItem>
                     <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                         <LightModeIcon />
@@ -106,35 +120,37 @@ function Navbar() {
                         <IconButton onClick={toggleTheme} color="inherit">
                             {theme === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
                         </IconButton>
-                        <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
-                            <IconButton color="inherit" component={RouterLink} to="/cart" sx={{ mr: 2 }}>
-                                <Badge badgeContent={0} color="secondary">
-                                    <CartIcon />
-                                </Badge>
-                            </IconButton>
-                            {isSignedIn ? (
-                                <UserButton afterSignOutUrl="/" />
-                            ) : (
-                                <Box>
-                                    <Button
-                                        color="inherit"
-                                        component={RouterLink}
-                                        to="/auth/login"
-                                        sx={{ mr: 1 }}
-                                    >
-                                        Sign In
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        color="inherit"
-                                        component={RouterLink}
-                                        to="/auth/register"
-                                    >
-                                        Sign Up
-                                    </Button>
-                                </Box>
-                            )}
-                        </Box>
+
+                        {/* Cart icon is always visible */}
+                        <IconButton color="inherit" component={RouterLink} to="/cart" sx={{ mr: 2 }}>
+                            <Badge badgeContent={0} color="secondary">
+                                <CartIcon />
+                            </Badge>
+                        </IconButton>
+
+                        {/* Authentication UI */}
+                        {isSignedIn ? (
+                            <UserButton afterSignOutUrl="/" />
+                        ) : (
+                            <Box>
+                                <Button
+                                    color="inherit"
+                                    component={RouterLink}
+                                    to="/auth/login"
+                                    sx={{ mr: 1 }}
+                                >
+                                    Sign In
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    color="inherit"
+                                    component={RouterLink}
+                                    to="/auth/register"
+                                >
+                                    Sign Up
+                                </Button>
+                            </Box>
+                        )}
                     </Box>
                 )}
 
@@ -152,6 +168,11 @@ function Navbar() {
                                 <CartIcon />
                             </Badge>
                         </IconButton>
+                        {isSignedIn && (
+                            <Box sx={{ mr: 2 }}>
+                                <UserButton afterSignOutUrl="/" />
+                            </Box>
+                        )}
                         <IconButton
                             color="inherit"
                             aria-label="open drawer"
