@@ -4,7 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { ThemeProvider } from './context/ThemeContext';
 import { ClerkProvider } from '@clerk/clerk-react';
-// Make sure this import exists
 import './styles/globals.css';
 
 // Get the publishable key from environment variables
