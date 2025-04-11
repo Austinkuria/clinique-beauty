@@ -30,7 +30,8 @@ function Hero() {
                     bottom: 0,
                     backgroundColor: 'rgba(0, 0, 0, 0.4)',
                     zIndex: 1
-                }
+                },
+                marginBottom: 4
             }}
         >
             <Container
@@ -57,7 +58,7 @@ function Hero() {
                         textShadow: '1px 1px 3px rgba(0,0,0,0.3)'
                     }}
                 >
-                    Discover Your Perfect Skincare
+                    Welcome to Clinique Beauty
                 </Typography>
                 <Typography
                     variant="h5"
@@ -69,7 +70,7 @@ function Hero() {
                         textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
                     }}
                 >
-                    Premium beauty products tailored for you.
+                    Discover our premium beauty products
                 </Typography>
                 <Button
                     component={RouterLink}
