@@ -26,12 +26,15 @@ import {
     DarkMode as DarkModeIcon,
     LightMode as LightModeIcon
 } from '@mui/icons-material';
+import { UserButton, useAuth } from '@clerk/clerk-react';
+import { Link } from 'react-router-dom';
 
 function Navbar() {
     const { theme, toggleTheme } = useContext(ThemeContext);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
+    const { isSignedIn } = useAuth();
 
     const navItems = [
         { name: 'Products', path: '/products' },
@@ -103,6 +106,14 @@ function Navbar() {
                         <IconButton onClick={toggleTheme} color="inherit">
                             {theme === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
                         </IconButton>
+                        {isSignedIn ? (
+                            <UserButton afterSignOutUrl="/" />
+                        ) : (
+                            <div>
+                                <Link to="/login">Login</Link>
+                                <Link to="/register">Register</Link>
+                            </div>
+                        )}
                     </Box>
                 )}
 
