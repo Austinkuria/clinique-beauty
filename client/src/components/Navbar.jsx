@@ -126,8 +126,10 @@ function Navbar() {
         <AppBar 
             position="sticky" 
             elevation={2}
-            className={colors.navbarBg}
-            sx={{ color: theme === 'dark' ? 'white' : 'inherit' }}
+            sx={{ 
+                bgcolor: theme === 'dark' ? '#1e1e1e' : 'white',  // Explicit background colors
+                color: theme === 'dark' ? 'white' : '#212121'      // Explicit text colors
+            }}
         >
             <Toolbar>
                 <RouterLink 
@@ -140,15 +142,17 @@ function Navbar() {
                 >
                     <HomeIcon sx={{ 
                         mr: 1,
-                        color: theme === 'dark' ? '#f48fb1' : '#e91e63'
+                        color: theme === 'dark' ? '#f48fb1' : '#e91e63',  // Pink color that works in both themes
+                        fontSize: '28px'  // Slightly larger icon
                     }} />
                     <Typography 
                         variant="h6" 
                         sx={{ 
                             fontWeight: 600,
-                            color: theme === 'dark' ? 'white' : '#212121',
+                            color: theme === 'dark' ? '#ffffff' : '#212121',  // Pure white in dark mode
                             fontSize: '1.25rem',
-                            letterSpacing: '0.5px'
+                            letterSpacing: '0.5px',
+                            textShadow: theme === 'dark' ? '0px 0px 5px rgba(255,255,255,0.3)' : 'none'  // Add subtle glow in dark mode
                         }}
                     >
                         Clinique Beauty
@@ -168,9 +172,11 @@ function Navbar() {
                                 startIcon={item.icon}
                                 sx={{ 
                                     mx: 1, 
-                                    color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)',
+                                    color: theme === 'dark' ? '#ffffff' : '#212121',  // Pure white in dark mode
+                                    fontWeight: 500,  // Medium weight for better visibility
                                     '&:hover': {
                                         color: theme === 'dark' ? '#f48fb1' : '#e91e63',
+                                        backgroundColor: theme === 'dark' ? 'rgba(244,143,177,0.08)' : 'rgba(233,30,99,0.04)'
                                     }
                                 }}
                             >
@@ -178,25 +184,33 @@ function Navbar() {
                             </Button>
                         ))}
                         
-                        {/* Theme toggle button with explicit color */}
+                        {/* Theme toggle button with improved contrast */}
                         <IconButton 
                             onClick={toggleTheme} 
                             sx={{ 
-                                color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)',
-                                ml: 1
+                                color: theme === 'dark' ? '#ffffff' : '#212121',  // Pure white in dark mode
+                                ml: 1,
+                                '&:hover': {
+                                    color: theme === 'dark' ? '#f48fb1' : '#e91e63',
+                                    backgroundColor: theme === 'dark' ? 'rgba(244,143,177,0.08)' : 'rgba(233,30,99,0.04)'
+                                }
                             }}
                         >
                             {theme === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
                         </IconButton>
 
-                        {/* Cart icon with explicit color */}
+                        {/* Cart icon with improved contrast */}
                         <IconButton 
                             component={RouterLink} 
                             to="/cart" 
                             sx={{ 
                                 mr: 2,
                                 ml: 1,
-                                color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)'
+                                color: theme === 'dark' ? '#ffffff' : '#212121',  // Pure white in dark mode
+                                '&:hover': {
+                                    color: theme === 'dark' ? '#f48fb1' : '#e91e63',
+                                    backgroundColor: theme === 'dark' ? 'rgba(244,143,177,0.08)' : 'rgba(233,30,99,0.04)'
+                                }
                             }}
                         >
                             <Badge badgeContent={0} color="secondary">
@@ -204,22 +218,43 @@ function Navbar() {
                             </Badge>
                         </IconButton>
 
-                        {/* Authentication UI */}
+                        {/* Authentication UI with improved contrast */}
                         {isSignedIn ? (
                             <UserButton 
                                 afterSignOutUrl="/" 
-                                appearance={clerkButtonAppearance} 
+                                appearance={{
+                                    baseTheme: theme === 'dark' ? 'dark' : 'light',
+                                    elements: {
+                                        userButtonAvatarBox: {
+                                            width: '2.2rem',
+                                            height: '2.2rem',
+                                        },
+                                        userButtonBox: {
+                                            boxShadow: 'none',
+                                            borderRadius: '50px',
+                                            backgroundColor: theme === 'dark' ? '#333333' : '#f5f5f5',
+                                        },
+                                        userButtonOuterIdentifier: {
+                                            color: theme === 'dark' ? '#ffffff' : '#212121',
+                                            fontWeight: 500
+                                        }
+                                    }
+                                }}
                             />
                         ) : (
                             <Box>
                                 <Button
                                     component={RouterLink}
                                     to="/auth/login"
+                                    variant="outlined"  // Outlined for better visibility
                                     sx={{ 
                                         mr: 1,
-                                        color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)',
+                                        color: theme === 'dark' ? '#ffffff' : '#212121',
+                                        borderColor: theme === 'dark' ? '#f48fb1' : '#e91e63',
                                         '&:hover': {
                                             color: theme === 'dark' ? '#f48fb1' : '#e91e63',
+                                            borderColor: theme === 'dark' ? '#f06292' : '#d81b60',
+                                            backgroundColor: theme === 'dark' ? 'rgba(244,143,177,0.08)' : 'rgba(233,30,99,0.04)'
                                         }
                                     }}
                                 >
@@ -231,7 +266,8 @@ function Navbar() {
                                     to="/auth/register"
                                     sx={{ 
                                         backgroundColor: theme === 'dark' ? '#f48fb1' : '#e91e63',
-                                        color: 'white',
+                                        color: '#ffffff',  // Always white text for best contrast
+                                        fontWeight: 500,
                                         '&:hover': {
                                             backgroundColor: theme === 'dark' ? '#f06292' : '#d81b60'
                                         }
