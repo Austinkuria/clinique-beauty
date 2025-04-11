@@ -36,7 +36,7 @@ function FeaturedProducts() {
             name: 'Serum',
             price: 39.99,
             image: serum,
-            description: 'Advanced anti-aging formula with peptides'
+            description: '2 in 1 Collagen Face Serum Anti Aging Collagen Serum '
         }
     ];
 
