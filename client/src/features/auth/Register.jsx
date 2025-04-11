@@ -13,7 +13,8 @@ const Register = () => {
                         path="/auth/register"
                         routing="path"
                         signInUrl="/auth/login"
-                        redirectUrl="/"
+                        afterSignUpUrl="/"
+                        fallbackRedirectUrl="/"
                     />
                 </Paper>
             </Box>

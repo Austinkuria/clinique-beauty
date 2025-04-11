@@ -11,11 +11,14 @@ import {
     Button,
     Box
 } from '@mui/material';
+import { useCart } from '../../../context/CartContext';
 import moisturizer from '../../../assets/images/products/moisturizer.webp';
 import cleanser from '../../../assets/images/products/cleanser.webp';
 import serum from '../../../assets/images/products/serum.webp';
 
 function FeaturedProducts() {
+    const { cartItems, setCartItems } = useCart();
+
     const products = [
         {
             id: 1,
@@ -36,9 +39,23 @@ function FeaturedProducts() {
             name: 'Serum',
             price: 39.99,
             image: serum,
-            description: '2 in 1 Collagen Face Serum Anti Aging Collagen Serum '
+            description: '2 in 1 Collagen Face Serum Anti Aging Collagen Serum'
         }
     ];
+
+    const addToCart = (product) => {
+        const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
+
+        if (existingItemIndex >= 0) {
+            // Item already exists, update quantity
+            const newCartItems = [...cartItems];
+            newCartItems[existingItemIndex].quantity += 1;
+            setCartItems(newCartItems);
+        } else {
+            // Add new item with quantity 1
+            setCartItems([...cartItems, { ...product, quantity: 1 }]);
+        }
+    };
 
     return (
         <Box sx={{ py: 8, bgcolor: 'background.default' }}>
@@ -113,6 +130,7 @@ function FeaturedProducts() {
                                         color="primary"
                                         variant="contained"
                                         fullWidth
+                                        onClick={() => addToCart(product)}
                                     >
                                         Add to Cart
                                     </Button>

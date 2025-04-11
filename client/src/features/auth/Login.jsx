@@ -13,7 +13,7 @@ const Login = () => {
                         path="/auth/login"
                         routing="path"
                         signUpUrl="/auth/register"
-                        redirectUrl="/"
+                        fallbackRedirectUrl="/"
                     />
                 </Paper>
             </Box>

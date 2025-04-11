@@ -16,16 +16,21 @@ import {
     useMediaQuery,
     useTheme,
     Switch,
-    Badge
+    Badge,
+    TextField,
+    InputAdornment,
+    Tooltip,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
     ShoppingCart as CartIcon,
     Home as HomeIcon,
     DarkMode as DarkModeIcon,
-    LightMode as LightModeIcon
+    LightMode as LightModeIcon,
+    Search as SearchIcon,
 } from '@mui/icons-material';
 import { UserButton, useAuth } from '@clerk/clerk-react';
+import { useCart } from '../context/CartContext';
 
 function Navbar() {
     const { theme, toggleTheme, colors, colorValues } = useContext(ThemeContext);
@@ -33,23 +38,25 @@ function Navbar() {
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const { isSignedIn } = useAuth();
+    const { cartItems } = useCart(); // Fetch cart items from context
 
-    // Navigation items
+    // Expanded navigation items for a beauty e-commerce site
     const navItems = [
-        { name: 'Products', path: '/products' },
+        { name: 'Skincare', path: '/products/skincare' },
+        { name: 'Makeup', path: '/products/makeup' },
+        { name: 'Fragrance', path: '/products/fragrance' },
         { name: 'Cart', path: '/cart', icon: <CartIcon /> },
-        // Only show Profile when user is signed in
-        ...(isSignedIn ? [{ name: 'Profile', path: '/profile' }] : [])
+        ...(isSignedIn ? [{ name: 'Profile', path: '/profile' }] : []),
     ];
 
-    // Custom styles for Clerk's UserButton with improved visibility using ThemeContext values
+    // Clerk UserButton styling
     const clerkButtonAppearance = {
         baseTheme: theme,
         elements: {
             userButtonAvatarBox: {
                 width: '2.2rem',
                 height: '2.2rem',
-                border: theme === 'dark' ? `2px solid ${colorValues.primary}` : 'none'
+                border: theme === 'dark' ? `2px solid ${colorValues.primary}` : 'none',
             },
             userButtonBox: {
                 boxShadow: 'none',
@@ -58,9 +65,9 @@ function Navbar() {
             },
             userButtonOuterIdentifier: {
                 color: colorValues.textPrimary,
-                fontWeight: 500
-            }
-        }
+                fontWeight: 500,
+            },
+        },
     };
 
     const toggleDrawer = (open) => (event) => {
@@ -70,20 +77,16 @@ function Navbar() {
         setDrawerOpen(open);
     };
 
+    // Mobile drawer content
     const drawer = (
-        <Box
-            onClick={toggleDrawer(false)}
-            onKeyDown={toggleDrawer(false)}
-            sx={{ width: 250 }}
-            role="presentation"
-            className={`${colors.sectionBg}`}
-        >
+        <Box sx={{ width: 250 }} role="presentation" className={`${colors.sectionBg}`}>
             <List>
                 {navItems.map((item) => (
                     <ListItem key={item.name} disablePadding>
                         <ListItemButton
                             component={RouterLink}
                             to={item.path}
+                            onClick={toggleDrawer(false)} // Close on navigation
                             className={`${colors.navbarTextSecondary} ${colors.textHover}`}
                         >
                             {item.icon && <Box mr={1}>{item.icon}</Box>}
@@ -97,6 +100,7 @@ function Navbar() {
                             <ListItemButton
                                 component={RouterLink}
                                 to="/auth/login"
+                                onClick={toggleDrawer(false)}
                                 className={`${colors.navbarTextSecondary} ${colors.textHover}`}
                             >
                                 <ListItemText primary="Sign In" />
@@ -106,6 +110,7 @@ function Navbar() {
                             <ListItemButton
                                 component={RouterLink}
                                 to="/auth/register"
+                                onClick={toggleDrawer(false)}
                                 className={`${colors.navbarTextSecondary} ${colors.textHover}`}
                             >
                                 <ListItemText primary="Sign Up" />
@@ -116,7 +121,11 @@ function Navbar() {
                 <ListItem>
                     <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                         <LightModeIcon className={colors.navbarTextSecondary} />
-                        <Switch checked={theme === 'dark'} onChange={toggleTheme} />
+                        <Switch
+                            checked={theme === 'dark'}
+                            onChange={toggleTheme}
+                            onClick={(e) => e.stopPropagation()} // Prevent drawer close
+                        />
                         <DarkModeIcon className={colors.navbarTextSecondary} />
                     </Box>
                 </ListItem>
@@ -131,23 +140,17 @@ function Navbar() {
             sx={{
                 bgcolor: colorValues.navbarBg,
                 color: colorValues.textPrimary,
-                borderBottom: theme === 'dark' ? '1px solid #333' : '1px solid #eaeaea'
+                borderBottom: theme === 'dark' ? '1px solid #333' : '1px solid #eaeaea',
             }}
         >
             <Toolbar>
+                {/* Branding */}
                 <RouterLink
                     to="/"
-                    style={{
-                        textDecoration: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                    }}
+                    title="Clinique Beauty Home"
+                    style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
                 >
-                    <HomeIcon sx={{
-                        mr: 1,
-                        color: colorValues.primary,
-                        fontSize: '28px'
-                    }} />
+                    <HomeIcon sx={{ mr: 1, color: colorValues.primary, fontSize: '28px' }} />
                     <Typography
                         variant="h6"
                         sx={{
@@ -163,9 +166,32 @@ function Navbar() {
 
                 <Box sx={{ flexGrow: 1 }} />
 
-                {/* Desktop menu */}
+                {/* Desktop View */}
                 {!isMobile && (
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {/* Search Bar */}
+                        <TextField
+                            variant="outlined"
+                            placeholder="Search products..."
+                            size="small"
+                            sx={{
+                                width: '250px',
+                                mr: 2,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '20px',
+                                    backgroundColor: theme === 'dark' ? '#424242' : '#f5f5f5',
+                                },
+                            }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: colorValues.textSecondary }} />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+
+                        {/* Navigation */}
                         {navItems.map((item) => (
                             <Button
                                 key={item.name}
@@ -178,33 +204,36 @@ function Navbar() {
                                     fontWeight: 500,
                                     '&:hover': {
                                         color: colorValues.primary,
-                                        backgroundColor: colorValues.buttonHover
-                                    }
+                                        backgroundColor: colorValues.buttonHover,
+                                    },
                                 }}
                             >
                                 {item.name}
                             </Button>
                         ))}
 
-                        {/* Theme toggle button */}
-                        <IconButton
-                            onClick={toggleTheme}
-                            sx={{
-                                color: colorValues.textPrimary,
-                                ml: 1,
-                                '&:hover': {
-                                    color: colorValues.primary,
-                                    backgroundColor: colorValues.buttonHover
-                                }
-                            }}
-                        >
-                            {theme === 'dark' ?
-                                <LightModeIcon sx={{ color: colorValues.primaryLight }} /> :
-                                <DarkModeIcon />
-                            }
-                        </IconButton>
+                        {/* Theme Toggle */}
+                        <Tooltip title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+                            <IconButton
+                                onClick={toggleTheme}
+                                sx={{
+                                    color: colorValues.textPrimary,
+                                    ml: 1,
+                                    '&:hover': {
+                                        color: colorValues.primary,
+                                        backgroundColor: colorValues.buttonHover,
+                                    },
+                                }}
+                            >
+                                {theme === 'dark' ? (
+                                    <LightModeIcon sx={{ color: colorValues.primaryLight }} />
+                                ) : (
+                                    <DarkModeIcon />
+                                )}
+                            </IconButton>
+                        </Tooltip>
 
-                        {/* Cart icon */}
+                        {/* Cart */}
                         <IconButton
                             component={RouterLink}
                             to="/cart"
@@ -214,29 +243,26 @@ function Navbar() {
                                 color: colorValues.textPrimary,
                                 '&:hover': {
                                     color: colorValues.primary,
-                                    backgroundColor: colorValues.buttonHover
-                                }
+                                    backgroundColor: colorValues.buttonHover,
+                                },
                             }}
                         >
                             <Badge
-                                badgeContent={0}
+                                badgeContent={cartItems.length} // Dynamic cart count
                                 sx={{
                                     '& .MuiBadge-badge': {
                                         backgroundColor: colorValues.primary,
-                                        color: 'white'
-                                    }
+                                        color: 'white',
+                                    },
                                 }}
                             >
                                 <CartIcon />
                             </Badge>
                         </IconButton>
 
-                        {/* Authentication UI */}
+                        {/* Authentication */}
                         {isSignedIn ? (
-                            <UserButton
-                                afterSignOutUrl="/"
-                                appearance={clerkButtonAppearance}
-                            />
+                            <UserButton afterSignOutUrl="/" appearance={clerkButtonAppearance} />
                         ) : (
                             <Box>
                                 <Button
@@ -249,8 +275,8 @@ function Navbar() {
                                         borderColor: colorValues.primary,
                                         '&:hover': {
                                             borderColor: colorValues.primaryDark,
-                                            backgroundColor: colorValues.buttonHover
-                                        }
+                                            backgroundColor: colorValues.buttonHover,
+                                        },
                                     }}
                                 >
                                     Sign In
@@ -264,8 +290,8 @@ function Navbar() {
                                         color: 'white',
                                         fontWeight: 500,
                                         '&:hover': {
-                                            backgroundColor: colorValues.primaryDark
-                                        }
+                                            backgroundColor: colorValues.primaryDark,
+                                        },
                                     }}
                                 >
                                     Sign Up
@@ -275,25 +301,22 @@ function Navbar() {
                     </Box>
                 )}
 
-                {/* Mobile menu */}
+                {/* Mobile View */}
                 {isMobile && (
                     <>
                         <IconButton
                             aria-label="cart"
                             component={RouterLink}
                             to="/cart"
-                            sx={{
-                                mr: 2,
-                                color: colorValues.textPrimary
-                            }}
+                            sx={{ mr: 2, color: colorValues.textPrimary }}
                         >
                             <Badge
-                                badgeContent={0}
+                                badgeContent={cartItems.length} // Dynamic cart count
                                 sx={{
                                     '& .MuiBadge-badge': {
                                         backgroundColor: colorValues.primary,
-                                        color: 'white'
-                                    }
+                                        color: 'white',
+                                    },
                                 }}
                             >
                                 <CartIcon />
@@ -302,10 +325,7 @@ function Navbar() {
 
                         {isSignedIn && (
                             <Box sx={{ mr: 2 }}>
-                                <UserButton
-                                    afterSignOutUrl="/"
-                                    appearance={clerkButtonAppearance}
-                                />
+                                <UserButton afterSignOutUrl="/" appearance={clerkButtonAppearance} />
                             </Box>
                         )}
 
@@ -313,18 +333,12 @@ function Navbar() {
                             aria-label="open drawer"
                             edge="end"
                             onClick={toggleDrawer(true)}
-                            sx={{
-                                color: colorValues.textPrimary
-                            }}
+                            sx={{ color: colorValues.textPrimary }}
                         >
                             <MenuIcon />
                         </IconButton>
 
-                        <Drawer
-                            anchor="right"
-                            open={drawerOpen}
-                            onClose={toggleDrawer(false)}
-                        >
+                        <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
                             {drawer}
                         </Drawer>
                     </>
