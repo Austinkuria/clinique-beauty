@@ -12,6 +12,8 @@ import {
     Box
 } from '@mui/material';
 import moisturizer from '../../../assets/images/products/moisturizer.webp';
+import cleanser from '../../../assets/images/products/cleanser.webp';
+import serum from '../../../assets/images/products/serum.webp';
 
 function FeaturedProducts() {
     const products = [
@@ -26,14 +28,14 @@ function FeaturedProducts() {
             id: 2,
             name: 'Cleanser',
             price: 19.99,
-            image: '/assets/images/products/cleanser.jpg',
+            image: cleanser,
             description: 'Gentle daily cleanser that removes impurities'
         },
         {
             id: 3,
             name: 'Serum',
             price: 39.99,
-            image: '/assets/images/products/serum.jpg',
+            image: serum,
             description: 'Advanced anti-aging formula with peptides'
         }
     ];
