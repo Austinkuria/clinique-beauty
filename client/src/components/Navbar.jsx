@@ -30,7 +30,7 @@ import {
     Search as SearchIcon,
 } from '@mui/icons-material';
 import { UserButton, useAuth } from '@clerk/clerk-react';
-import { useCart } from '../context/CartContext'; // Assuming CartContext exists
+import { useCart } from '../context/CartContext';
 
 function Navbar() {
     const { theme, toggleTheme, colors, colorValues } = useContext(ThemeContext);
