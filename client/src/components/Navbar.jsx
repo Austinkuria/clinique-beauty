@@ -106,14 +106,35 @@ function Navbar() {
                         <IconButton onClick={toggleTheme} color="inherit">
                             {theme === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
                         </IconButton>
-                        {isSignedIn ? (
-                            <UserButton afterSignOutUrl="/" />
-                        ) : (
-                            <div>
-                                <Link to="/login">Login</Link>
-                                <Link to="/register">Register</Link>
-                            </div>
-                        )}
+                        <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
+                            <IconButton color="inherit" component={RouterLink} to="/cart" sx={{ mr: 2 }}>
+                                <Badge badgeContent={0} color="secondary">
+                                    <CartIcon />
+                                </Badge>
+                            </IconButton>
+                            {isSignedIn ? (
+                                <UserButton afterSignOutUrl="/" />
+                            ) : (
+                                <Box>
+                                    <Button
+                                        color="inherit"
+                                        component={RouterLink}
+                                        to="/auth/login"
+                                        sx={{ mr: 1 }}
+                                    >
+                                        Sign In
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        color="inherit"
+                                        component={RouterLink}
+                                        to="/auth/register"
+                                    >
+                                        Sign Up
+                                    </Button>
+                                </Box>
+                            )}
+                        </Box>
                     </Box>
                 )}
 
