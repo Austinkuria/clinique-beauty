@@ -43,7 +43,13 @@ function Fragrance() {
                     sx={{
                         fontWeight: 600,
                         marginBottom: 3,
-                        color: theme === 'dark' ? colorValues.primary : colorValues.primaryDark
+                        textAlign: 'center',
+                        width: '100%',
+                        color: theme === 'dark' ? colorValues.primary : colorValues.primaryDark,
+                        padding: '12px 0',
+                        borderBottom: `2px solid ${colorValues.primaryLight}`,
+                        marginLeft: 'auto',
+                        marginRight: 'auto'
                     }}
                 >
                     Fragrance
