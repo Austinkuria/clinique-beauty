@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { Box, Typography, Button, Card, CardMedia, CardContent, CardActions, Rating } from '@mui/material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -9,15 +10,12 @@ function ProductCard({ product }) {
     const { cartItems, setCartItems } = useCart();
 
     const addToCart = (product) => {
-        const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
-
+        const existingItemIndex = cartItems.findIndex((item) => item.id === product.id);
         if (existingItemIndex >= 0) {
-            // Item already exists, update quantity
             const newCartItems = [...cartItems];
             newCartItems[existingItemIndex].quantity = (newCartItems[existingItemIndex].quantity || 1) + 1;
             setCartItems(newCartItems);
         } else {
-            // Add new item with quantity 1
             setCartItems([...cartItems, { ...product, quantity: 1 }]);
         }
     };
@@ -30,33 +28,35 @@ function ProductCard({ product }) {
                 flexDirection: 'column',
                 border: 'none',
                 backgroundColor: 'transparent',
-                boxShadow: 'none'
+                boxShadow: 'none',
             }}
         >
             <CardMedia
-                component="img"
+                component={RouterLink}
+                to={`/products/${product.id}`}
                 height="200"
                 image={product.image}
                 alt={product.name}
                 sx={{
                     borderRadius: '8px',
-                    objectFit: 'cover'
+                    objectFit: 'cover',
                 }}
             />
-
             <CardContent sx={{ flexGrow: 1, p: 2 }}>
                 <Typography
                     variant="h6"
-                    component="h3"
+                    component={RouterLink}
+                    to={`/products/${product.id}`}
                     sx={{
                         fontWeight: 500,
                         mb: 1,
-                        color: colorValues.textPrimary
+                        color: colorValues.textPrimary,
+                        textDecoration: 'none',
+                        '&:hover': { color: colorValues.primary },
                     }}
                 >
                     {product.name}
                 </Typography>
-
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <Rating
                         value={product.rating}
@@ -65,25 +65,14 @@ function ProductCard({ product }) {
                         size="small"
                         sx={{ color: colorValues.primary }}
                     />
-                    <Typography
-                        variant="body2"
-                        sx={{ ml: 1, color: colorValues.textSecondary }}
-                    >
+                    <Typography variant="body2" sx={{ ml: 1, color: colorValues.textSecondary }}>
                         ({product.rating})
                     </Typography>
                 </Box>
-
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontWeight: 600,
-                        color: colorValues.primary
-                    }}
-                >
+                <Typography variant="h6" sx={{ fontWeight: 600, color: colorValues.primary }}>
                     ${product.price.toFixed(2)}
                 </Typography>
             </CardContent>
-
             <CardActions sx={{ p: 2, pt: 0 }}>
                 <Button
                     variant="contained"
@@ -101,7 +90,7 @@ function ProductCard({ product }) {
                             backgroundColor: colorValues.primaryDark,
                             boxShadow: theme === 'dark' ? '0 6px 8px rgba(0,0,0,0.5)' : '0 4px 6px rgba(0,0,0,0.2)',
                         },
-                        py: 1
+                        py: 1,
                     }}
                 >
                     Add to Cart
