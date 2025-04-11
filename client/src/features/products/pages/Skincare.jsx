@@ -87,10 +87,7 @@ function Skincare() {
                                     }
                                 }}
                             >
-                                <ProductCard
-                                    product={product}
-                                    onAddToCart={() => addToCart(product)}
-                                />
+                                <ProductCard product={product} />
                             </Paper>
                         </Grid>
                     ))}

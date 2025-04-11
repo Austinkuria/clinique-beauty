@@ -3,17 +3,16 @@ import { Container, Typography, Grid, Box, Paper } from '@mui/material';
 import FilterBar from '../components/FilterBar';
 import ProductCard from '../components/ProductCard';
 import ReviewSection from '../components/ReviewSection';
-import { useCart } from '../../../context/CartContext';
 import { ThemeContext } from '../../../context/ThemeContext';
 
 const mockProducts = [
-    { id: 5, name: 'Matte Lipstick', price: 15.99, image: '/images/makeup/lipstick.jpg', rating: 4.3, category: 'Lipstick' },
-    { id: 6, name: 'Liquid Foundation', price: 29.99, image: '/images/makeup/foundation.jpg', rating: 4.6, category: 'Foundation' },
-    { id: 7, name: 'Mascara', price: 12.99, image: '/images/makeup/mascara.jpg', rating: 4.4, category: 'Mascara' },
-    { id: 8, name: 'Eyeshadow Palette', price: 39.99, image: '/images/makeup/eyeshadow.jpg', rating: 4.7, category: 'Eyeshadow' },
+    { id: 13, name: 'Moisturizing Shampoo', price: 18.99, image: '/images/hair/shampoo.jpg', rating: 4.6, category: 'Shampoo' },
+    { id: 14, name: 'Repair Conditioner', price: 16.99, image: '/images/hair/conditioner.jpg', rating: 4.5, category: 'Conditioner' },
+    { id: 15, name: 'Curl Defining Cream', price: 22.99, image: '/images/hair/styling-cream.jpg', rating: 4.7, category: 'Styling' },
+    { id: 16, name: 'Hair Oil Treatment', price: 34.99, image: '/images/hair/oil.jpg', rating: 4.8, category: 'Treatment' },
 ];
 
-function Makeup() {
+function HairProducts() {
     const { theme, colorValues } = useContext(ThemeContext);
     const [filters, setFilters] = useState({ category: 'All', sort: 'default' });
 
@@ -51,7 +50,7 @@ function Makeup() {
                         marginRight: 'auto'
                     }}
                 >
-                    Makeup
+                    Hair Products
                 </Typography>
 
                 <Paper
@@ -64,7 +63,7 @@ function Makeup() {
                     }}
                 >
                     <FilterBar
-                        categories={['All', 'Lipstick', 'Foundation', 'Mascara', 'Eyeshadow']}
+                        categories={['All', 'Shampoo', 'Conditioner', 'Styling', 'Treatment']}
                         onFilterChange={setFilters}
                         currentFilters={filters}
                     />
@@ -108,4 +107,4 @@ function Makeup() {
     );
 }
 
-export default Makeup;
+export default HairProducts;

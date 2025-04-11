@@ -45,6 +45,7 @@ function Navbar() {
         { name: 'Skincare', path: '/products/skincare' },
         { name: 'Makeup', path: '/products/makeup' },
         { name: 'Fragrance', path: '/products/fragrance' },
+        { name: 'Hair', path: '/products/hair' },
         // Removed the profile button since Clerk's UserButton handles this
     ];
 

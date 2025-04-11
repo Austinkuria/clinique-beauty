@@ -9,6 +9,7 @@ import { RouteErrorElement } from './components/ErrorBoundary.jsx';
 import Skincare from './features/products/pages/Skincare';
 import Makeup from './features/products/pages/Makeup';
 import Fragrance from './features/products/pages/Fragrance';
+import HairProducts from './features/products/pages/HairProducts';
 
 // Lazy-load these components for better performance
 const Login = React.lazy(() => import('./features/auth/Login.jsx'));
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
                     { path: '/products/skincare', element: <Skincare /> },
                     { path: '/products/makeup', element: <Makeup /> },
                     { path: '/products/fragrance', element: <Fragrance /> },
+                    { path: '/products/hair', element: <HairProducts /> },
 
                     // { path: '/products', element: <ProductList /> },
                     // { path: '/products/:id', element: <ProductDetail /> },

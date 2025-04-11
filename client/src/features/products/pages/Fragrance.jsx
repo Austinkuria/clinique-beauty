@@ -14,7 +14,6 @@ const mockProducts = [
 ];
 
 function Fragrance() {
-    const { addToCart } = useCart();
     const { theme, colorValues } = useContext(ThemeContext);
     const [filters, setFilters] = useState({ category: 'All', sort: 'default' });
 
@@ -87,10 +86,7 @@ function Fragrance() {
                                     }
                                 }}
                             >
-                                <ProductCard
-                                    product={product}
-                                    onAddToCart={() => addToCart(product)}
-                                />
+                                <ProductCard product={product} />
                             </Paper>
                         </Grid>
                     ))}
