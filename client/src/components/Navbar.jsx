@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { ThemeContext } from '../context/ThemeContext.jsx';
 import {
     AppBar,
@@ -35,12 +35,10 @@ import { useCart } from '../context/CartContext'; // Assuming CartContext exists
 function Navbar() {
     const { theme, toggleTheme, colors, colorValues } = useContext(ThemeContext);
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const { isSignedIn } = useAuth();
-    const { cartItems } = useCart();
-    const navigate = useNavigate();
+    const { cartItems } = useCart(); // Fetch cart items from context
 
     // Navigation items without the cart and without Profile button
     const navItems = [
@@ -78,46 +76,9 @@ function Navbar() {
         setDrawerOpen(open);
     };
 
-    const handleSearchSubmit = (e) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-            setSearchQuery('');
-            if (drawerOpen) {
-                setDrawerOpen(false);
-            }
-        }
-    };
-
     // Mobile drawer content
     const drawer = (
         <Box sx={{ width: 250 }} role="presentation" className={`${colors.sectionBg}`}>
-            {/* Search in drawer */}
-            <Box sx={{ p: 2 }}>
-                <form onSubmit={handleSearchSubmit}>
-                    <TextField
-                        variant="outlined"
-                        placeholder="Search products..."
-                        fullWidth
-                        size="small"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: '20px',
-                                backgroundColor: theme === 'dark' ? '#424242' : '#f5f5f5',
-                            },
-                        }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: colorValues.textSecondary }} />
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
-                </form>
-            </Box>
             <List>
                 {navItems.map((item) => (
                     <ListItem key={item.name} disablePadding>
@@ -229,36 +190,26 @@ function Navbar() {
                 {!isMobile && (
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         {/* Search Bar */}
-                        <form onSubmit={handleSearchSubmit}>
-                            <TextField
-                                variant="outlined"
-                                placeholder="Search products..."
-                                size="small"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                sx={{
-                                    width: '250px',
-                                    mr: 2,
-                                    '& .MuiOutlinedInput-root': {
-                                        borderRadius: '20px',
-                                        backgroundColor: theme === 'dark' ? '#424242' : '#f5f5f5',
-                                    },
-                                }}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon
-                                                sx={{
-                                                    color: colorValues.textSecondary,
-                                                    cursor: 'pointer'
-                                                }}
-                                                onClick={handleSearchSubmit}
-                                            />
-                                        </InputAdornment>
-                                    ),
-                                }}
-                            />
-                        </form>
+                        <TextField
+                            variant="outlined"
+                            placeholder="Search products..."
+                            size="small"
+                            sx={{
+                                width: '250px',
+                                mr: 2,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '20px',
+                                    backgroundColor: theme === 'dark' ? '#424242' : '#f5f5f5',
+                                },
+                            }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: colorValues.textSecondary }} />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
 
                         {/* Navigation */}
                         {navItems.map((item) => (
@@ -373,15 +324,6 @@ function Navbar() {
                 {/* Mobile View */}
                 {isMobile && (
                     <>
-                        {/* Add search icon to mobile toolbar */}
-                        <IconButton
-                            sx={{ mr: 1, color: colorValues.textPrimary }}
-                            onClick={() => setDrawerOpen(true)}
-                            aria-label="search"
-                        >
-                            <SearchIcon />
-                        </IconButton>
-
                         <IconButton
                             component={RouterLink}
                             to="/cart"
