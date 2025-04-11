@@ -113,15 +113,12 @@ function Hero() {
                     zIndex: 2,
                     textAlign: 'center',
                     color: 'white',
-                    pt: { xs: 2, md: 8 },
+                    pt: { xs: 1, md: 4 }, // Reduced top padding
                     minHeight: { xs: '300px', md: '400px' }
                 }}
             >
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        variants={chipVariants}
-                        whileHover={animationComplete ? "hover" : undefined}
-                    >
+                <Box sx={{ mt: { xs: 0, md: 0 } }}> {/* Add Box with no top margin */}
+                    <AnimatePresence mode="wait">
                         <RouterLink to="/products/collections/limited-edition" style={{ textDecoration: 'none' }}>
                             <Chip
                                 label="LIMITED EDITION"
@@ -136,8 +133,8 @@ function Hero() {
                                 }}
                             />
                         </RouterLink>
-                    </motion.div>
-                </AnimatePresence>
+                    </AnimatePresence>
+                </Box>
 
                 <Box sx={{ mb: 2 }}>
                     <motion.div
@@ -197,34 +194,38 @@ function Hero() {
                         </Typography>
                     </motion.div>
                 </Box>
-
-                <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
-                    spacing={2}
-                    justifyContent="center"
+                <Box
                     sx={{
                         mt: 4,
                         position: 'relative',
-                        // Fix height to prevent shifting
-                        height: { xs: 'auto', sm: '60px' },
-                        // Add padding to ensure consistent space
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: 2,
                         pb: { xs: 4, sm: 0 }
                     }}
                 >
-                    <Box sx={{
-                        position: 'relative',
-                        display: 'inline-block',
-                        // Set fixed dimensions to prevent layout shifting
-                        width: { xs: '100%', sm: 'auto' },
-                        height: { xs: 'auto', sm: '100%' }
-                    }}>
+                    {/* Isolate each button in its own fixed-width container */}
+                    <Box 
+                        sx={{
+                            position: 'relative',
+                            width: { xs: '100%', sm: '160px' }, // Fixed width on desktop
+                            height: '50px', // Fixed height
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            mb: { xs: 2, sm: 0 }
+                        }}
+                    >
                         <motion.div
                             variants={buttonVariants}
                             whileHover={animationComplete ? "hover" : undefined}
                             whileTap={animationComplete ? { scale: 0.95 } : undefined}
                             style={{
-                                display: 'inline-block',
-                                transformOrigin: 'center'
+                                position: 'absolute', // Take out of document flow
+                                transformOrigin: 'center',
+                                display: 'block'
                             }}
                         >
                             <Button
@@ -237,9 +238,9 @@ function Hero() {
                                     px: 4,
                                     py: 1.5,
                                     fontSize: '1.1rem',
-                                    transition: 'transform 0.3s',
+                                    whiteSpace: 'nowrap',
                                     '&:hover': {
-                                        transform: 'none' // Remove MUI hover to let Framer Motion handle it
+                                        transform: 'none'
                                     },
                                     boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
                                 }}
@@ -249,20 +250,24 @@ function Hero() {
                         </motion.div>
                     </Box>
 
-                    <Box sx={{
-                        position: 'relative',
-                        display: 'inline-block',
-                        // Set fixed dimensions to prevent layout shifting
-                        width: { xs: '100%', sm: 'auto' },
-                        height: { xs: 'auto', sm: '100%' }
-                    }}>
+                    <Box 
+                        sx={{
+                            position: 'relative',
+                            width: { xs: '100%', sm: '160px' }, // Fixed width on desktop
+                            height: '50px', // Fixed height
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center'
+                        }}
+                    >
                         <motion.div
                             variants={buttonVariants}
                             whileHover={animationComplete ? "hover" : undefined}
                             whileTap={animationComplete ? { scale: 0.95 } : undefined}
                             style={{
-                                display: 'inline-block',
-                                transformOrigin: 'center'
+                                position: 'absolute', // Take out of document flow
+                                transformOrigin: 'center',
+                                display: 'block'
                             }}
                         >
                             <Button
@@ -274,14 +279,14 @@ function Hero() {
                                     px: 4,
                                     py: 1.5,
                                     fontSize: '1.1rem',
+                                    whiteSpace: 'nowrap',
                                     borderColor: 'white',
                                     color: 'white',
                                     borderWidth: 2,
-                                    transition: 'all 0.3s',
                                     '&:hover': {
                                         borderColor: 'white',
                                         backgroundColor: 'rgba(255,255,255,0.1)',
-                                        transform: 'none' // Remove MUI hover to let Framer Motion handle it
+                                        transform: 'none'
                                     }
                                 }}
                             >
@@ -289,7 +294,7 @@ function Hero() {
                             </Button>
                         </motion.div>
                     </Box>
-                </Stack>
+                </Box>
             </Container>
         </Box>
     );
