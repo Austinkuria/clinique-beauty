@@ -99,16 +99,6 @@ function Fragrance() {
                         borderRadius: 2
                     }}
                 >
-                    <Typography
-                        variant="h5"
-                        sx={{
-                            fontWeight: 500,
-                            marginBottom: 2,
-                            color: theme === 'dark' ? colorValues.primary : colorValues.primaryDark
-                        }}
-                    >
-                        Customer Reviews
-                    </Typography>
                     <ReviewSection />
                 </Paper>
             </Container>
