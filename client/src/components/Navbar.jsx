@@ -136,11 +136,21 @@ function Navbar() {
                         textDecoration: 'none', 
                         display: 'flex', 
                         alignItems: 'center',
-                        color: theme === 'dark' ? '#f48fb1' : '#e91e63'  // Use primary color for better visibility
                     }}
                 >
-                    <HomeIcon sx={{ mr: 1 }} />
-                    <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+                    <HomeIcon sx={{ 
+                        mr: 1,
+                        color: theme === 'dark' ? '#f48fb1' : '#e91e63'
+                    }} />
+                    <Typography 
+                        variant="h6" 
+                        sx={{ 
+                            fontWeight: 600,
+                            color: theme === 'dark' ? 'white' : '#212121',
+                            fontSize: '1.25rem',
+                            letterSpacing: '0.5px'
+                        }}
+                    >
                         Clinique Beauty
                     </Typography>
                 </RouterLink>
