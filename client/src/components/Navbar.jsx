@@ -26,22 +26,40 @@ import {
     LightMode as LightModeIcon
 } from '@mui/icons-material';
 import { UserButton, useAuth } from '@clerk/clerk-react';
-import { Link } from 'react-router-dom';
 
 function Navbar() {
-    const { theme, toggleTheme } = useContext(ThemeContext);
+    const { theme, toggleTheme, colors } = useContext(ThemeContext);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const { isSignedIn } = useAuth();
 
-    // Reordered navigation items - authentication related items first
+    // Navigation items
     const navItems = [
         { name: 'Products', path: '/products' },
         { name: 'Cart', path: '/cart', icon: <CartIcon /> },
         // Only show Profile when user is signed in
         ...(isSignedIn ? [{ name: 'Profile', path: '/profile' }] : [])
     ];
+
+    // Custom styles for Clerk's UserButton with improved visibility
+    const clerkButtonAppearance = {
+        baseTheme: theme === 'dark' ? 'dark' : 'light',
+        elements: {
+            userButtonAvatarBox: {
+                width: '2.2rem',
+                height: '2.2rem',
+            },
+            userButtonBox: {
+                boxShadow: 'none',
+                borderRadius: '50px'
+            },
+            // Ensure the text is visible
+            userButtonOuterIdentifier: {
+                color: theme === 'dark' ? 'white' : 'black',
+            }
+        }
+    };
 
     const toggleDrawer = (open) => (event) => {
         if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
@@ -56,11 +74,16 @@ function Navbar() {
             onKeyDown={toggleDrawer(false)}
             sx={{ width: 250 }}
             role="presentation"
+            className={`${colors.sectionBg}`}
         >
             <List>
                 {navItems.map((item) => (
                     <ListItem key={item.name} disablePadding>
-                        <ListItemButton component={RouterLink} to={item.path}>
+                        <ListItemButton 
+                            component={RouterLink} 
+                            to={item.path}
+                            className={`${colors.navbarTextSecondary} ${colors.textHover}`}
+                        >
                             {item.icon && <Box mr={1}>{item.icon}</Box>}
                             <ListItemText primary={item.name} />
                         </ListItemButton>
@@ -69,12 +92,20 @@ function Navbar() {
                 {!isSignedIn && (
                     <>
                         <ListItem disablePadding>
-                            <ListItemButton component={RouterLink} to="/auth/login">
+                            <ListItemButton 
+                                component={RouterLink} 
+                                to="/auth/login"
+                                className={`${colors.navbarTextSecondary} ${colors.textHover}`}
+                            >
                                 <ListItemText primary="Sign In" />
                             </ListItemButton>
                         </ListItem>
                         <ListItem disablePadding>
-                            <ListItemButton component={RouterLink} to="/auth/register">
+                            <ListItemButton 
+                                component={RouterLink} 
+                                to="/auth/register"
+                                className={`${colors.navbarTextSecondary} ${colors.textHover}`}
+                            >
                                 <ListItemText primary="Sign Up" />
                             </ListItemButton>
                         </ListItem>
@@ -82,9 +113,9 @@ function Navbar() {
                 )}
                 <ListItem>
                     <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                        <LightModeIcon />
+                        <LightModeIcon className={colors.navbarTextSecondary} />
                         <Switch checked={theme === 'dark'} onChange={toggleTheme} />
-                        <DarkModeIcon />
+                        <DarkModeIcon className={colors.navbarTextSecondary} />
                     </Box>
                 </ListItem>
             </List>
@@ -92,9 +123,22 @@ function Navbar() {
     );
 
     return (
-        <AppBar position="sticky" color="default" elevation={2}>
+        <AppBar 
+            position="sticky" 
+            elevation={2}
+            className={colors.navbarBg}
+            sx={{ color: theme === 'dark' ? 'white' : 'inherit' }}
+        >
             <Toolbar>
-                <RouterLink to="/" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
+                <RouterLink 
+                    to="/" 
+                    style={{ 
+                        textDecoration: 'none', 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        color: theme === 'dark' ? '#f48fb1' : '#e91e63'  // Use primary color for better visibility
+                    }}
+                >
                     <HomeIcon sx={{ mr: 1 }} />
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
                         Clinique Beauty
@@ -111,18 +155,40 @@ function Navbar() {
                                 key={item.name}
                                 component={RouterLink}
                                 to={item.path}
-                                sx={{ mx: 1 }}
                                 startIcon={item.icon}
+                                sx={{ 
+                                    mx: 1, 
+                                    color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)',
+                                    '&:hover': {
+                                        color: theme === 'dark' ? '#f48fb1' : '#e91e63',
+                                    }
+                                }}
                             >
                                 {item.name}
                             </Button>
                         ))}
-                        <IconButton onClick={toggleTheme} color="inherit">
+                        
+                        {/* Theme toggle button with explicit color */}
+                        <IconButton 
+                            onClick={toggleTheme} 
+                            sx={{ 
+                                color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)',
+                                ml: 1
+                            }}
+                        >
                             {theme === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
                         </IconButton>
 
-                        {/* Cart icon is always visible */}
-                        <IconButton color="inherit" component={RouterLink} to="/cart" sx={{ mr: 2 }}>
+                        {/* Cart icon with explicit color */}
+                        <IconButton 
+                            component={RouterLink} 
+                            to="/cart" 
+                            sx={{ 
+                                mr: 2,
+                                ml: 1,
+                                color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)'
+                            }}
+                        >
                             <Badge badgeContent={0} color="secondary">
                                 <CartIcon />
                             </Badge>
@@ -130,22 +196,36 @@ function Navbar() {
 
                         {/* Authentication UI */}
                         {isSignedIn ? (
-                            <UserButton afterSignOutUrl="/" />
+                            <UserButton 
+                                afterSignOutUrl="/" 
+                                appearance={clerkButtonAppearance} 
+                            />
                         ) : (
                             <Box>
                                 <Button
-                                    color="inherit"
                                     component={RouterLink}
                                     to="/auth/login"
-                                    sx={{ mr: 1 }}
+                                    sx={{ 
+                                        mr: 1,
+                                        color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)',
+                                        '&:hover': {
+                                            color: theme === 'dark' ? '#f48fb1' : '#e91e63',
+                                        }
+                                    }}
                                 >
                                     Sign In
                                 </Button>
                                 <Button
-                                    variant="outlined"
-                                    color="inherit"
+                                    variant="contained"
                                     component={RouterLink}
                                     to="/auth/register"
+                                    sx={{ 
+                                        backgroundColor: theme === 'dark' ? '#f48fb1' : '#e91e63',
+                                        color: 'white',
+                                        '&:hover': {
+                                            backgroundColor: theme === 'dark' ? '#f06292' : '#d81b60'
+                                        }
+                                    }}
                                 >
                                     Sign Up
                                 </Button>
@@ -154,33 +234,43 @@ function Navbar() {
                     </Box>
                 )}
 
-                {/* Mobile menu */}
+                {/* Mobile menu with improved visibility */}
                 {isMobile && (
                     <>
                         <IconButton
-                            color="inherit"
                             aria-label="cart"
                             component={RouterLink}
                             to="/cart"
-                            sx={{ mr: 2 }}
+                            sx={{ 
+                                mr: 2,
+                                color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)'
+                            }}
                         >
                             <Badge badgeContent={0} color="primary">
                                 <CartIcon />
                             </Badge>
                         </IconButton>
+                        
                         {isSignedIn && (
                             <Box sx={{ mr: 2 }}>
-                                <UserButton afterSignOutUrl="/" />
+                                <UserButton 
+                                    afterSignOutUrl="/" 
+                                    appearance={clerkButtonAppearance}
+                                />
                             </Box>
                         )}
+                        
                         <IconButton
-                            color="inherit"
                             aria-label="open drawer"
                             edge="end"
                             onClick={toggleDrawer(true)}
+                            sx={{ 
+                                color: theme === 'dark' ? 'white' : 'rgba(0, 0, 0, 0.87)'
+                            }}
                         >
                             <MenuIcon />
                         </IconButton>
+                        
                         <Drawer
                             anchor="right"
                             open={drawerOpen}
