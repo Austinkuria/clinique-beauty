@@ -11,13 +11,14 @@ import {
     Tabs,
     Tab,
     Divider,
-    IconButton // Import IconButton
+    IconButton,
+    TextField // Import TextField
 } from "@mui/material";
 import { ThemeContext } from "../../context/ThemeContext.jsx";
 import { useCart } from "../../context/CartContext";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import AddIcon from '@mui/icons-material/Add'; // Import Add icon
-import RemoveIcon from '@mui/icons-material/Remove'; // Import Remove icon
+import AddIcon from '@mui/icons-material/Add'; // Keep Add icon
+import RemoveIcon from '@mui/icons-material/Remove'; // Keep Remove icon
 import mockProducts from "../../data/mockProducts";  // Import centralized products
 
 // Helper component for tab panels
@@ -50,6 +51,7 @@ function ProductDetail() {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1); // State for quantity
+    const [isOutOfStock, setIsOutOfStock] = useState(false); // State for stock status
 
     useEffect(() => {
         // Find product by ID from the centralized mock data
@@ -59,6 +61,14 @@ function ProductDetail() {
         setTimeout(() => {
             setProduct(foundProduct || null);
             setLoading(false);
+            // Check stock status once product loads
+            if (foundProduct && foundProduct.stock !== undefined && foundProduct.stock <= 0) {
+                setIsOutOfStock(true);
+                setQuantity(0); // Set quantity to 0 if out of stock initially
+            } else if (foundProduct) {
+                setIsOutOfStock(false);
+                setQuantity(1); // Reset to 1 if in stock
+            }
         }, 500);
     }, [id]);
 
@@ -66,8 +76,31 @@ function ProductDetail() {
         setTabValue(newValue);
     };
 
+    const handleQuantityChange = (event) => {
+        let value = parseInt(event.target.value, 10);
+
+        if (isNaN(value) || value < 1) {
+            value = 1; // Default to 1 if input is invalid or less than 1
+        }
+
+        // Check against stock if available
+        if (product && product.stock !== undefined && value > product.stock) {
+            value = product.stock; // Cap at max stock
+        }
+
+        // Prevent setting quantity if out of stock
+        if (isOutOfStock) {
+            value = 0;
+        }
+
+        setQuantity(value);
+    };
+
     const handleIncrement = () => {
-        setQuantity(prevQuantity => prevQuantity + 1);
+        setQuantity(prevQuantity => {
+            const maxQuantity = (product && product.stock !== undefined) ? product.stock : Infinity;
+            return Math.min(prevQuantity + 1, maxQuantity); // Increment but not beyond stock
+        });
     };
 
     const handleDecrement = () => {
@@ -88,7 +121,10 @@ function ProductDetail() {
             // Add new item with the selected quantity
             setCartItems([...cartItems, { ...product, quantity: quantity }]);
         }
-        setQuantity(1); // Reset quantity selector after adding to cart
+        // Reset quantity only if not out of stock
+        if (!isOutOfStock) {
+            setQuantity(1);
+        }
     };
 
     if (loading) {
@@ -187,32 +223,64 @@ function ProductDetail() {
                                 Category: {product.category}
                             </Typography>
 
-                            {/* Quantity Selector */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
-                                <Typography variant="body1" sx={{ mr: 2 }}>Quantity:</Typography>
-                                <IconButton
-                                    onClick={handleDecrement}
-                                    disabled={quantity <= 1}
-                                    size="small"
-                                    aria-label="Decrease quantity"
-                                    sx={{ border: `1px solid ${colorValues.textSecondary}`, borderRadius: 1, mr: 1 }}
+                            {/* Stock Status */}
+                            {product && product.stock !== undefined && (
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        mb: 2,
+                                        color: isOutOfStock ? colorValues.error : colorValues.success,
+                                        fontWeight: 500
+                                    }}
                                 >
-                                    <RemoveIcon fontSize="small" />
-                                </IconButton>
-                                <Typography variant="body1" sx={{ mx: 1, minWidth: '20px', textAlign: 'center' }}>
-                                    {quantity}
+                                    {isOutOfStock ? 'Out of Stock' : `In Stock (${product.stock} available)`}
                                 </Typography>
-                                <IconButton
-                                    onClick={handleIncrement}
-                                    size="small"
-                                    aria-label="Increase quantity"
-                                    sx={{ border: `1px solid ${colorValues.textSecondary}`, borderRadius: 1, ml: 1 }}
-                                // Optional: Add disabled logic based on stock if available
-                                // disabled={product.stock && quantity >= product.stock}
-                                >
-                                    <AddIcon fontSize="small" />
-                                </IconButton>
-                            </Box>
+                            )}
+
+                            {/* Quantity Selector - Conditionally render if not out of stock */}
+                            {!isOutOfStock && product && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+                                    <Typography variant="body1" sx={{ mr: 2 }}>Quantity:</Typography>
+                                    <IconButton
+                                        onClick={handleDecrement}
+                                        disabled={quantity <= 1}
+                                        size="small"
+                                        aria-label="Decrease quantity"
+                                        sx={{ border: `1px solid ${colorValues.textSecondary}`, borderRadius: 1, mr: 1 }}
+                                    >
+                                        <RemoveIcon fontSize="small" />
+                                    </IconButton>
+                                    <TextField
+                                        value={quantity}
+                                        onChange={handleQuantityChange}
+                                        type="number"
+                                        size="small"
+                                        aria-label="Product quantity"
+                                        inputProps={{
+                                            min: 1,
+                                            max: product.stock, // Set max based on stock
+                                            style: { textAlign: 'center', width: '40px', MozAppearance: 'textfield' }, // Basic styling
+                                        }}
+                                        sx={{
+                                            mx: 0.5,
+                                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                                WebkitAppearance: 'none', // Hide spinners in Chrome/Safari
+                                                margin: 0,
+                                            },
+                                        }}
+                                    />
+                                    <IconButton
+                                        onClick={handleIncrement}
+                                        size="small"
+                                        aria-label="Increase quantity"
+                                        sx={{ border: `1px solid ${colorValues.textSecondary}`, borderRadius: 1, ml: 1 }}
+                                        // Disable if quantity reaches stock limit
+                                        disabled={product.stock !== undefined && quantity >= product.stock}
+                                    >
+                                        <AddIcon fontSize="small" />
+                                    </IconButton>
+                                </Box>
+                            )}
 
                             <Box sx={{ mt: 'auto', pt: 2 }}> {/* Adjusted padding top */}
                                 <Button
@@ -221,6 +289,7 @@ function ProductDetail() {
                                     fullWidth
                                     startIcon={<ShoppingCartIcon />}
                                     onClick={addToCart}
+                                    disabled={isOutOfStock || quantity < 1} // Disable if out of stock or quantity is invalid
                                     sx={{
                                         backgroundColor: colorValues.primary,
                                         color: '#ffffff',
@@ -229,10 +298,11 @@ function ProductDetail() {
                                         borderRadius: '50px',
                                         '&:hover': {
                                             backgroundColor: colorValues.primaryDark,
-                                        }
+                                        },
+                                        opacity: (isOutOfStock || quantity < 1) ? 0.6 : 1, // Indicate disabled state visually
                                     }}
                                 >
-                                    Add {quantity} to Cart {/* Update button text */}
+                                    {isOutOfStock ? 'Out of Stock' : `Add ${quantity} to Cart`} {/* Update button text */}
                                 </Button>
                             </Box>
                         </Paper>
