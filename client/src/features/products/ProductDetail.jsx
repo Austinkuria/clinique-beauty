@@ -24,6 +24,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Import Back icon
 import mockProducts from "../../data/mockProducts";  // Import centralized products
 import ReviewSection from "./components/ReviewSection"; // Import ReviewSection
+import ProductCard from "./components/ProductCard"; // Import ProductCard
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -56,10 +57,12 @@ function ProductDetail() {
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1); // State for quantity
     const [isOutOfStock, setIsOutOfStock] = useState(false); // State for stock status
+    const [relatedProducts, setRelatedProducts] = useState([]);
 
     useEffect(() => {
         // Find product by ID from the centralized mock data
         const foundProduct = mockProducts.find(p => p.id === parseInt(id));
+        console.log("Current Product ID:", id); // Log ID
 
         // Simulate API call delay
         setTimeout(() => {
@@ -73,6 +76,20 @@ function ProductDetail() {
                 setIsOutOfStock(false);
                 setQuantity(1); // Reset to 1 if in stock
             }
+
+            // Find related products (same category, different id)
+            if (foundProduct && foundProduct.category) { // Check if product and category exist
+                console.log("Found Product for related search:", foundProduct.name, "Category:", foundProduct.category); // Log found product
+                const related = mockProducts.filter(
+                    p => p.category === foundProduct.category && p.id !== foundProduct.id
+                ).slice(0, 4); // Limit to 4 related products
+                console.log("Related Products Found:", related); // Log the filtered related products
+                setRelatedProducts(related);
+            } else {
+                console.log("Could not find related products. Product found:", !!foundProduct, "Category exists:", !!foundProduct?.category); // Log why related products weren't searched for
+                setRelatedProducts([]); // Ensure it's empty if no category or product
+            }
+
         }, 500);
     }, [id]);
 
@@ -404,6 +421,44 @@ function ProductDetail() {
                         <ReviewSection productId={product?.id} />
                     </TabPanel>
                 </Paper>
+
+                {/* Related Products Section */}
+                {relatedProducts.length > 0 ? (
+                    <Box sx={{ mt: 6 }}>
+                        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: colorValues.textPrimary }}>
+                            Related Products
+                        </Typography>
+                        <Grid container spacing={3}>
+                            {relatedProducts.map((relatedProduct) => (
+                                <Grid item xs={12} sm={6} md={4} lg={3} key={relatedProduct.id}>
+                                    <Paper
+                                        elevation={theme === 'dark' ? 3 : 1}
+                                        sx={{
+                                            backgroundColor: colorValues.bgPaper,
+                                            borderRadius: 2,
+                                            height: '100%',
+                                            transition: 'transform 0.2s, box-shadow 0.2s',
+                                            '&:hover': {
+                                                transform: 'translateY(-4px)',
+                                                boxShadow: theme === 'dark' ? 8 : 4
+                                            }
+                                        }}
+                                    >
+                                        {/* Use ProductCard for consistency */}
+                                        <ProductCard product={relatedProduct} />
+                                    </Paper>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+                ) : (
+                    // Optional: Show a message if no related products were found after loading
+                    !loading && product && (
+                        <Typography sx={{ mt: 4, color: colorValues.textSecondary, textAlign: 'center' }}>
+                            No other products found in this category.
+                        </Typography>
+                    )
+                )}
             </Container>
         </Box>
     );
