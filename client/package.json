@@ -21,6 +21,7 @@
     "framer-motion": "^12.6.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-medium-image-zoom": "^5.2.14",
     "react-router-dom": "^7.5.0"
   },
   "devDependencies": {

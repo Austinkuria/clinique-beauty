@@ -78,9 +78,6 @@ function ProductDetail() {
         }
     };
 
-    // Update product pages to use the centralized mock data
-    // ...existing code...
-
     if (loading) {
         return (
             <Container sx={{ py: 4, minHeight: '60vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
