@@ -5,20 +5,17 @@ import ProductCard from '../components/ProductCard';
 import ReviewSection from '../components/ReviewSection';
 import { useCart } from '../../../context/CartContext';
 import { ThemeContext } from '../../../context/ThemeContext';
-
-const mockProducts = [
-    { id: 1, name: 'Hydrating Moisturizer', price: 29.99, image: '/images/skincare/moisturizer.jpg', rating: 4.5, category: 'Moisturizers' },
-    { id: 2, name: 'Cleansing Foam', price: 19.99, image: '/images/skincare/cleanser.jpg', rating: 4.2, category: 'Cleansers' },
-    { id: 3, name: 'SPF 50 Sunscreen', price: 24.99, image: '/images/skincare/sunscreen.jpg', rating: 4.7, category: 'Sunscreens' },
-    { id: 4, name: 'Anti-Aging Serum', price: 49.99, image: '/images/skincare/serum.jpg', rating: 4.8, category: 'Serums' },
-];
+import mockProductsData from '../../../data/mockProducts';
 
 function Skincare() {
     const { addToCart } = useCart();
     const { theme, colorValues } = useContext(ThemeContext);
     const [filters, setFilters] = useState({ category: 'All', sort: 'default' });
 
-    const filteredProducts = mockProducts
+    // Filter only skincare products (IDs 1-4)
+    const skincareProducts = mockProductsData.filter(product => product.id >= 1 && product.id <= 4);
+
+    const filteredProducts = skincareProducts
         .filter((product) => filters.category === 'All' || product.category === filters.category)
         .sort((a, b) => {
             if (filters.sort === 'price-low') return a.price - b.price;

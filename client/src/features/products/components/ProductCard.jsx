@@ -1,15 +1,22 @@
-import React, { useContext } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import React, { useContext, useState } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Card, CardMedia, CardContent, CardActions, Rating } from '@mui/material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useCart } from '../../../context/CartContext';
+// Import default image
+import defaultProductImage from '../../../assets/images/products/cleanser.webp';
 
 function ProductCard({ product }) {
     const { theme, colorValues } = useContext(ThemeContext);
     const { cartItems, setCartItems } = useCart();
+    const [imageError, setImageError] = useState(false);
+    const navigate = useNavigate();
 
-    const addToCart = (product) => {
+    const addToCart = (e, product) => {
+        // Stop event propagation to prevent navigation when clicking the button
+        e.stopPropagation();
+
         const existingItemIndex = cartItems.findIndex((item) => item.id === product.id);
         if (existingItemIndex >= 0) {
             const newCartItems = [...cartItems];
@@ -20,8 +27,13 @@ function ProductCard({ product }) {
         }
     };
 
+    const handleCardClick = () => {
+        navigate(`/products/${product.id}`);
+    };
+
     return (
         <Card
+            onClick={handleCardClick}
             sx={{
                 height: '100%',
                 display: 'flex',
@@ -29,14 +41,21 @@ function ProductCard({ product }) {
                 border: 'none',
                 backgroundColor: 'transparent',
                 boxShadow: 'none',
+                cursor: 'pointer',
+                '&:hover': {
+                    '& .product-title': {
+                        color: colorValues.primary
+                    }
+                },
+                transition: 'transform 0.2s',
             }}
         >
             <CardMedia
-                component={RouterLink}
-                to={`/products/${product.id}`}
+                component="img"
                 height="200"
-                image={product.image}
+                image={imageError ? defaultProductImage : product.image}
                 alt={product.name}
+                onError={() => setImageError(true)}
                 sx={{
                     borderRadius: '8px',
                     objectFit: 'cover',
@@ -45,14 +64,13 @@ function ProductCard({ product }) {
             <CardContent sx={{ flexGrow: 1, p: 2 }}>
                 <Typography
                     variant="h6"
-                    component={RouterLink}
-                    to={`/products/${product.id}`}
+                    className="product-title"
                     sx={{
                         fontWeight: 500,
                         mb: 1,
                         color: colorValues.textPrimary,
                         textDecoration: 'none',
-                        '&:hover': { color: colorValues.primary },
+                        transition: 'color 0.2s',
                     }}
                 >
                     {product.name}
@@ -78,7 +96,7 @@ function ProductCard({ product }) {
                     variant="contained"
                     fullWidth
                     startIcon={<ShoppingCartIcon />}
-                    onClick={() => addToCart(product)}
+                    onClick={(e) => addToCart(e, product)}
                     sx={{
                         backgroundColor: colorValues.primary,
                         color: '#ffffff',
@@ -91,6 +109,7 @@ function ProductCard({ product }) {
                             boxShadow: theme === 'dark' ? '0 6px 8px rgba(0,0,0,0.5)' : '0 4px 6px rgba(0,0,0,0.2)',
                         },
                         py: 1,
+                        zIndex: 2, // Ensure button is above card for clicks
                     }}
                 >
                     Add to Cart
