@@ -10,7 +10,6 @@ export const RequireAuth = ({ children }) => {
     }
 
     if (!isSignedIn) {
-        // Updated to use the new recommended prop
         return <Navigate to="/auth/login" replace />;
     }
 

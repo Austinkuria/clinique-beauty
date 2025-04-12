@@ -102,7 +102,7 @@ function Navbar() {
                         className={`${colors.navbarTextSecondary} ${colors.textHover}`}
                     >
                         <Badge
-                            badgeContent={cartItems.length}
+                            badgeContent={cartItems?.length || 0}
                             sx={{
                                 '& .MuiBadge-badge': {
                                     backgroundColor: colorValues.primary,
@@ -266,10 +266,10 @@ function Navbar() {
                                     backgroundColor: colorValues.buttonHover,
                                 },
                             }}
-                            aria-label={`Cart with ${cartItems.length} items`}
+                            aria-label={`Cart with ${cartItems?.length || 0} items`}
                         >
                             <Badge
-                                badgeContent={cartItems.length}
+                                badgeContent={cartItems?.length || 0}
                                 sx={{
                                     '& .MuiBadge-badge': {
                                         backgroundColor: colorValues.primary,
@@ -329,10 +329,10 @@ function Navbar() {
                             component={RouterLink}
                             to="/cart"
                             sx={{ mr: 2, color: colorValues.textPrimary }}
-                            aria-label={`Cart with ${cartItems.length} items`}
+                            aria-label={`Cart with ${cartItems?.length || 0} items`}
                         >
                             <Badge
-                                badgeContent={cartItems.length}
+                                badgeContent={cartItems?.length || 0}
                                 sx={{
                                     '& .MuiBadge-badge': {
                                         backgroundColor: colorValues.primary,

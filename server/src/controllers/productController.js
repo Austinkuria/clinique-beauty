@@ -1,31 +1,56 @@
 import asyncHandler from '../utils/asyncHandler.js';
-import Product from '../models/Product.js';
+import { supabase } from '../config/db.js';
+import { validateProduct } from '../models/Product.js';
 
-export const getProducts = asyncHandler(async (req, res) => 
-    { const products = await Product.find({}); 
-res.json(products); });
+export const getProducts = asyncHandler(async (req, res) => {
+    const { data, error } = await supabase
+        .from('products')
+        .select('*');
 
-export const getProductById = asyncHandler(async (req, res) => 
-    { const product = await Product.findById(req.params.id); 
-        if (product) { res.json(product); 
+    if (error) {
+        res.status(500);
+        throw new Error(error.message);
+    }
 
-        } else { 
-            res.status(404); 
-            throw new Error('Product not found'); 
-        } 
-    });
-    
-    export const createProduct = asyncHandler(async (req, res) => 
-        { 
-            const 
-            { 
-                name, price, image, description, category, stock 
-            } = req.body; 
+    res.json(data);
+});
 
-    const product = new Product({ 
-        name, price, image, description, category, stock 
-    });
+export const getProductById = asyncHandler(async (req, res) => {
+    const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
 
-    const createdProduct = await product.save(); 
-    res.status(201).json(createdProduct); 
+    if (error || !data) {
+        res.status(404);
+        throw new Error('Product not found');
+    }
+
+    res.json(data);
+});
+
+export const createProduct = asyncHandler(async (req, res) => {
+    const { name, price, image, description, category, stock } = req.body;
+
+    // Validate product data
+    const validation = validateProduct(req.body);
+    if (!validation.valid) {
+        res.status(400);
+        throw new Error(validation.error);
+    }
+
+    const { data, error } = await supabase
+        .from('products')
+        .insert([{
+            name, price, image, description, category, stock
+        }])
+        .select();
+
+    if (error) {
+        res.status(400);
+        throw new Error(error.message);
+    }
+
+    res.status(201).json(data[0]);
 });
