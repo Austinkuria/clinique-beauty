@@ -2,7 +2,6 @@ import React, { useState, useContext } from 'react';
 import { Container, Typography, Grid, Box, Paper } from '@mui/material';
 import FilterBar from '../components/FilterBar';
 import ProductCard from '../components/ProductCard';
-import ReviewSection from '../components/ReviewSection';
 import { ThemeContext } from '../../../context/ThemeContext';
 
 const mockProducts = [
@@ -90,18 +89,6 @@ function HairProducts() {
                         </Grid>
                     ))}
                 </Grid>
-
-                <Paper
-                    elevation={theme === 'dark' ? 3 : 1}
-                    sx={{
-                        padding: 3,
-                        marginTop: 6,
-                        backgroundColor: colorValues.bgPaper,
-                        borderRadius: 2
-                    }}
-                >
-                    <ReviewSection />
-                </Paper>
             </Container>
         </Box>
     );

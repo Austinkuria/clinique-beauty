@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { Container, Typography, Grid, Box, Paper } from '@mui/material';
 import FilterBar from '../components/FilterBar';
 import ProductCard from '../components/ProductCard';
-import ReviewSection from '../components/ReviewSection';
+// import ReviewSection from '../components/ReviewSection';
 import { useCart } from '../../../context/CartContext';
 import { ThemeContext } from '../../../context/ThemeContext';
 import mockProductsData from '../../../data/mockProducts';
@@ -90,17 +90,6 @@ function Skincare() {
                     ))}
                 </Grid>
 
-                <Paper
-                    elevation={theme === 'dark' ? 3 : 1}
-                    sx={{
-                        padding: 3,
-                        marginTop: 6,
-                        backgroundColor: colorValues.bgPaper,
-                        borderRadius: 2
-                    }}
-                >
-                    <ReviewSection />
-                </Paper>
             </Container>
         </Box>
     );

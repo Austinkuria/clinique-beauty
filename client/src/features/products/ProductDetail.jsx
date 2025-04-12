@@ -23,6 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Import Back icon
 import mockProducts from "../../data/mockProducts";  // Import centralized products
+import ReviewSection from "./components/ReviewSection"; // Import ReviewSection
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -369,6 +370,7 @@ function ProductDetail() {
                         <Tab label="Details" id="product-tab-0" aria-controls="product-tabpanel-0" />
                         <Tab label="Benefits" id="product-tab-1" aria-controls="product-tabpanel-1" />
                         <Tab label="Ingredients" id="product-tab-2" aria-controls="product-tabpanel-2" />
+                        <Tab label="Reviews" id="product-tab-3" aria-controls="product-tabpanel-3" /> {/* Add Reviews Tab */}
                     </Tabs>
 
                     <TabPanel value={tabValue} index={0}>
@@ -395,6 +397,11 @@ function ProductDetail() {
                                 </Typography>
                             )) || <Typography>No ingredient information available.</Typography>}
                         </Box>
+                    </TabPanel>
+
+                    {/* Reviews Tab Panel */}
+                    <TabPanel value={tabValue} index={3}>
+                        <ReviewSection productId={product?.id} />
                     </TabPanel>
                 </Paper>
             </Container>
