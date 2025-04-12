@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCart } from '../../context/CartContext';
+import toast from 'react-hot-toast'; // Import toast
 import {
   Container,
   Typography,
@@ -39,15 +40,14 @@ const Cart = () => {
     // Check against stock if product details are available
     const maxQuantity = itemToUpdate.product?.stock;
     if (maxQuantity !== undefined && newQuantity > maxQuantity) {
-      // Optionally show a toast message here
-      console.warn(`Cannot set quantity above available stock (${maxQuantity})`);
+      toast.error(`Cannot set quantity above available stock (${maxQuantity})`); // Show toast message
+      console.log(`Cannot set quantity above available stock (${maxQuantity})`)
       newQuantity = maxQuantity; // Cap at max stock
     }
 
     if (newQuantity < 1) {
       newQuantity = 1; // Ensure quantity doesn't go below 1
     }
-
 
     setCartItems(cartItems.map(item =>
       item.id === itemId ? { ...item, quantity: newQuantity } : item

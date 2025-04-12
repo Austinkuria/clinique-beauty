@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link as RouterLink } from "react-router-dom"; // Import RouterLink
 import {
     Box,
     Container,
@@ -12,13 +12,16 @@ import {
     Tab,
     Divider,
     IconButton,
-    TextField // Import TextField
+    TextField,
+    Breadcrumbs, // Import Breadcrumbs
+    Link // Import Link for Breadcrumbs
 } from "@mui/material";
 import { ThemeContext } from "../../context/ThemeContext.jsx";
 import { useCart } from "../../context/CartContext";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import AddIcon from '@mui/icons-material/Add'; // Keep Add icon
-import RemoveIcon from '@mui/icons-material/Remove'; // Keep Remove icon
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Import Back icon
 import mockProducts from "../../data/mockProducts";  // Import centralized products
 
 // Helper component for tab panels
@@ -154,6 +157,32 @@ function ProductDetail() {
             minHeight: '100vh'
         }}>
             <Container>
+                {/* Back Button and Breadcrumbs */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <IconButton
+                        onClick={() => navigate(-1)} // Go back to previous page
+                        aria-label="Go back"
+                        sx={{ mr: 1, color: colorValues.textSecondary }}
+                    >
+                        <ArrowBackIcon />
+                    </IconButton>
+                    <Breadcrumbs aria-label="breadcrumb" sx={{ color: colorValues.textSecondary }}>
+                        <Link component={RouterLink} underline="hover" color="inherit" to="/">
+                            Home
+                        </Link>
+                        <Link component={RouterLink} underline="hover" color="inherit" to="/products">
+                            Products
+                        </Link>
+                        {/* Display category if available */}
+                        {product?.category && (
+                            <Link component={RouterLink} underline="hover" color="inherit" to={`/products?category=${product.category}`}>
+                                {product.category}
+                            </Link>
+                        )}
+                        <Typography color={colorValues.textPrimary}>{product?.name || 'Product'}</Typography>
+                    </Breadcrumbs>
+                </Box>
+
                 <Grid container spacing={4}>
                     {/* Product Image */}
                     <Grid item xs={12} md={6}>
