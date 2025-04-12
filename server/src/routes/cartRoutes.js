@@ -44,21 +44,27 @@ router.post('/', authMiddleware, asyncHandler(async (req, res) => {
     const { productId, quantity } = req.body;
     const userId = req.user.id;
 
-    if (!productId || !quantity) {
+    if (!productId || !quantity || quantity < 1) { // Ensure quantity is at least 1
         res.status(400);
-        throw new Error('Product ID and quantity are required');
+        throw new Error('Product ID and a valid quantity are required');
     }
 
-    // Check if product exists
+    // Check if product exists and get stock
     const { data: product, error: productError } = await supabase
         .from('products')
-        .select('*')
+        .select('id, stock') // Select only id and stock
         .eq('id', productId)
         .single();
 
     if (productError || !product) {
         res.status(404);
         throw new Error('Product not found');
+    }
+
+    // Check if requested quantity exceeds stock
+    if (quantity > product.stock) {
+        res.status(400);
+        throw new Error(`Not enough stock. Only ${product.stock} available.`);
     }
 
     // Check if item already in cart
@@ -80,6 +86,12 @@ router.post('/', authMiddleware, asyncHandler(async (req, res) => {
         // Update quantity if already in cart
         const newQuantity = existingItem.quantity + quantity;
 
+        // Check if new quantity exceeds stock
+        if (newQuantity > product.stock) {
+            res.status(400);
+            throw new Error(`Cannot add ${quantity}. Total quantity would exceed stock (${product.stock} available).`);
+        }
+
         const { data, error } = await supabase
             .from('cart_items')
             .update({ quantity: newQuantity })
@@ -94,7 +106,7 @@ router.post('/', authMiddleware, asyncHandler(async (req, res) => {
 
         result = data;
     } else {
-        // Add new item to cart
+        // Add new item to cart (already checked quantity against stock above)
         const { data, error } = await supabase
             .from('cart_items')
             .insert({
@@ -124,13 +136,13 @@ router.put('/:id', authMiddleware, asyncHandler(async (req, res) => {
 
     if (!quantity || quantity < 1) {
         res.status(400);
-        throw new Error('Valid quantity is required');
+        throw new Error('Valid quantity is required (must be 1 or greater)');
     }
 
-    // Verify item belongs to user
+    // Verify item belongs to user and get product ID
     const { data: existingItem, error: checkError } = await supabase
         .from('cart_items')
-        .select('*')
+        .select('id, product_id') // Select product_id as well
         .eq('id', id)
         .eq('user_id', userId)
         .single();
@@ -138,6 +150,25 @@ router.put('/:id', authMiddleware, asyncHandler(async (req, res) => {
     if (checkError || !existingItem) {
         res.status(404);
         throw new Error('Cart item not found');
+    }
+
+    // Get product stock
+    const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('id, stock')
+        .eq('id', existingItem.product_id)
+        .single();
+
+    if (productError || !product) {
+        // This case should ideally not happen if cart item exists, but good to check
+        res.status(404);
+        throw new Error('Associated product not found');
+    }
+
+    // Check if requested quantity exceeds stock
+    if (quantity > product.stock) {
+        res.status(400);
+        throw new Error(`Not enough stock. Only ${product.stock} available.`);
     }
 
     // Update quantity

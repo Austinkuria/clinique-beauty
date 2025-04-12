@@ -25,7 +25,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 
 const Cart = () => {
-  const { cartItems, setCartItems } = useCart();
+  const { cartItems, setCartItems } = useCart(); // Assuming useCart provides items with product details including stock
   const [loading, setLoading] = useState(false);
 
   const removeFromCart = (itemId) => {
@@ -33,7 +33,21 @@ const Cart = () => {
   };
 
   const updateQuantity = (itemId, newQuantity) => {
-    if (newQuantity < 1) return;
+    const itemToUpdate = cartItems.find(item => item.id === itemId);
+    if (!itemToUpdate) return;
+
+    // Check against stock if product details are available
+    const maxQuantity = itemToUpdate.product?.stock;
+    if (maxQuantity !== undefined && newQuantity > maxQuantity) {
+      // Optionally show a toast message here
+      console.warn(`Cannot set quantity above available stock (${maxQuantity})`);
+      newQuantity = maxQuantity; // Cap at max stock
+    }
+
+    if (newQuantity < 1) {
+      newQuantity = 1; // Ensure quantity doesn't go below 1
+    }
+
 
     setCartItems(cartItems.map(item =>
       item.id === itemId ? { ...item, quantity: newQuantity } : item
@@ -133,24 +147,44 @@ const Cart = () => {
 
                             <TextField
                               size="small"
+                              type="number" // Ensure type is number
                               value={item.quantity || 1}
                               onChange={(e) => {
                                 const val = parseInt(e.target.value);
-                                if (!isNaN(val) && val > 0) {
-                                  updateQuantity(item.id, val);
+                                // Allow empty input temporarily, but handle NaN/zero on blur or update
+                                if (!isNaN(val)) {
+                                  updateQuantity(item.id, val); // Update immediately or on blur
+                                } else if (e.target.value === '') {
+                                  // Handle empty string case if needed, maybe set temporary state
                                 }
                               }}
+                              // Optional: Add onBlur handler to finalize value if allowing empty input
+                              // onBlur={(e) => {
+                              //   const val = parseInt(e.target.value);
+                              //   if (isNaN(val) || val < 1) {
+                              //     updateQuantity(item.id, 1); // Reset to 1 if invalid on blur
+                              //   }
+                              // }}
                               inputProps={{
-                                style: { textAlign: 'center' },
+                                style: { textAlign: 'center', MozAppearance: 'textfield' }, // Hide spinners in Firefox
                                 min: 1,
-                                max: 99
+                                max: item.product?.stock, // Set max based on stock
                               }}
-                              sx={{ width: '60px', mx: 1 }}
+                              sx={{
+                                width: '60px',
+                                mx: 1,
+                                '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                  WebkitAppearance: 'none', // Hide spinners in Chrome/Safari
+                                  margin: 0,
+                                },
+                              }}
                             />
 
                             <IconButton
                               size="small"
                               onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
+                              // Disable if quantity reaches stock
+                              disabled={item.product?.stock !== undefined && (item.quantity || 1) >= item.product.stock}
                             >
                               <AddIcon fontSize="small" />
                             </IconButton>

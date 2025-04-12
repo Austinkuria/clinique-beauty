@@ -25,6 +25,7 @@ function FeaturedProducts() {
             name: 'Moisturizer',
             price: 29.99,
             image: moisturizer,
+            stock: 50, // Added stock
             description: 'Deeply hydrating formula for all skin types'
         },
         {
@@ -32,6 +33,7 @@ function FeaturedProducts() {
             name: 'Cleanser',
             price: 19.99,
             image: cleanser,
+            stock: 35, // Added stock
             description: 'Gentle daily cleanser that removes impurities'
         },
         {
@@ -39,6 +41,7 @@ function FeaturedProducts() {
             name: 'Serum',
             price: 39.99,
             image: serum,
+            stock: 25, // Added stock
             description: '2 in 1 Collagen Face Serum Anti Aging Collagen Serum'
         }
     ];

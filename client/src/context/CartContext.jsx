@@ -45,23 +45,41 @@ export const CartProvider = ({ children }) => {
     };
 
     const addToCart = async (product, quantity = 1) => {
+        // Ensure product object includes stock
+        if (!product || product.stock === undefined) {
+            console.error('Product data is missing stock information.');
+            // Optionally fetch full product details if only ID was passed
+            return;
+        }
+
         setLoading(true);
 
         try {
             if (isSignedIn) {
                 // Add to server cart for authenticated users
+                // Server-side validation handles stock check
                 await api.addToCart(product.id, quantity);
                 fetchCart(); // Refresh cart from server
             } else {
                 // Add to local cart for anonymous users
                 setCart(prevCart => {
                     const existingItem = prevCart.items.find(item => item.product.id === product.id);
+                    const availableStock = product.stock;
 
                     if (existingItem) {
-                        // Update quantity if item exists
+                        const newQuantity = existingItem.quantity + quantity;
+                        // Check stock for existing item update
+                        if (newQuantity > availableStock) {
+                            console.warn(`Cannot add ${quantity}. Total quantity would exceed stock (${availableStock} available).`);
+                            // Optionally show a toast message
+                            // Return previous cart state without changes
+                            return prevCart;
+                        }
+
+                        // Update quantity if item exists and stock is sufficient
                         const updatedItems = prevCart.items.map(item =>
                             item.product.id === product.id
-                                ? { ...item, quantity: item.quantity + quantity }
+                                ? { ...item, quantity: newQuantity }
                                 : item
                         );
 
@@ -70,10 +88,18 @@ export const CartProvider = ({ children }) => {
                             total: calculateTotal(updatedItems)
                         };
                     } else {
-                        // Add new item
+                        // Check stock for new item addition
+                        if (quantity > availableStock) {
+                            console.warn(`Cannot add ${quantity}. Requested quantity exceeds stock (${availableStock} available).`);
+                            // Optionally show a toast message
+                            // Return previous cart state without changes
+                            return prevCart;
+                        }
+                        // Add new item if stock is sufficient
                         const newItems = [
                             ...prevCart.items,
-                            { product, quantity }
+                            // Ensure the full product object (including stock) is stored
+                            { product: { ...product }, quantity }
                         ];
 
                         return {
@@ -85,6 +111,7 @@ export const CartProvider = ({ children }) => {
             }
         } catch (error) {
             console.error('Error adding to cart:', error);
+            // Optionally show error toast to user
         } finally {
             setLoading(false);
         }
@@ -96,14 +123,30 @@ export const CartProvider = ({ children }) => {
         try {
             if (isSignedIn) {
                 // Update server cart for authenticated users
+                // Server-side validation handles stock check
                 await api.updateCartItem(itemId, quantity);
                 fetchCart(); // Refresh cart from server
             } else {
                 // Update local cart for anonymous users
                 setCart(prevCart => {
+                    const itemToUpdate = prevCart.items.find(item => item.product.id === itemId);
+                    if (!itemToUpdate) return prevCart; // Item not found
+
+                    const availableStock = itemToUpdate.product.stock;
+
+                    // Validate quantity against stock and minimum value
+                    let validatedQuantity = quantity;
+                    if (validatedQuantity < 1) {
+                        validatedQuantity = 1;
+                    }
+                    if (availableStock !== undefined && validatedQuantity > availableStock) {
+                        console.warn(`Cannot set quantity above available stock (${availableStock})`);
+                        validatedQuantity = availableStock; // Cap at max stock
+                    }
+
                     const updatedItems = prevCart.items.map(item =>
                         item.product.id === itemId
-                            ? { ...item, quantity }
+                            ? { ...item, quantity: validatedQuantity }
                             : item
                     );
 
@@ -115,6 +158,7 @@ export const CartProvider = ({ children }) => {
             }
         } catch (error) {
             console.error('Error updating cart:', error);
+            // Optionally show error toast to user
         } finally {
             setLoading(false);
         }
