@@ -10,11 +10,14 @@ import {
     Paper,
     Tabs,
     Tab,
-    Divider
+    Divider,
+    IconButton // Import IconButton
 } from "@mui/material";
 import { ThemeContext } from "../../context/ThemeContext.jsx";
 import { useCart } from "../../context/CartContext";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import AddIcon from '@mui/icons-material/Add'; // Import Add icon
+import RemoveIcon from '@mui/icons-material/Remove'; // Import Remove icon
 import mockProducts from "../../data/mockProducts";  // Import centralized products
 
 // Helper component for tab panels
@@ -46,6 +49,7 @@ function ProductDetail() {
     const [tabValue, setTabValue] = useState(0);
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [quantity, setQuantity] = useState(1); // State for quantity
 
     useEffect(() => {
         // Find product by ID from the centralized mock data
@@ -62,20 +66,29 @@ function ProductDetail() {
         setTabValue(newValue);
     };
 
+    const handleIncrement = () => {
+        setQuantity(prevQuantity => prevQuantity + 1);
+    };
+
+    const handleDecrement = () => {
+        setQuantity(prevQuantity => Math.max(1, prevQuantity - 1)); // Prevent quantity < 1
+    };
+
     const addToCart = () => {
         if (!product) return;
 
         const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
 
         if (existingItemIndex >= 0) {
-            // Item already exists, update quantity
+            // Item already exists, update quantity by adding the selected quantity
             const newCartItems = [...cartItems];
-            newCartItems[existingItemIndex].quantity = (newCartItems[existingItemIndex].quantity || 1) + 1;
+            newCartItems[existingItemIndex].quantity = (newCartItems[existingItemIndex].quantity || 0) + quantity; // Add selected quantity
             setCartItems(newCartItems);
         } else {
-            // Add new item with quantity 1
-            setCartItems([...cartItems, { ...product, quantity: 1 }]);
+            // Add new item with the selected quantity
+            setCartItems([...cartItems, { ...product, quantity: quantity }]);
         }
+        setQuantity(1); // Reset quantity selector after adding to cart
     };
 
     if (loading) {
@@ -174,7 +187,34 @@ function ProductDetail() {
                                 Category: {product.category}
                             </Typography>
 
-                            <Box sx={{ mt: 'auto', pt: 3 }}>
+                            {/* Quantity Selector */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+                                <Typography variant="body1" sx={{ mr: 2 }}>Quantity:</Typography>
+                                <IconButton
+                                    onClick={handleDecrement}
+                                    disabled={quantity <= 1}
+                                    size="small"
+                                    aria-label="Decrease quantity"
+                                    sx={{ border: `1px solid ${colorValues.textSecondary}`, borderRadius: 1, mr: 1 }}
+                                >
+                                    <RemoveIcon fontSize="small" />
+                                </IconButton>
+                                <Typography variant="body1" sx={{ mx: 1, minWidth: '20px', textAlign: 'center' }}>
+                                    {quantity}
+                                </Typography>
+                                <IconButton
+                                    onClick={handleIncrement}
+                                    size="small"
+                                    aria-label="Increase quantity"
+                                    sx={{ border: `1px solid ${colorValues.textSecondary}`, borderRadius: 1, ml: 1 }}
+                                // Optional: Add disabled logic based on stock if available
+                                // disabled={product.stock && quantity >= product.stock}
+                                >
+                                    <AddIcon fontSize="small" />
+                                </IconButton>
+                            </Box>
+
+                            <Box sx={{ mt: 'auto', pt: 2 }}> {/* Adjusted padding top */}
                                 <Button
                                     variant="contained"
                                     size="large"
@@ -192,7 +232,7 @@ function ProductDetail() {
                                         }
                                     }}
                                 >
-                                    Add to Cart
+                                    Add {quantity} to Cart {/* Update button text */}
                                 </Button>
                             </Box>
                         </Paper>
