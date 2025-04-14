@@ -58,7 +58,11 @@ export const WishlistProvider = ({ children }) => {
         if (!isSignedIn || !user) return false;
 
         setLoading(true);
-        const toastId = toast.loading("Updating wishlist...");
+        // Use a variable for the toast message
+        const isAdding = newWishlist.length > wishlist.length;
+        const loadingMessage = isAdding ? "Adding to wishlist..." : "Removing from wishlist...";
+        console.log(`[WishlistContext] Calling toast.loading: "${loadingMessage}"`); // Log before loading toast
+        const toastId = toast.loading(loadingMessage);
         try {
             await user.update({
                 publicMetadata: {
@@ -70,10 +74,14 @@ export const WishlistProvider = ({ children }) => {
             // Clerk's hook might update user object, triggering the load effect,
             // but setting state here ensures immediate UI feedback.
             setWishlist(newWishlist);
-            toast.success("Wishlist updated!", { id: toastId });
+            // Update toast message on success
+            const successMessage = isAdding ? "Added to wishlist!" : "Removed from wishlist!";
+            console.log(`[WishlistContext] Calling toast.success: "${successMessage}" (ID: ${toastId})`); // Log before success toast
+            toast.success(successMessage, { id: toastId });
             return true;
         } catch (error) {
             console.error("Error updating wishlist metadata:", error);
+            console.log(`[WishlistContext] Calling toast.error: "Failed to update wishlist." (ID: ${toastId})`); // Log before error toast
             toast.error("Failed to update wishlist.", { id: toastId });
             return false;
         } finally {
@@ -85,35 +93,45 @@ export const WishlistProvider = ({ children }) => {
 
     const addToWishlist = async (productId) => {
         if (wishlist.includes(productId)) {
-            toast.success("Item already in wishlist.");
-            return;
+            // Inform user it's already there, maybe use a less prominent toast or none
+            // toast.success("Item already in wishlist.");
+            return; // No change needed
         }
 
         const newWishlist = [...wishlist, productId];
 
         if (isSignedIn) {
+            console.log("[WishlistContext] Calling updateWishlistMetadata for add.");
+            // updateWishlistMetadata handles its own toasts (loading/success/error)
             await updateWishlistMetadata(newWishlist);
         } else {
-            // Anonymous: Just update state, effect will save to localStorage
+            // Anonymous: Update state and show a simple success toast
             setWishlist(newWishlist);
-            toast.success("Added to local wishlist!"); // Different message for local
+            const successMessage = "Added to wishlist!";
+            console.log(`[WishlistContext] Anonymous: Calling toast.success: "${successMessage}"`); // Log before anonymous success toast
+            toast.success(successMessage); // Simple success for local add
         }
     };
 
     const removeFromWishlist = async (productId) => {
         if (!wishlist.includes(productId)) {
-            toast.error("Item not found in wishlist.");
-            return;
+            // Item not found, maybe show an error or do nothing silently
+            // toast.error("Item not found in wishlist.");
+            return; // No change needed
         }
 
         const newWishlist = wishlist.filter(id => id !== productId);
 
         if (isSignedIn) {
+            console.log("[WishlistContext] Calling updateWishlistMetadata for remove.");
+            // updateWishlistMetadata handles its own toasts (loading/success/error)
             await updateWishlistMetadata(newWishlist);
         } else {
-            // Anonymous: Just update state, effect will save to localStorage
+            // Anonymous: Update state and show a simple success toast
             setWishlist(newWishlist);
-            toast.success("Removed from local wishlist!"); // Different message for local
+            const successMessage = "Removed from wishlist!";
+            console.log(`[WishlistContext] Anonymous: Calling toast.success: "${successMessage}"`); // Log before anonymous success toast
+            toast.success(successMessage); // Simple success for local remove
         }
     };
 
