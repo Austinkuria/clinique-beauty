@@ -17,6 +17,7 @@ import {
     Link, // Import Link for Breadcrumbs
     Tooltip // Import Tooltip
 } from "@mui/material";
+import toast from 'react-hot-toast'; // Import toast
 import { ThemeContext } from "../../context/ThemeContext.jsx";
 import { useCart } from "../../context/CartContext";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
