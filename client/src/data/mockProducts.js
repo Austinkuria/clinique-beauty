@@ -74,7 +74,15 @@ const mockProducts = [
         stock: 30, // Added stock
         description: 'Medium to full coverage foundation with a natural finish that lasts all day.',
         benefits: ['Medium to full coverage', '24-hour wear', 'Natural finish'],
-        ingredients: ['Hyaluronic Acid', 'Vitamin E', 'SPF 20']
+        ingredients: ['Hyaluronic Acid', 'Vitamin E', 'SPF 20'],
+        shades: [
+            { name: 'Fair Ivory', color: '#F5E1D3' },
+            { name: 'Light Beige', color: '#F3D9C6' },
+            { name: 'Natural Buff', color: '#F1D4AF' },
+            { name: 'Medium Sand', color: '#E6C3A8' },
+            { name: 'Golden Tan', color: '#DDAE8A' },
+            { name: 'Deep Mocha', color: '#A07C5E' },
+        ]
     },
     {
         id: 7,

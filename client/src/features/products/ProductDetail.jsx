@@ -14,7 +14,8 @@ import {
     IconButton,
     TextField,
     Breadcrumbs, // Import Breadcrumbs
-    Link // Import Link for Breadcrumbs
+    Link, // Import Link for Breadcrumbs
+    Tooltip // Import Tooltip
 } from "@mui/material";
 import { ThemeContext } from "../../context/ThemeContext.jsx";
 import { useCart } from "../../context/CartContext";
@@ -58,14 +59,17 @@ function ProductDetail() {
     const [quantity, setQuantity] = useState(1); // State for quantity
     const [isOutOfStock, setIsOutOfStock] = useState(false); // State for stock status
     const [relatedProducts, setRelatedProducts] = useState([]);
+    const [selectedShade, setSelectedShade] = useState(null); // State for selected shade
 
     useEffect(() => {
         // Find product by ID from the centralized mock data
         const foundProduct = mockProducts.find(p => p.id === parseInt(id));
-        console.log("Current Product ID:", id); // Log ID
+        console.log("[Effect] Current Product ID:", id);
+        console.log("[Effect] Found Product (Initial):", foundProduct); // Log initial find
 
         // Simulate API call delay
         setTimeout(() => {
+            console.log("[Effect Timeout] Setting product state:", foundProduct); // Log before setting state
             setProduct(foundProduct || null);
             setLoading(false);
             // Check stock status once product loads
@@ -75,6 +79,15 @@ function ProductDetail() {
             } else if (foundProduct) {
                 setIsOutOfStock(false);
                 setQuantity(1); // Reset to 1 if in stock
+            }
+
+            // Initialize selected shade if product has shades
+            if (foundProduct?.shades?.length > 0) {
+                console.log("[Effect Timeout] Product has shades:", foundProduct.shades); // Log shades found
+                setSelectedShade(foundProduct.shades[0]); // Default to the first shade
+            } else {
+                console.log("[Effect Timeout] Product has NO shades or shades array is empty."); // Log if no shades
+                setSelectedShade(null); // Reset if product has no shades
             }
 
             // Find related products (same category, different id)
@@ -128,10 +141,25 @@ function ProductDetail() {
         setQuantity(prevQuantity => Math.max(1, prevQuantity - 1)); // Prevent quantity < 1
     };
 
+    const handleShadeSelect = (shade) => {
+        setSelectedShade(shade);
+    };
+
     const addToCart = () => {
         if (!product) return;
 
-        const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
+        // Include selected shade in cart item if applicable
+        const itemToAdd = {
+            ...product,
+            quantity: quantity,
+            ...(selectedShade && { selectedShade: selectedShade }) // Add shade info if selected
+        };
+
+        const existingItemIndex = cartItems.findIndex(item =>
+            item.id === product.id &&
+            // Also check if shade matches if the item in cart has a shade
+            (item.selectedShade ? item.selectedShade.name === selectedShade?.name : !selectedShade)
+        );
 
         if (existingItemIndex >= 0) {
             // Item already exists, update quantity by adding the selected quantity
@@ -140,11 +168,15 @@ function ProductDetail() {
             setCartItems(newCartItems);
         } else {
             // Add new item with the selected quantity
-            setCartItems([...cartItems, { ...product, quantity: quantity }]);
+            setCartItems([...cartItems, itemToAdd]);
         }
         // Reset quantity only if not out of stock
         if (!isOutOfStock) {
             setQuantity(1);
+            // Optionally reset shade selection after adding, or keep it
+            // if (product?.shades?.length > 0) {
+            //     setSelectedShade(product.shades[0]);
+            // }
         }
     };
 
@@ -166,6 +198,11 @@ function ProductDetail() {
             </Container>
         );
     }
+
+    // Add logging right before the return statement for the main component render
+    console.log("[Render] Product State:", product);
+    console.log("[Render] Product Shades:", product?.shades);
+    console.log("[Render] Selected Shade State:", selectedShade);
 
     return (
         <Box sx={{
@@ -270,6 +307,50 @@ function ProductDetail() {
                                 Category: {product.category}
                             </Typography>
 
+                            {/* Shade Selector */}
+                            {/* Add logging right before the conditional check */}
+                            {console.log("[Render Check] Checking for shades:", product?.shades)}
+                            {product.shades && product.shades.length > 0 ? (
+                                <Box sx={{ my: 3 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
+                                        Shade: {selectedShade ? selectedShade.name : 'Select a shade'}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                        {product.shades.map((shade) => (
+                                            <Tooltip title={shade.name} key={shade.name} arrow>
+                                                <Box
+                                                    onClick={() => handleShadeSelect(shade)}
+                                                    sx={{
+                                                        width: 32,
+                                                        height: 32,
+                                                        borderRadius: '50%',
+                                                        backgroundColor: shade.color,
+                                                        cursor: 'pointer',
+                                                        border: selectedShade?.name === shade.name
+                                                            ? `3px solid ${colorValues.primary}` // Highlight selected
+                                                            : `1px solid ${colorValues.textSecondary}`,
+                                                        outline: selectedShade?.name === shade.name
+                                                            ? `1px solid ${colorValues.bgPaper}` // Inner outline for contrast
+                                                            : 'none',
+                                                        outlineOffset: '-3px',
+                                                        transition: 'border 0.2s ease-in-out',
+                                                        '&:hover': {
+                                                            transform: 'scale(1.1)',
+                                                            boxShadow: '0px 2px 5px rgba(0,0,0,0.2)'
+                                                        }
+                                                    }}
+                                                    aria-label={`Select shade ${shade.name}`}
+                                                    role="button"
+                                                />
+                                            </Tooltip>
+                                        ))}
+                                    </Box>
+                                </Box>
+                            ) : (
+                                // Optional: Log when the condition is false
+                                console.log("[Render Check] Condition for shades is FALSE.")
+                            )}
+
                             {/* Stock Status */}
                             {product && product.stock !== undefined && (
                                 <Typography
@@ -336,7 +417,7 @@ function ProductDetail() {
                                     fullWidth
                                     startIcon={<ShoppingCartIcon />}
                                     onClick={addToCart}
-                                    disabled={isOutOfStock || quantity < 1} // Disable if out of stock or quantity is invalid
+                                    disabled={isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade)} // Disable if shades exist but none selected
                                     sx={{
                                         backgroundColor: colorValues.primary,
                                         color: '#ffffff',
@@ -346,10 +427,13 @@ function ProductDetail() {
                                         '&:hover': {
                                             backgroundColor: colorValues.primaryDark,
                                         },
-                                        opacity: (isOutOfStock || quantity < 1) ? 0.6 : 1, // Indicate disabled state visually
+                                        opacity: (isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade)) ? 0.6 : 1, // Indicate disabled state visually
                                     }}
                                 >
-                                    {isOutOfStock ? 'Out of Stock' : `Add ${quantity} to Cart`} {/* Update button text */}
+                                    {/* Adjust button text based on state */}
+                                    {isOutOfStock ? 'Out of Stock' :
+                                        (product.shades?.length > 0 && !selectedShade) ? 'Select a Shade' :
+                                            `Add ${quantity} to Cart`}
                                 </Button>
                             </Box>
                         </Paper>
