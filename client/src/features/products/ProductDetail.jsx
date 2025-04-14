@@ -26,6 +26,10 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Import Back icon
 import mockProducts from "../../data/mockProducts";  // Import centralized products
 import ReviewSection from "./components/ReviewSection"; // Import ReviewSection
 import ProductCard from "./components/ProductCard"; // Import ProductCard
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'; // Wishlist outlined icon
+import FavoriteIcon from '@mui/icons-material/Favorite'; // Wishlist filled icon
+import { useUser } from "@clerk/clerk-react"; // Keep useUser
+import { useWishlist } from "../../context/WishlistContext"; // Import Wishlist context hook
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -60,6 +64,8 @@ function ProductDetail() {
     const [isOutOfStock, setIsOutOfStock] = useState(false); // State for stock status
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [selectedShade, setSelectedShade] = useState(null); // State for selected shade
+    const { user, isSignedIn } = useUser(); // Get Clerk user status
+    const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist(); // Use Wishlist context
 
     useEffect(() => {
         // Find product by ID from the centralized mock data
@@ -180,6 +186,20 @@ function ProductDetail() {
         }
     };
 
+    const handleWishlistClick = () => {
+        if (!product) return; // Don't do anything if product isn't loaded
+
+        if (!isSignedIn) {
+            // Optionally prompt anonymous users to sign in, or let context handle local storage
+            toast("Sign in to sync your wishlist across devices!"); // Example prompt
+            // Allow context to handle local storage update anyway
+            toggleWishlist(product.id);
+        } else {
+            // Signed-in user: context handles Clerk metadata update
+            toggleWishlist(product.id);
+        }
+    };
+
     if (loading) {
         return (
             <Container sx={{ py: 4, minHeight: '60vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -203,6 +223,17 @@ function ProductDetail() {
     console.log("[Render] Product State:", product);
     console.log("[Render] Product Shades:", product?.shades);
     console.log("[Render] Selected Shade State:", selectedShade);
+    console.log("[Render] Is In Wishlist (from context):", isInWishlist(product.id));
+
+    // Determine wishlist status using context function
+    const isProductInWishlist = product ? isInWishlist(product.id) : false;
+
+    // --- Add Debugging Logs ---
+    console.log("[Render] Product Loaded:", !!product);
+    console.log("[Render] Is Signed In:", isSignedIn);
+    console.log("[Render] Is Product In Wishlist (from context):", isProductInWishlist);
+    console.log("[Render] Wishlist Loading State:", wishlistLoading);
+    // --- End Debugging Logs ---
 
     return (
         <Box sx={{
@@ -284,9 +315,33 @@ function ProductDetail() {
                                 flexDirection: 'column'
                             }}
                         >
-                            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-                                {product.name}
-                            </Typography>
+                            {/* Product Title and Wishlist Button */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Typography variant="h4" component="h1" sx={{ fontWeight: 600, flexGrow: 1, pr: 1 }}>
+                                    {product.name}
+                                </Typography>
+                                <Tooltip title={isProductInWishlist ? "Remove from Wishlist" : "Add to Wishlist"} arrow>
+                                    <span> {/* Span needed for tooltip when button is disabled */}
+                                        <IconButton
+                                            onClick={handleWishlistClick} // Use the handler
+                                            disabled={wishlistLoading || !product} // Disable while loading or if product not loaded
+                                            color="primary"
+                                            aria-label={isProductInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                                            sx={{
+                                                // Keep existing styles for color based on state
+                                                color: isProductInWishlist ? colorValues.error : colorValues.textSecondary,
+                                                transition: 'color 0.2s',
+                                                '&:hover': {
+                                                    color: isProductInWishlist ? colorValues.errorDark : colorValues.primary,
+                                                }
+                                            }}
+                                        >
+                                            {/* Use context state to determine icon */}
+                                            {isProductInWishlist ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Box>
 
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                 <Rating value={product.rating} precision={0.1} readOnly />

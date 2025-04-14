@@ -6,6 +6,7 @@ import { CartProvider } from './context/CartContext';
 import { ClerkProvider } from '@clerk/clerk-react';
 import ErrorBoundary from './components/ErrorBoundary';
 import { clerkAppearance } from './features/auth/ClerkConfiguration';
+import { WishlistProvider } from './context/WishlistContext'; // Import WishlistProvider
 import './styles/globals.css';
 
 // Get the publishable key from environment variables
@@ -24,7 +25,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                     appearance={clerkAppearance}
                 >
                     <CartProvider>
-                        <Routes />
+                        <WishlistProvider> {/* Wrap with WishlistProvider */}
+                            <Routes />
+                        </WishlistProvider>
                     </CartProvider>
                 </ClerkProvider>
             </ThemeProvider>
