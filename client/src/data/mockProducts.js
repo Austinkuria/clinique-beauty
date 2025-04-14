@@ -62,7 +62,14 @@ const mockProducts = [
         stock: 60, // Added stock
         description: "Long-lasting, highly pigmented matte lipstick that doesn't dry out lips.",
         benefits: ['Long-wearing formula', 'Comfortable matte finish', 'Highly pigmented'],
-        ingredients: ['Shea Butter', 'Vitamin E', 'Jojoba Oil']
+        ingredients: ['Shea Butter', 'Vitamin E', 'Jojoba Oil'],
+        shades: [
+            { name: 'Classic Red', color: '#C0392B' },
+            { name: 'Nude Pink', color: '#E5B4B4' },
+            { name: 'Deep Plum', color: '#6C3483' },
+            { name: 'Coral Kiss', color: '#F39C12' },
+            { name: 'Berry Bold', color: '#9B59B6' },
+        ]
     },
     {
         id: 6,
@@ -106,7 +113,8 @@ const mockProducts = [
         stock: 20, // Added stock
         description: 'Versatile palette with 12 highly pigmented shades in matte and shimmer finishes.',
         benefits: ['12 versatile shades', 'Blend easily', 'Long-lasting wear'],
-        ingredients: ['Mica', 'Silica', 'Vitamin E']
+        ingredients: ['Mica', 'Silica', 'Vitamin E'],
+        paletteTheme: 'Neutral Tones'
     },
 
     // Fragrance Products
