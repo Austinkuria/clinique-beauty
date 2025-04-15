@@ -326,14 +326,18 @@ function ProductDetail() {
                                         <IconButton
                                             onClick={handleWishlistClick} // Use the handler
                                             disabled={wishlistLoading || !product} // Disable while loading or if product not loaded
-                                            color="primary"
                                             aria-label={isProductInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
                                             sx={{
-                                                // Keep existing styles for color based on state
-                                                color: isProductInWishlist ? colorValues.error : colorValues.textSecondary,
-                                                transition: 'color 0.2s',
+                                                // Use theme colors
+                                                color: isProductInWishlist ? (theme === 'light' ? '#d32f2f' : '#ef5350') : colorValues.textSecondary, // Use error color when in wishlist, secondary otherwise
+                                                transition: 'color 0.2s, transform 0.1s',
                                                 '&:hover': {
-                                                    color: isProductInWishlist ? colorValues.errorDark : colorValues.primary,
+                                                    color: isProductInWishlist ? (theme === 'light' ? '#c62828' : '#e57373') : colorValues.primary, // Darker error on hover, primary on hover otherwise
+                                                    transform: 'scale(1.1)',
+                                                },
+                                                '&:disabled': {
+                                                    color: colorValues.textSecondary, // Ensure disabled state has a neutral color
+                                                    opacity: 0.5,
                                                 }
                                             }}
                                         >
