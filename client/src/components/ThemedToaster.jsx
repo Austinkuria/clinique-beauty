@@ -28,7 +28,13 @@ function ThemedToaster() {
                 secondary: colorValues.bgPaper,
             },
         },
-        //, etc. if needed
+        // Add styles for loading
+        loading: {
+            iconTheme: {
+                primary: colorValues.primary, // Use primary color for loading spinner
+                secondary: theme === 'light' ? '#e0e0e0' : '#424242', // Use a neutral secondary color
+            },
+        },
     };
 
     return (
