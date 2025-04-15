@@ -49,9 +49,17 @@ function Navbar() {
         // Removed the profile button since Clerk's UserButton handles this
     ];
 
-    // Clerk UserButton styling
+    // Clerk UserButton styling - Updated to include variables with direct color values
     const clerkButtonAppearance = {
-        baseTheme: theme,
+        baseTheme: theme === 'dark' ? 'dark' : 'light', // Use Clerk's base themes
+        variables: {
+            colorPrimary: colorValues.primary, // Use direct color value
+            colorText: colorValues.textPrimary, // Use direct color value
+            colorBackground: colorValues.bgPaper, // Use direct color value for component backgrounds
+            colorInputBackground: theme === 'dark' ? '#333333' : '#f5f5f5', // Example for inputs
+            colorInputText: colorValues.textPrimary, // Example for input text
+            // Add other variables as needed, ensuring they are direct color values
+        },
         elements: {
             userButtonAvatarBox: {
                 width: '2.2rem',
@@ -61,12 +69,29 @@ function Navbar() {
             userButtonBox: {
                 boxShadow: 'none',
                 borderRadius: '50px',
-                backgroundColor: theme === 'dark' ? '#333333' : '#f5f5f5',
+                // Use a slightly different background for the button itself if needed
+                backgroundColor: theme === 'dark' ? '#2a2a2a' : '#eeeeee',
             },
             userButtonOuterIdentifier: {
                 color: colorValues.textPrimary,
                 fontWeight: 500,
             },
+            // You might need to style other Clerk elements if you use SignIn/SignUp components
+            // card: {
+            //     backgroundColor: colorValues.bgPaper,
+            // },
+            // formButtonPrimary: {
+            //     backgroundColor: colorValues.primary,
+            //     '&:hover': {
+            //         backgroundColor: colorValues.primaryDark,
+            //     }
+            // },
+            // footerActionLink: {
+            //     color: colorValues.primary,
+            //     '&:hover': {
+            //         color: colorValues.primaryLight,
+            //     }
+            // }
         },
     };
 

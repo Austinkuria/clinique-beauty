@@ -1,38 +1,106 @@
-import React from 'react';
+import React, { useContext } from 'react'; // Add useContext
 import ReactDOM from 'react-dom/client';
-import Routes from './routes';
-import { ThemeProvider } from './context/ThemeContext';
-import { CartProvider } from './context/CartContext';
 import { ClerkProvider } from '@clerk/clerk-react';
+import { ThemeProvider, ThemeContext } from './context/ThemeContext.jsx'; // Import ThemeContext
+import { CartProvider } from './context/CartContext.jsx';
+import { WishlistProvider } from './context/WishlistContext.jsx';
+import Routes from './routes';
 import ErrorBoundary from './components/ErrorBoundary';
-import { clerkAppearance } from './features/auth/ClerkConfiguration';
-import { WishlistProvider } from './context/WishlistContext'; // Import WishlistProvider
-import ThemedToaster from './components/ThemedToaster'; // Import the themed toaster
-import './styles/globals.css';
+import ThemedToaster from './components/ThemedToaster.jsx';
+import './index.css';
 
-// Get the publishable key from environment variables
+// Clerk Publishable Key
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!publishableKey) {
-    console.error("Missing VITE_CLERK_PUBLISHABLE_KEY environment variable");
+    throw new Error("Missing Clerk Publishable Key");
 }
+
+// New component to access ThemeContext and configure Clerk
+function AppCore() {
+    const { theme, colorValues } = useContext(ThemeContext);
+
+    // Define Clerk appearance using direct color values from context
+    const clerkAppearance = {
+        baseTheme: theme === 'dark' ? 'dark' : 'light', // Use Clerk's base themes
+        variables: {
+            colorPrimary: colorValues.primary,
+            colorText: colorValues.textPrimary,
+            colorBackground: colorValues.bgPaper,
+            colorInputBackground: theme === 'dark' ? '#333333' : '#f5f5f5', // Example
+            colorInputText: colorValues.textPrimary, // Example
+            colorTextSecondary: colorValues.textSecondary,
+            colorDanger: theme === 'light' ? '#d32f2f' : '#ef5350', // Example error color
+            colorSuccess: theme === 'light' ? '#2e7d32' : '#66bb6a', // Example success color
+        },
+        elements: {
+            // Style elements common to SignIn, SignUp, UserButton etc.
+            card: {
+                backgroundColor: colorValues.bgPaper,
+                boxShadow: theme === 'dark' ? '0 4px 12px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                borderRadius: '8px',
+            }, // <-- Added missing closing brace and comma
+            formButtonPrimary: {
+                backgroundColor: colorValues.primary,
+                '&:hover': {
+                    backgroundColor: colorValues.primaryDark,
+                },
+                '&:focus': {
+                    backgroundColor: colorValues.primaryDark, // Ensure focus state is handled
+                },
+                '&:active': {
+                    backgroundColor: colorValues.primaryDark, // Ensure active state is handled
+                },
+                borderRadius: '50px',
+                textTransform: 'none',
+            },
+            footerActionLink: {
+                color: colorValues.primary,
+                '&:hover': {
+                    color: colorValues.primaryLight,
+                },
+                fontWeight: 500,
+            },
+            formFieldInput: {
+                backgroundColor: theme === 'dark' ? '#333333' : '#f5f5f5', // Match variable
+                color: colorValues.textPrimary,
+                borderColor: theme === 'dark' ? '#555' : '#ccc', // Example border
+                '&:focus': {
+                    borderColor: colorValues.primary, // Highlight focus with primary color
+                    boxShadow: `0 0 0 1px ${colorValues.primary}`, // Add focus ring
+                }
+            },
+            // Specific styles for UserButton if needed (can override Navbar's)
+            userButtonAvatarBox: {
+                width: '2.2rem',
+                height: '2.2rem',
+                border: theme === 'dark' ? `2px solid ${colorValues.primary}` : 'none',
+            },
+        },
+    };
+
+    return (
+        <ClerkProvider
+            publishableKey={publishableKey}
+            appearance={clerkAppearance} // Pass the dynamic appearance object
+        >
+            <CartProvider>
+                <WishlistProvider>
+                    <Routes />
+                    <ThemedToaster />
+                </WishlistProvider>
+            </CartProvider>
+        </ClerkProvider>
+    );
+}
+
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <ErrorBoundary>
+            {/* ThemeProvider now wraps the component that uses its context */}
             <ThemeProvider>
-                <ClerkProvider
-                    publishableKey={publishableKey}
-                    appearance={clerkAppearance}
-                >
-                    <CartProvider>
-                        <WishlistProvider> {/* Wrap with WishlistProvider */}
-                            <Routes />
-                            {/* Use the ThemedToaster component */}
-                            <ThemedToaster />
-                        </WishlistProvider>
-                    </CartProvider>
-                </ClerkProvider>
+                <AppCore />
             </ThemeProvider>
         </ErrorBoundary>
     </React.StrictMode>
