@@ -52,6 +52,8 @@ const router = createBrowserRouter([
                     },
                     // Clerk verification routes
                     { path: '/auth/register/verify-email-address', element: <ClerkVerification type="verifyEmail" /> },
+                    // Add route for Clerk SSO callback during registration
+                    { path: '/auth/register/sso-callback', element: <Register /> },
                     { path: '/auth/verify', element: <ClerkVerification type="verify" /> },
                     { path: '/auth/reset-password', element: <ClerkVerification type="resetPassword" /> },
                     { path: '/products/skincare', element: <Skincare /> },
