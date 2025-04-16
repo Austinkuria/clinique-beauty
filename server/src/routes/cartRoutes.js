@@ -70,7 +70,7 @@ router.post('/', authMiddleware, asyncHandler(async (req, res) => {
     // Check if item already in cart
     const { data: existingItem, error: existingError } = await supabase
         .from('cart_items')
-        .select('*')
+        .select('id, quantity') // Select only needed fields
         .eq('user_id', userId)
         .eq('product_id', productId)
         .single();
@@ -80,7 +80,7 @@ router.post('/', authMiddleware, asyncHandler(async (req, res) => {
         throw new Error('Error checking cart');
     }
 
-    let result;
+    let updatedOrNewItemId;
 
     if (existingItem) {
         // Update quantity if already in cart
@@ -92,40 +92,64 @@ router.post('/', authMiddleware, asyncHandler(async (req, res) => {
             throw new Error(`Cannot add ${quantity}. Total quantity would exceed stock (${product.stock} available).`);
         }
 
-        const { data, error } = await supabase
+        const { data: updatedItem, error: updateError } = await supabase
             .from('cart_items')
-            .update({ quantity: newQuantity })
+            .update({ quantity: newQuantity, updated_at: new Date() }) // Also update timestamp
             .eq('id', existingItem.id)
-            .select()
+            .select('id') // Select only the ID
             .single();
 
-        if (error) {
+        if (updateError) {
             res.status(500);
             throw new Error('Error updating cart item');
         }
+        updatedOrNewItemId = updatedItem.id;
 
-        result = data;
     } else {
         // Add new item to cart (already checked quantity against stock above)
-        const { data, error } = await supabase
+        const { data: newItem, error: insertError } = await supabase
             .from('cart_items')
             .insert({
                 user_id: userId,
                 product_id: productId,
                 quantity
             })
-            .select()
+            .select('id') // Select only the ID
             .single();
 
-        if (error) {
+        if (insertError) {
             res.status(500);
             throw new Error('Error adding item to cart');
         }
-
-        result = data;
+        updatedOrNewItemId = newItem.id;
     }
 
-    res.status(201).json(result);
+    // Fetch the updated/new cart item with product details to return
+    const { data: resultItem, error: resultError } = await supabase
+        .from('cart_items')
+        .select(`
+            id,
+            quantity,
+            products (*)
+        `)
+        .eq('id', updatedOrNewItemId)
+        .single();
+
+    if (resultError || !resultItem) {
+        console.error("Error fetching result item after add/update:", resultError);
+        // Don't throw here, but maybe log. The operation succeeded, just fetching failed.
+        // We could return a simpler success message or the basic ID.
+        // For now, let's return the ID if fetching fails.
+        res.status(201).json({ id: updatedOrNewItemId, message: "Operation successful, but failed to fetch full item details." });
+    } else {
+        // Map to the expected client structure
+        const responseItem = {
+            id: resultItem.id,
+            product: resultItem.products,
+            quantity: resultItem.quantity
+        };
+        res.status(201).json(responseItem);
+    }
 }));
 
 // Update cart item quantity

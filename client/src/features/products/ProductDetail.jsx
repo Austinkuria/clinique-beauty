@@ -24,7 +24,7 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Import Back icon
-import mockProducts from "../../data/mockProducts";  // Import centralized products
+import { useApi } from "../../api/apiClient"; // Import useApi
 import ReviewSection from "./components/ReviewSection"; // Import ReviewSection
 import ProductCard from "./components/ProductCard"; // Import ProductCard
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'; // Wishlist outlined icon
@@ -57,10 +57,12 @@ function ProductDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { theme, colorValues } = useContext(ThemeContext);
-    const { cartItems, setCartItems } = useCart();
+    const cartContext = useCart(); // Get cart context methods
+    const api = useApi(); // Get API methods
     const [tabValue, setTabValue] = useState(0);
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null); // Add error state
     const [quantity, setQuantity] = useState(1); // State for quantity
     const [isOutOfStock, setIsOutOfStock] = useState(false); // State for stock status
     const [relatedProducts, setRelatedProducts] = useState([]);
@@ -69,49 +71,53 @@ function ProductDetail() {
     const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist(); // Use Wishlist context
 
     useEffect(() => {
-        // Find product by ID from the centralized mock data
-        const foundProduct = mockProducts.find(p => p.id === parseInt(id));
-        console.log("[Effect] Current Product ID:", id);
-        console.log("[Effect] Found Product (Initial):", foundProduct); // Log initial find
+        const fetchProductData = async () => {
+            setLoading(true);
+            setError(null); // Reset error on new fetch
+            try {
+                const fetchedProduct = await api.getProductById(id);
+                console.log("[Effect] Fetched Product:", fetchedProduct);
+                setProduct(fetchedProduct);
 
-        // Simulate API call delay
-        setTimeout(() => {
-            console.log("[Effect Timeout] Setting product state:", foundProduct); // Log before setting state
-            setProduct(foundProduct || null);
-            setLoading(false);
-            // Check stock status once product loads
-            if (foundProduct && foundProduct.stock !== undefined && foundProduct.stock <= 0) {
-                setIsOutOfStock(true);
-                setQuantity(0); // Set quantity to 0 if out of stock initially
-            } else if (foundProduct) {
-                setIsOutOfStock(false);
-                setQuantity(1); // Reset to 1 if in stock
+                // Check stock status
+                if (fetchedProduct && fetchedProduct.stock !== undefined && fetchedProduct.stock <= 0) {
+                    setIsOutOfStock(true);
+                    setQuantity(0);
+                } else if (fetchedProduct) {
+                    setIsOutOfStock(false);
+                    setQuantity(1);
+                }
+
+                // Initialize selected shade
+                if (fetchedProduct?.shades?.length > 0) {
+                    setSelectedShade(fetchedProduct.shades[0]);
+                } else {
+                    setSelectedShade(null);
+                }
+
+                // Fetch related products (using API)
+                if (fetchedProduct?.category) {
+                    const allProducts = await api.getProducts(fetchedProduct.category); // Fetch by category
+                    const related = allProducts
+                        .filter(p => p.id !== fetchedProduct.id) // Exclude current product
+                        .slice(0, 4);
+                    console.log("Related Products Found (API):", related);
+                    setRelatedProducts(related);
+                } else {
+                    setRelatedProducts([]);
+                }
+
+            } catch (err) {
+                console.error("Error fetching product:", err);
+                setError(err.message || 'Failed to load product'); // Set error state
+                setProduct(null); // Ensure product is null on error
+            } finally {
+                setLoading(false);
             }
+        };
 
-            // Initialize selected shade if product has shades
-            if (foundProduct?.shades?.length > 0) {
-                console.log("[Effect Timeout] Product has shades:", foundProduct.shades); // Log shades found
-                setSelectedShade(foundProduct.shades[0]); // Default to the first shade
-            } else {
-                console.log("[Effect Timeout] Product has NO shades or shades array is empty."); // Log if no shades
-                setSelectedShade(null); // Reset if product has no shades
-            }
-
-            // Find related products (same category, different id)
-            if (foundProduct && foundProduct.category) { // Check if product and category exist
-                console.log("Found Product for related search:", foundProduct.name, "Category:", foundProduct.category); // Log found product
-                const related = mockProducts.filter(
-                    p => p.category === foundProduct.category && p.id !== foundProduct.id
-                ).slice(0, 4); // Limit to 4 related products
-                console.log("Related Products Found:", related); // Log the filtered related products
-                setRelatedProducts(related);
-            } else {
-                console.log("Could not find related products. Product found:", !!foundProduct, "Category exists:", !!foundProduct?.category); // Log why related products weren't searched for
-                setRelatedProducts([]); // Ensure it's empty if no category or product
-            }
-
-        }, 500);
-    }, [id]);
+        fetchProductData();
+    }, [id, api]); // Add api as dependency
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
@@ -152,38 +158,22 @@ function ProductDetail() {
         setSelectedShade(shade);
     };
 
-    const addToCart = () => {
-        if (!product) return;
+    // Use CartContext's addToCart function
+    const handleAddToCart = () => {
+        if (!product || quantity < 1 || isOutOfStock) return;
 
-        // Include selected shade in cart item if applicable
-        const itemToAdd = {
+        // Create product object to pass to context, including selected shade
+        const productToAdd = {
             ...product,
-            quantity: quantity,
             ...(selectedShade && { selectedShade: selectedShade }) // Add shade info if selected
         };
 
-        const existingItemIndex = cartItems.findIndex(item =>
-            item.id === product.id &&
-            // Also check if shade matches if the item in cart has a shade
-            (item.selectedShade ? item.selectedShade.name === selectedShade?.name : !selectedShade)
-        );
+        // Call the context function
+        cartContext.addToCart(productToAdd, quantity);
 
-        if (existingItemIndex >= 0) {
-            // Item already exists, update quantity by adding the selected quantity
-            const newCartItems = [...cartItems];
-            newCartItems[existingItemIndex].quantity = (newCartItems[existingItemIndex].quantity || 0) + quantity; // Add selected quantity
-            setCartItems(newCartItems);
-        } else {
-            // Add new item with the selected quantity
-            setCartItems([...cartItems, itemToAdd]);
-        }
-        // Reset quantity only if not out of stock
+        // Reset quantity input after adding
         if (!isOutOfStock) {
             setQuantity(1);
-            // Optionally reset shade selection after adding, or keep it
-            // if (product?.shades?.length > 0) {
-            //     setSelectedShade(product.shades[0]);
-            // }
         }
     };
 
@@ -205,6 +195,19 @@ function ProductDetail() {
         return (
             <Container sx={{ py: 4, minHeight: '60vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <Typography>Loading product details...</Typography>
+            </Container>
+        );
+    }
+
+    // Display error message if fetching failed
+    if (error) {
+        return (
+            <Container sx={{ py: 4, minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                <Typography variant="h5" color="error" sx={{ mb: 2 }}>Error loading product</Typography>
+                <Typography sx={{ mb: 2 }}>{error}</Typography>
+                <Button variant="outlined" onClick={() => navigate('/products')}>
+                    Back to Products
+                </Button>
             </Container>
         );
     }
@@ -476,8 +479,8 @@ function ProductDetail() {
                                     size="large"
                                     fullWidth
                                     startIcon={<ShoppingCartIcon />}
-                                    onClick={addToCart}
-                                    disabled={isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade)} // Disable if shades exist but none selected
+                                    onClick={handleAddToCart} // Use the updated handler
+                                    disabled={isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading} // Also disable if cart context is loading
                                     sx={{
                                         backgroundColor: colorValues.primary,
                                         color: '#ffffff',
@@ -487,13 +490,14 @@ function ProductDetail() {
                                         '&:hover': {
                                             backgroundColor: colorValues.primaryDark,
                                         },
-                                        opacity: (isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade)) ? 0.6 : 1, // Indicate disabled state visually
+                                        opacity: (isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading) ? 0.6 : 1, // Indicate disabled state visually
                                     }}
                                 >
                                     {/* Adjust button text based on state */}
-                                    {isOutOfStock ? 'Out of Stock' :
-                                        (product.shades?.length > 0 && !selectedShade) ? 'Select a Shade' :
-                                            `Add ${quantity} to Cart`}
+                                    {cartContext.loading ? 'Adding...' : // Show loading state from context
+                                        isOutOfStock ? 'Out of Stock' :
+                                            (product.shades?.length > 0 && !selectedShade) ? 'Select a Shade' :
+                                                `Add ${quantity} to Cart`}
                                 </Button>
                             </Box>
                         </Paper>

@@ -17,9 +17,8 @@ CREATE TABLE IF NOT EXISTS products (
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    clerk_id TEXT UNIQUE,
+    clerk_id TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
     name TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'customer',
     created_at TIMESTAMPTZ DEFAULT NOW(),
