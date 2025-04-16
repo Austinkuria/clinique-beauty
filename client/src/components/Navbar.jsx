@@ -38,7 +38,7 @@ function Navbar() {
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const { isSignedIn } = useAuth();
-    const { cartItems } = useCart(); // Fetch cart items from context
+    const { itemCount, loading: cartLoading } = useCart(); // Get itemCount and loading state from CartContext
 
     // Navigation items without the cart and without Profile button
     const navItems = [
@@ -127,7 +127,7 @@ function Navbar() {
                         className={`${colors.navbarTextSecondary} ${colors.textHover}`}
                     >
                         <Badge
-                            badgeContent={cartItems?.length || 0}
+                            badgeContent={cartLoading ? '...' : itemCount}
                             sx={{
                                 '& .MuiBadge-badge': {
                                     backgroundColor: colorValues.primary,
@@ -291,10 +291,10 @@ function Navbar() {
                                     backgroundColor: colorValues.buttonHover,
                                 },
                             }}
-                            aria-label={`Cart with ${cartItems?.length || 0} items`}
+                            aria-label={`Cart with ${itemCount} items`}
                         >
                             <Badge
-                                badgeContent={cartItems?.length || 0}
+                                badgeContent={cartLoading ? '...' : itemCount}
                                 sx={{
                                     '& .MuiBadge-badge': {
                                         backgroundColor: colorValues.primary,
@@ -354,10 +354,10 @@ function Navbar() {
                             component={RouterLink}
                             to="/cart"
                             sx={{ mr: 2, color: colorValues.textPrimary }}
-                            aria-label={`Cart with ${cartItems?.length || 0} items`}
+                            aria-label={`Cart with ${itemCount} items`}
                         >
                             <Badge
-                                badgeContent={cartItems?.length || 0}
+                                badgeContent={cartLoading ? '...' : itemCount}
                                 sx={{
                                     '& .MuiBadge-badge': {
                                         backgroundColor: colorValues.primary,

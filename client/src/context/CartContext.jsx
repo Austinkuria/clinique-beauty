@@ -1,286 +1,154 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { useApi } from '../api/apiClient';
-import toast from 'react-hot-toast'; // Import toast
+import { useApi } from '../api/apiClient'; // Import useApi
+import toast from 'react-hot-toast';
 
-const CartContext = createContext();
+export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-    const [cart, setCart] = useState({ items: [], total: 0 });
-    const [loading, setLoading] = useState(false);
-    const { isSignedIn } = useAuth();
-    const api = useApi();
+    const [cartItems, setCartItems] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [loading, setLoading] = useState(false); // Loading state for cart operations
+    const [error, setError] = useState(null); // Error state
+    const { isSignedIn, isLoaded } = useAuth();
+    const api = useApi(); // Get API methods
 
-    // Fetch cart from the server if user is signed in
+    // Fetch cart when auth state changes (signed in/out)
     useEffect(() => {
-        if (isSignedIn) {
-            fetchCart();
-        } else {
-            // Load cart from localStorage for anonymous users
-            const savedCart = localStorage.getItem('cart');
-            if (savedCart) {
-                setCart(JSON.parse(savedCart));
+        const loadCart = async () => {
+            if (isSignedIn) {
+                setLoading(true);
+                setError(null);
+                try {
+                    const data = await api.getCart();
+                    setCartItems(data.items || []);
+                    setTotal(data.total || 0);
+                } catch (err) {
+                    console.error("Failed to fetch cart:", err);
+                    setError(err.message);
+                    // Optionally clear cart on fetch error when signed in
+                    // setCartItems([]);
+                    // setTotal(0);
+                    toast.error(`Failed to load cart: ${err.message}`);
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                // Handle anonymous cart (e.g., load from localStorage or clear)
+                // For now, let's clear it when signed out
+                setCartItems([]);
+                setTotal(0);
+                setError(null); // Clear error on sign out
             }
+        };
+
+        if (isLoaded) { // Only run when Clerk is ready
+            loadCart();
         }
-    }, [isSignedIn]);
 
-    // Save cart to localStorage for anonymous users
-    useEffect(() => {
-        if (!isSignedIn && cart.items.length > 0) {
-            localStorage.setItem('cart', JSON.stringify(cart));
-        }
-    }, [cart, isSignedIn]);
+    }, [isSignedIn, isLoaded, api]); // Add api as dependency
 
-    const fetchCart = async () => {
-        if (!isSignedIn) return;
-
-        setLoading(true);
-        try {
-            const cartData = await api.getCart();
-            setCart(cartData);
-        } catch (error) {
-            console.error('Error fetching cart:', error);
-            toast.error('Could not load your cart.'); // Toast on fetch error
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const addToCart = async (product, quantity = 1) => {
-        // Ensure product object includes stock
-        if (!product || product.stock === undefined) {
-            console.error('Product data is missing stock information.');
-            toast.error('Cannot add item: Product details incomplete.'); // Toast for incomplete data
+    const addToCart = async (product, quantity) => {
+        if (!isSignedIn) {
+            toast.error("Please sign in to add items to your cart.");
+            // Optionally redirect to login: navigate('/auth/login');
             return;
         }
-
         setLoading(true);
-        const toastId = toast.loading('Adding to cart...'); // Loading toast
-
+        setError(null);
         try {
-            if (isSignedIn) {
-                // Add to server cart for authenticated users
-                // Server-side validation handles stock check
-                await api.addToCart(product.id, quantity);
-                toast.success(`${quantity} ${product.name}(s) added to cart!`, { id: toastId }); // Success toast
-                fetchCart(); // Refresh cart from server
-            } else {
-                // Add to local cart for anonymous users
-                let itemAddedOrUpdated = false; // Flag to check if state changed
-                setCart(prevCart => {
-                    const existingItem = prevCart.items.find(item => item.product.id === product.id);
-                    const availableStock = product.stock;
+            // Use product.id for the API call
+            const addedItem = await api.addToCart(product.id, quantity);
+            // Update state based on the *full cart* returned by GET or the single item returned by POST
+            // Option 1: Refetch the whole cart (simpler, ensures consistency)
+            const data = await api.getCart();
+            setCartItems(data.items || []);
+            setTotal(data.total || 0);
+            toast.success(`${product.name} added to cart!`);
 
-                    if (existingItem) {
-                        const newQuantity = existingItem.quantity + quantity;
-                        // Check stock for existing item update
-                        if (newQuantity > availableStock) {
-                            // console.warn(`Cannot add ${quantity}. Total quantity would exceed stock (${availableStock} available).`);
-                            toast.error(`Only ${availableStock} ${product.name}(s) available.`, { id: toastId }); // Error toast for stock limit
-                            return prevCart; // Return previous cart state without changes
-                        }
+            // Option 2: Update state based on returned item (more complex state logic)
+            // This requires the POST endpoint to return the item in the same format as GET
+            // const existingItemIndex = cartItems.findIndex(item => item.product.id === addedItem.product.id);
+            // if (existingItemIndex > -1) {
+            //     const updatedItems = [...cartItems];
+            //     updatedItems[existingItemIndex] = addedItem;
+            //     setCartItems(updatedItems);
+            // } else {
+            //     setCartItems(prevItems => [...prevItems, addedItem]);
+            // }
+            // // Recalculate total locally or trust total from add response if available
+            // setTotal(newTotal); // Need to calculate or get newTotal
 
-                        // Update quantity if item exists and stock is sufficient
-                        itemAddedOrUpdated = true; // Mark as updated
-                        const updatedItems = prevCart.items.map(item =>
-                            item.product.id === product.id
-                                ? { ...item, quantity: newQuantity }
-                                : item
-                        );
-
-                        return {
-                            items: updatedItems,
-                            total: calculateTotal(updatedItems)
-                        };
-                    } else {
-                        // Check stock for new item addition
-                        if (quantity > availableStock) {
-                            //  console.warn(`Cannot add ${quantity}. Requested quantity exceeds stock (${availableStock} available).`);
-                            toast.error(`Only ${availableStock} ${product.name}(s) available.`, { id: toastId }); // Error toast for stock limit
-                            return prevCart; // Return previous cart state without changes
-                        }
-                        // Add new item if stock is sufficient
-                        itemAddedOrUpdated = true; // Mark as added
-                        const newItems = [
-                            ...prevCart.items,
-                            // Ensure the full product object (including stock) is stored
-                            { product: { ...product }, quantity }
-                        ];
-
-                        return {
-                            items: newItems,
-                            total: calculateTotal(newItems)
-                        };
-                    }
-                });
-                // Show success toast only if an item was actually added/updated
-                if (itemAddedOrUpdated) {
-                    toast.success(`${quantity} ${product.name}(s) added to cart!`, { id: toastId });
-                }
-            }
-        } catch (error) {
-            console.error('Error adding to cart:', error);
-            toast.error(`Failed to add ${product.name} to cart.`, { id: toastId }); // Error toast on catch
+        } catch (err) {
+            console.error("Failed to add to cart:", err);
+            setError(err.message);
+            toast.error(`Failed to add item: ${err.message}`);
         } finally {
             setLoading(false);
-            // Ensure loading toast is dismissed if no other toast replaced it
-            if (!toast.success && !toast.error) {
-                 toast.dismiss(toastId);
-            }
         }
     };
 
-    const updateQuantity = async (itemId, quantity) => {
+    const updateCartItem = async (itemId, quantity) => {
+        if (!isSignedIn) return; // Should not happen if item exists, but good check
         setLoading(true);
-        const toastId = toast.loading('Updating quantity...'); // Loading toast
-
+        setError(null);
         try {
-            if (isSignedIn) {
-                // Update server cart for authenticated users
-                // Server-side validation handles stock check
-                await api.updateCartItem(itemId, quantity);
-                toast.success('Cart updated!', { id: toastId }); // Success toast
-                fetchCart(); // Refresh cart from server
-            } else {
-                // Update local cart for anonymous users
-                let quantityChanged = false; // Flag to check if state changed
-                setCart(prevCart => {
-                    const itemToUpdate = prevCart.items.find(item => item.product.id === itemId);
-                    if (!itemToUpdate) {
-                        toast.error('Item not found in cart.', { id: toastId }); // Error if item missing
-                        return prevCart; // Item not found
-                    }
-
-                    const availableStock = itemToUpdate.product.stock;
-
-                    // Validate quantity against stock and minimum value
-                    let validatedQuantity = quantity;
-                    if (validatedQuantity < 1) {
-                        validatedQuantity = 1;
-                    }
-                    if (availableStock !== undefined && validatedQuantity > availableStock) {
-                        // console.warn(`Cannot set quantity above available stock (${availableStock})`);
-                        toast.error(`Only ${availableStock} ${itemToUpdate.product.name}(s) available.`, { id: toastId }); // Error toast for stock limit
-                        validatedQuantity = availableStock; // Cap at max stock
-                    }
-
-                    // Only update state if the quantity actually changes
-                    if (itemToUpdate.quantity !== validatedQuantity) {
-                        quantityChanged = true;
-                        const updatedItems = prevCart.items.map(item =>
-                            item.product.id === itemId
-                                ? { ...item, quantity: validatedQuantity }
-                                : item
-                        );
-
-                        return {
-                            items: updatedItems,
-                            total: calculateTotal(updatedItems)
-                        };
-                    } else {
-                        // If quantity didn't change (e.g., tried to exceed stock), dismiss loading toast
-                        toast.dismiss(toastId);
-                        return prevCart; // No change needed
-                    }
-                });
-                // Show success toast only if quantity actually changed
-                if (quantityChanged) {
-                     toast.success('Quantity updated!', { id: toastId });
-                }
-            }
-        } catch (error) {
-            console.error('Error updating cart:', error);
-            toast.error('Failed to update quantity.', { id: toastId }); // Error toast on catch
+            await api.updateCartItem(itemId, quantity);
+            // Refetch cart to ensure consistency
+            const data = await api.getCart();
+            setCartItems(data.items || []);
+            setTotal(data.total || 0);
+            toast.success("Cart updated.");
+        } catch (err) {
+            console.error("Failed to update cart item:", err);
+            setError(err.message);
+            toast.error(`Update failed: ${err.message}`);
         } finally {
             setLoading(false);
-             // Ensure loading toast is dismissed if no other toast replaced it
-             if (!toast.success && !toast.error) {
-                 toast.dismiss(toastId);
-             }
         }
     };
 
-    const removeItem = async (itemId) => {
+    const removeFromCart = async (itemId) => {
+        if (!isSignedIn) return;
         setLoading(true);
-        const toastId = toast.loading('Removing item...'); // Loading toast
-
-        // Find item name for toast message (needed for anonymous cart)
-        const itemToRemove = cart.items.find(item => (isSignedIn ? item.id === itemId : item.product.id === itemId));
-        const itemName = itemToRemove?.product?.name || 'Item';
-
-
+        setError(null);
         try {
-            if (isSignedIn) {
-                // Remove from server cart for authenticated users
-                await api.removeFromCart(itemId);
-                toast.success(`${itemName} removed from cart.`, { id: toastId }); // Success toast
-                fetchCart(); // Refresh cart from server
-            } else {
-                // Remove from local cart for anonymous users
-                let itemRemoved = false; // Flag
-                setCart(prevCart => {
-                    const initialLength = prevCart.items.length;
-                    const updatedItems = prevCart.items.filter(item => item.product.id !== itemId);
-                    if (updatedItems.length < initialLength) {
-                        itemRemoved = true; // Mark as removed
-                    }
-                    return {
-                        items: updatedItems,
-                        total: calculateTotal(updatedItems)
-                    };
-                });
-                 if (itemRemoved) {
-                    toast.success(`${itemName} removed from cart.`, { id: toastId }); // Success toast
-                 } else {
-                    // If item wasn't found/removed, dismiss loading
-                    toast.dismiss(toastId);
-                 }
-            }
-        } catch (error) {
-            console.error('Error removing from cart:', error);
-            toast.error(`Failed to remove ${itemName}.`, { id: toastId }); // Error toast on catch
+            await api.removeFromCart(itemId);
+            // Refetch cart
+            const data = await api.getCart();
+            setCartItems(data.items || []);
+            setTotal(data.total || 0);
+            toast.success("Item removed from cart.");
+        } catch (err) {
+            console.error("Failed to remove from cart:", err);
+            setError(err.message);
+            toast.error(`Removal failed: ${err.message}`);
         } finally {
             setLoading(false);
-             // Ensure loading toast is dismissed if no other toast replaced it
-             if (!toast.success && !toast.error) {
-                 toast.dismiss(toastId);
-             }
         }
     };
 
-    const calculateTotal = (items) => {
-        return items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-    };
-
-    const clearCart = async () => { // Make async if backend clear is needed
-        const toastId = toast.loading('Clearing cart...');
-        try {
-            // Optional: Add backend call to clear cart if necessary for signed-in users
-            // if (isSignedIn) { await api.clearServerCart(); }
-
-            setCart({ items: [], total: 0 });
-            if (!isSignedIn) {
-                localStorage.removeItem('cart');
-            }
-            toast.success('Cart cleared.', { id: toastId });
-        } catch (error) {
-            console.error('Error clearing cart:', error);
-            toast.error('Failed to clear cart.', { id: toastId });
-        }
-    };
+    // Optional: Function to clear the entire cart (implement API endpoint if needed)
+    // const clearCart = async () => { ... };
 
     return (
         <CartContext.Provider value={{
-            cart,
-            loading,
+            cartItems,
+            total,
+            loading, // Expose loading state
+            error,   // Expose error state
             addToCart,
-            updateQuantity,
-            removeItem,
-            clearCart
+            updateCartItem,
+            removeFromCart,
+            // clearCart, // Expose if implemented
+            itemCount: cartItems.reduce((sum, item) => sum + item.quantity, 0) // Calculate item count
         }}>
             {children}
         </CartContext.Provider>
     );
 };
 
-export const useCart = () => useContext(CartContext);
+// Custom hook to use the Cart context
+export const useCart = () => {
+    return useContext(CartContext);
+};
