@@ -2,18 +2,13 @@ import jwt from 'jsonwebtoken';
 import asyncHandler from '../utils/asyncHandler.js';
 import { supabase } from '../config/db.js';
 
-// JWKS URL for Clerk - Consider fetching dynamically or using env var for flexibility
-// You can get this from Clerk Dashboard -> API Keys -> Advanced -> JWT Public Key
-// Or use process.env.CLERK_JWT_KEY if set
-const CLERK_PUBLIC_KEY = process.env.CLERK_JWT_KEY || `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0/zfo+c6xM3XsLB+D51T
-YyyynDJauVrxEWK2NPMgQSY7zffIf/bgViZtO62HGEriZ57TDj27D7Y4A3HAUqiY
-nXXp0JLhhb1yvzJESz0rQl27aeREt9jFZCvHa1bGkN915zzyLfZtWWQXtvXp0nlN
-QZN82v6PnDLQmTl/tVOtpgG3d5miA9YWGYvUBa3wpQnP0mvKRSyvGz2bzceWNDpQ
-TL/7nQG0YJRH6skK/SQEilGIHUpt8JqFURh7pvmz/pxCz0cCieb81JO0ae+Y2M7D
-Qob8YtbWzzHeQrr+fQoVq5GdHhII8dyV1kViUnTqV6r46iIkActS9GAA8u0rUx9Z
-9QIDAQAB
------END PUBLIC KEY-----`;
+// Get the Clerk JWT Public Key from environment variables.
+// Ensure CLERK_JWT_KEY is set in your server's environment.
+// It should be the full key including -----BEGIN PUBLIC KEY----- and -----END PUBLIC KEY-----.
+const CLERK_PUBLIC_KEY = process.env.CLERK_JWT_KEY;
+
+// Note: autoRefreshToken is a setting for client-side libraries (like supabase-js or @clerk/clerk-react)
+// to manage session tokens. This server-side middleware only *verifies* the token provided by the client.
 
 export const clerkMiddleware = asyncHandler(async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -23,14 +18,15 @@ export const clerkMiddleware = asyncHandler(async (req, res, next) => {
         throw new Error('No token provided');
     }
 
+    // Check if the public key is loaded from the environment
     if (!CLERK_PUBLIC_KEY) {
-        console.error("FATAL ERROR: CLERK_JWT_KEY environment variable or hardcoded public key is missing.");
+        console.error("FATAL ERROR: CLERK_JWT_KEY environment variable is missing or empty.");
         res.status(500);
         throw new Error('Server configuration error: Missing JWT verification key.');
     }
 
     try {
-        // Verify the Clerk JWT using the public key
+        // Verify the Clerk JWT using the public key from the environment
         const decoded = jwt.verify(token, CLERK_PUBLIC_KEY, {
             algorithms: ['RS256']
         });
