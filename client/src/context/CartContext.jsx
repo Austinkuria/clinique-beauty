@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useApi } from '../api/apiClient'; // Import useApi
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 export const CartContext = createContext();
 
@@ -12,6 +13,7 @@ export const CartProvider = ({ children }) => {
     const [error, setError] = useState(null); // Error state
     const { isSignedIn, isLoaded } = useAuth();
     const api = useApi(); // Get API methods
+    const navigate = useNavigate(); // Get navigate function
 
     // Fetch cart when auth state changes (signed in/out)
     useEffect(() => {
@@ -46,12 +48,12 @@ export const CartProvider = ({ children }) => {
             loadCart();
         }
 
-    }, [isSignedIn, isLoaded, api]); // Add api as dependency
+    }, [isSignedIn, isLoaded]); // Only re-run if auth status changes
 
     const addToCart = async (product, quantity) => {
         if (!isSignedIn) {
             toast.error("Please sign in to add items to your cart.");
-            // Optionally redirect to login: navigate('/auth/login');
+            navigate('/auth/login'); // Correctly navigate to login
             return;
         }
         setLoading(true);

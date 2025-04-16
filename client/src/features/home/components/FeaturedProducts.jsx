@@ -12,9 +12,9 @@ import {
     Box
 } from '@mui/material';
 import { useCart } from '../../../context/CartContext';
-import moisturizer from '../../../assets/images/products/moisturizer.webp';
-import cleanser from '../../../assets/images/products/cleanser.webp';
-import serum from '../../../assets/images/products/serum.webp';
+import moisturizer from '../../../assets/images/products/skincare/moisturizer.webp';
+import cleanser from '../../../assets/images/products/skincare/cleanser.webp';
+import serum from '../../../assets/images/products/skincare/serum.webp';
 
 function FeaturedProducts() {
     const { cartItems, setCartItems } = useCart();

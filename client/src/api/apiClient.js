@@ -1,101 +1,74 @@
 import { useAuth } from '@clerk/clerk-react';
+import { useCallback } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL;
+// Base URL for your Supabase Edge Functions - Use import.meta.env for Vite
+const API_BASE_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'https://zdbfjwienzjdjpawcnuc.supabase.co/functions/v1';
 
-// Helper function to handle API responses and errors
-const handleResponse = async (response) => {
-    if (!response.ok) {
-        let errorMessage = `HTTP error! status: ${response.status}`;
-        try {
-            // Try to parse error message from server response body
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-            // Ignore if response body is not JSON or empty
-        }
-        console.error("API Error:", errorMessage, response); // Log the full error
-        throw new Error(errorMessage); // Throw error with server message if available
-    }
-    // Handle cases where response might be empty (e.g., DELETE)
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.indexOf("application/json") !== -1) {
-        return response.json();
-    }
-    return {}; // Return empty object for non-JSON or empty responses
-};
-
-
-// Create a custom hook that returns API methods with auth token
 export const useApi = () => {
     const { getToken } = useAuth();
 
-    const getAuthHeaders = async () => {
-        const token = await getToken();
-        return {
+    const makeRequest = useCallback(async (endpoint, method = 'GET', body = null) => {
+        const token = await getToken({ template: 'supabase' }); // Fetch Supabase token from Clerk
+
+        if (!token) {
+            throw new Error("Authentication token not available.");
+        }
+
+        const headers = {
             'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : '',
+            'Authorization': `Bearer ${token}`, // Ensure Bearer token is set
+            // Remove apikey if not explicitly needed by function (Bearer token is usually sufficient)
+            // 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY // Use import.meta.env if needed
         };
-    };
 
-    // Products API
-    const getProducts = async (category = '') => { // Add optional category filter
-        const url = category ? `${API_URL}/products?category=${encodeURIComponent(category)}` : `${API_URL}/products`;
-        const response = await fetch(url);
-        return handleResponse(response);
-    };
+        const config = {
+            method: method,
+            headers: headers,
+        };
 
-    const getProductById = async (id) => {
-        const response = await fetch(`${API_URL}/products/${id}`);
-        return handleResponse(response);
-    };
+        if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+            config.body = JSON.stringify(body);
+        }
 
-    // Removed getProductsByCategory as getProducts now handles it
+        const response = await fetch(`${API_BASE_URL}/${endpoint}`, config);
 
-    // Cart API - requires authentication
-    const getCart = async () => {
-        const headers = await getAuthHeaders();
-        const response = await fetch(`${API_URL}/cart`, { headers });
-        return handleResponse(response);
-    };
+        // Check if the response is ok (status in the range 200-299)
+        if (!response.ok) {
+            let errorData;
+            try {
+                // Try to parse error response from the function
+                errorData = await response.json();
+            } catch (e) {
+                // If parsing fails, use status text
+                errorData = { message: response.statusText };
+            }
+            // Throw an error with details from the response or status text
+            throw new Error(errorData?.message || `Request failed with status ${response.status}`);
+        }
 
-    const addToCart = async (productId, quantity) => {
-        const headers = await getAuthHeaders();
-        const response = await fetch(`${API_URL}/cart`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ productId, quantity }),
-        });
-        return handleResponse(response); // Returns the added/updated item
-    };
+        // Handle cases where the response might be empty (e.g., DELETE, some PUTs)
+        const contentType = response.headers.get("content-type");
+        if (response.status === 204 || !contentType || !contentType.includes("application/json")) {
+            return null; // Or return { success: true } or similar if appropriate
+        }
 
-    const updateCartItem = async (itemId, quantity) => {
-        const headers = await getAuthHeaders();
-        const response = await fetch(`${API_URL}/cart/${itemId}`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify({ quantity }),
-        });
-        return handleResponse(response);
-    };
+        // If response is ok and has JSON content, parse and return it
+        return response.json();
 
-    const removeFromCart = async (itemId) => {
-        const headers = await getAuthHeaders();
-        const response = await fetch(`${API_URL}/cart/${itemId}`, {
-            method: 'DELETE',
-            headers,
-        });
-        return handleResponse(response); // Returns { message: '...' } on success
-    };
+    }, [getToken]);
 
-    // Add other API calls (Orders, Wishlist if server-side, etc.) here
+    // Define specific API methods using makeRequest
+    const getCart = useCallback(() => makeRequest('api/cart', 'GET'), [makeRequest]);
+    const addToCart = useCallback((productId, quantity) => makeRequest('api/cart', 'POST', { productId, quantity }), [makeRequest]);
+    const updateCartItem = useCallback((itemId, quantity) => makeRequest(`api/cart/${itemId}`, 'PUT', { quantity }), [makeRequest]);
+    const removeFromCart = useCallback((itemId) => makeRequest(`api/cart/${itemId}`, 'DELETE'), [makeRequest]);
+    // Add other API methods (getProducts, getProductById, createOrder, etc.) here
 
     return {
-        getProducts,
-        getProductById,
-        // getProductsByCategory, // Removed
         getCart,
         addToCart,
         updateCartItem,
         removeFromCart,
+        // Export other methods
     };
 };

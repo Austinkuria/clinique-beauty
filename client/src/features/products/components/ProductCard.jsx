@@ -4,8 +4,8 @@ import { Box, Typography, Button, Card, CardMedia, CardContent, CardActions, Rat
 import { ThemeContext } from '../../../context/ThemeContext';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useCart } from '../../../context/CartContext';
-// Import default image
-import defaultProductImage from '../../../assets/images/products/cleanser.webp';
+// Update path to use the general placeholder image
+import defaultProductImage from '../../../assets/images/placeholder.webp';
 
 function ProductCard({ product }) {
     const { theme, colorValues } = useContext(ThemeContext);

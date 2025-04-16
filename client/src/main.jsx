@@ -1,13 +1,15 @@
-import React, { useContext } from 'react'; // Add useContext
+import React, { useContext } from 'react';
 import ReactDOM from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
-import { ThemeProvider, ThemeContext } from './context/ThemeContext.jsx'; // Import ThemeContext
-import { CartProvider } from './context/CartContext.jsx';
-import { WishlistProvider } from './context/WishlistContext.jsx';
-import Routes from './routes';
+import { ThemeProvider, ThemeContext } from './context/ThemeContext.jsx';
+// Remove CartProvider and WishlistProvider imports from here
+// import { CartProvider } from './context/CartContext.jsx';
+// import { WishlistProvider } from './context/WishlistContext.jsx';
+import { router } from './routes';
 import ErrorBoundary from './components/ErrorBoundary';
 import ThemedToaster from './components/ThemedToaster.jsx';
 import './index.css';
+import { RouterProvider } from 'react-router-dom';
 
 // Clerk Publishable Key
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -84,12 +86,11 @@ function AppCore() {
             publishableKey={publishableKey}
             appearance={clerkAppearance} // Pass the dynamic appearance object
         >
-            <CartProvider>
-                <WishlistProvider>
-                    <Routes />
-                    <ThemedToaster />
-                </WishlistProvider>
-            </CartProvider>
+            {/* Remove CartProvider and WishlistProvider from here */}
+            {/* Render RouterProvider directly */}
+            <RouterProvider router={router} />
+            <ThemedToaster />
+            {/* Remove CartProvider and WishlistProvider from here */}
         </ClerkProvider>
     );
 }

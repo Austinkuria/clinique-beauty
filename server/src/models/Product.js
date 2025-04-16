@@ -18,7 +18,7 @@ const ProductTable = {
         notes: 'jsonb',                        // Added notes
         palettetheme: 'text',                  // Changed to lowercase 'palettetheme'
         created_at: 'timestamptz default now()',
-        updated_at: 'timestamptz default now(),
+        updated_at: 'timestamptz default now()',
     }
 };
 

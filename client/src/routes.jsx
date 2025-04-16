@@ -17,7 +17,8 @@ const Login = React.lazy(() => import('./features/auth/Login.jsx'));
 const Register = React.lazy(() => import('./features/auth/Register.jsx'));
 const ClerkVerification = React.lazy(() => import('./features/auth/ClerkVerification.jsx'));
 
-const router = createBrowserRouter([
+// Export the router instance directly
+export const router = createBrowserRouter([
     {
         path: '/',
         element: <App />,
@@ -71,9 +72,3 @@ const router = createBrowserRouter([
         ]
     }
 ]);
-
-export default function Routes() {
-    return (
-        <RouterProvider router={router} />
-    );
-}
