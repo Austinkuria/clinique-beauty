@@ -11,8 +11,14 @@ const ProductTable = {
         description: 'text not null',
         category: 'text not null',
         stock: 'integer not null default 0',
+        rating: 'numeric default 0',          // Added rating
+        benefits: 'jsonb',                     // Added benefits
+        ingredients: 'jsonb',                  // Added ingredients
+        shades: 'jsonb',                       // Added shades
+        notes: 'jsonb',                        // Added notes
+        palettetheme: 'text',                  // Changed to lowercase 'palettetheme'
         created_at: 'timestamptz default now()',
-        updated_at: 'timestamptz default now()'
+        updated_at: 'timestamptz default now(),
     }
 };
 

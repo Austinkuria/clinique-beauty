@@ -10,6 +10,12 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT NOT NULL,
     category TEXT NOT NULL,
     stock INTEGER NOT NULL DEFAULT 0,
+    rating NUMERIC DEFAULT 0,          -- Added rating column
+    benefits JSONB,                     -- Added benefits column (use TEXT[] if it's just a list of strings)
+    ingredients JSONB,                  -- Added ingredients column (use TEXT[] if it's just a list of strings)
+    shades JSONB,                       -- Added shades column
+    notes JSONB,                        -- Added notes column (use TEXT[] if it's just a list of strings)
+    paletteTheme TEXT,                  -- Added paletteTheme column
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
