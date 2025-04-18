@@ -3,9 +3,19 @@ import { supabase } from '../config/db.js';
 import { validateProduct } from '../models/Product.js';
 
 export const getProducts = asyncHandler(async (req, res) => {
-    const { data, error } = await supabase
-        .from('products')
-        .select('*');
+    // Check if category filter was provided in query params
+    const { category } = req.query;
+
+    // Build the query
+    let query = supabase.from('products').select('*');
+
+    // Add category filter if provided
+    if (category) {
+        query = query.eq('category', category);
+    }
+
+    // Execute the query
+    const { data, error } = await query;
 
     if (error) {
         res.status(500);

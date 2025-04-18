@@ -8,18 +8,22 @@ export const useApi = () => {
     const { getToken } = useAuth();
 
     const makeRequest = useCallback(async (endpoint, method = 'GET', body = null) => {
-        const token = await getToken({ template: 'supabase' }); // Fetch Supabase token from Clerk
-
-        if (!token) {
-            throw new Error("Authentication token not available.");
-        }
+        const token = await getToken(); // Attempt to get token
 
         const headers = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`, // Ensure Bearer token is set
-            // Remove apikey if not explicitly needed by function (Bearer token is usually sufficient)
-            // 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY // Use import.meta.env if needed
         };
+
+        // Only add Authorization header if a token exists
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        } else if (method !== 'GET') {
+            // Optionally, throw error if trying non-GET requests without a token
+            // Or handle based on specific endpoint requirements if some POST/PUT are public
+            console.warn(`Attempted ${method} request to ${endpoint} without authentication token.`);
+            // Depending on your app's logic, you might want to throw an error here for non-GET:
+            // throw new Error('Authentication required for this action.');
+        }
 
         const config = {
             method: method,
@@ -62,13 +66,24 @@ export const useApi = () => {
     const addToCart = useCallback((productId, quantity) => makeRequest('api/cart', 'POST', { productId, quantity }), [makeRequest]);
     const updateCartItem = useCallback((itemId, quantity) => makeRequest(`api/cart/${itemId}`, 'PUT', { quantity }), [makeRequest]);
     const removeFromCart = useCallback((itemId) => makeRequest(`api/cart/${itemId}`, 'DELETE'), [makeRequest]);
-    // Add other API methods (getProducts, getProductById, createOrder, etc.) here
+
+    // Add missing product methods
+    const getProducts = useCallback((category) => {
+        const endpoint = category
+            ? `api/products?category=${encodeURIComponent(category)}`
+            : 'api/products';
+        return makeRequest(endpoint, 'GET');
+    }, [makeRequest]);
+
+    const getProductById = useCallback((id) => makeRequest(`api/products/${id}`, 'GET'), [makeRequest]);
 
     return {
         getCart,
         addToCart,
         updateCartItem,
         removeFromCart,
+        getProducts,      // Export the new method
+        getProductById,   // Export the new method
         // Export other methods
     };
 };
