@@ -18,10 +18,12 @@ function Skincare() {
             try {
                 // Fetch products specifically for the 'Skincare' category
                 const data = await api.getProducts('Skincare');
-                setProducts(data);
+                // Ensure data is an array before setting state
+                setProducts(Array.isArray(data) ? data : []);
             } catch (err) {
                 console.error("Error fetching skincare products:", err);
                 setError(err.message || 'Failed to load products.');
+                setProducts([]); // Also set to empty array on error
             } finally {
                 setLoading(false);
             }
@@ -51,6 +53,7 @@ function Skincare() {
 
                 {!loading && !error && (
                     <Grid container spacing={3}>
+                        {/* Now products is guaranteed to be an array */}
                         {products.length > 0 ? (
                             products.map((product) => (
                                 <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>

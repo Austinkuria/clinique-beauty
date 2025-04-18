@@ -1,19 +1,24 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { useApi } from '../api/apiClient'; // Import useApi
+import { useAuth, useUser } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom'; // Keep useNavigate
 import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useApi } from '../api/apiClient';
 
-export const CartContext = createContext();
+const CartContext = createContext();
+
+export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
     const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(false); // Loading state for cart operations
-    const [error, setError] = useState(null); // Error state
-    const { isSignedIn, isLoaded } = useAuth();
-    const api = useApi(); // Get API methods
-    const navigate = useNavigate(); // Get navigate function
+    const [loading, setLoading] = useState(false); // Initialize loading state
+    const [error, setError] = useState(null);
+    const { isSignedIn, isLoaded } = useUser(); // Use useUser for auth status
+    const api = useApi();
+    const navigate = useNavigate(); // Keep useNavigate here
+
+    // Calculate itemCount based on cartItems
+    const itemCount = cartItems.reduce((count, item) => count + (item.quantity || 0), 0);
 
     // Fetch cart when auth state changes (signed in/out)
     useEffect(() => {
@@ -130,27 +135,30 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // Optional: Function to clear the entire cart (implement API endpoint if needed)
-    // const clearCart = async () => { ... };
+    const clearCart = () => {
+        // Implement logic to clear cart (e.g., call API endpoint or just clear state)
+        setCartItems([]);
+        setTotal(0);
+        // Optionally call an API endpoint if needed:
+        // try { await api.clearCart(); } catch(err) { ... }
+        toast.success("Cart cleared");
+    };
 
     return (
         <CartContext.Provider value={{
             cartItems,
+            setCartItems, // Keep if needed directly, but prefer specific functions
             total,
-            loading, // Expose loading state
-            error,   // Expose error state
+            itemCount, // Ensure itemCount is always provided
+            loading,
+            error,
             addToCart,
-            updateCartItem,
-            removeFromCart,
-            // clearCart, // Expose if implemented
-            itemCount: cartItems.reduce((sum, item) => sum + item.quantity, 0) // Calculate item count
+            updateCartItem, // Add update function
+            removeFromCart, // Add remove function
+            clearCart, // Add clear function
+            // Add other cart-related functions or state as needed
         }}>
             {children}
         </CartContext.Provider>
     );
-};
-
-// Custom hook to use the Cart context
-export const useCart = () => {
-    return useContext(CartContext);
 };

@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import ReactDOM from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
 import { ThemeProvider, ThemeContext } from './context/ThemeContext.jsx';
-// Remove CartProvider and WishlistProvider imports from here
+// Remove CartProvider and WishlistProvider imports again
 // import { CartProvider } from './context/CartContext.jsx';
 // import { WishlistProvider } from './context/WishlistContext.jsx';
 import { router } from './routes';
@@ -86,11 +86,9 @@ function AppCore() {
             publishableKey={publishableKey}
             appearance={clerkAppearance} // Pass the dynamic appearance object
         >
-            {/* Remove CartProvider and WishlistProvider from here */}
-            {/* Render RouterProvider directly */}
+            {/* Render RouterProvider directly, without Cart/Wishlist Providers here */}
             <RouterProvider router={router} />
             <ThemedToaster />
-            {/* Remove CartProvider and WishlistProvider from here */}
         </ClerkProvider>
     );
 }
@@ -99,7 +97,6 @@ function AppCore() {
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <ErrorBoundary>
-            {/* ThemeProvider now wraps the component that uses its context */}
             <ThemeProvider>
                 <AppCore />
             </ThemeProvider>
