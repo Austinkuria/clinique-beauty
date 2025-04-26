@@ -8,7 +8,7 @@ const mockProducts = [
         price: 29.99,
         image: '/images/skincare/moisturizer.jpg',
         rating: 4.5,
-        category: 'Moisturizers',
+        category: 'Skincare', // Changed from 'Moisturizers'
         stock: 50, // Added stock
         description: 'A lightweight, oil-free formula that delivers 24-hour hydration, leaving skin smooth and supple.',
         benefits: ['Oil-free formula', '24-hour hydration', 'Suitable for all skin types'],
@@ -20,7 +20,7 @@ const mockProducts = [
         price: 19.99,
         image: '/images/skincare/cleanser.jpg',
         rating: 4.2,
-        category: 'Cleansers',
+        category: 'Skincare', // Changed from 'Cleansers'
         stock: 35, // Added stock
         description: 'Gently removes makeup, dirt, and impurities without stripping skin of essential moisture.',
         benefits: ['Gentle formula', 'Removes makeup and impurities', 'pH balanced'],
@@ -32,7 +32,7 @@ const mockProducts = [
         price: 24.99,
         image: '/images/skincare/sunscreen.jpg',
         rating: 4.7,
-        category: 'Sunscreens',
+        category: 'Skincare', // Changed from 'Sunscreens'
         stock: 40, // Added stock
         description: 'Broad spectrum SPF 50 protection against harmful UVA/UVB rays in a lightweight, non-greasy formula.',
         benefits: ['SPF 50 Protection', 'Water-resistant', 'Non-comedogenic'],
@@ -44,7 +44,7 @@ const mockProducts = [
         price: 49.99,
         image: '/images/skincare/serum.jpg',
         rating: 4.8,
-        category: 'Serums',
+        category: 'Skincare', // Changed from 'Serums'
         stock: 25, // Added stock
         description: 'Targets fine lines and wrinkles with advanced peptides and antioxidants for visibly younger-looking skin.',
         benefits: ['Reduces fine lines', 'Improves skin elasticity', 'Brightens complexion'],
