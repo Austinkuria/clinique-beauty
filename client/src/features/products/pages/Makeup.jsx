@@ -1,30 +1,60 @@
-import React, { useState, useContext } from 'react';
-import { Container, Typography, Grid, Box, Paper } from '@mui/material';
+import React, { useState, useContext, useEffect } from 'react'; // Added useEffect
+import { Container, Typography, Grid, Box, Paper, CircularProgress, Alert } from '@mui/material'; // Added CircularProgress, Alert
 import FilterBar from '../components/FilterBar';
 import ProductCard from '../components/ProductCard';
-import ReviewSection from '../components/ReviewSection';
-import { useCart } from '../../../context/CartContext';
+// Remove ReviewSection import if not used on this page specifically
+// import ReviewSection from '../components/ReviewSection';
+import { useCart } from '../../../context/CartContext'; // Keep if ProductCard uses it, otherwise remove
 import { ThemeContext } from '../../../context/ThemeContext';
+import { useApi } from '../../../api/apiClient'; // Import useApi
 
-const mockProducts = [
-    { id: 5, name: 'Matte Lipstick', price: 15.99, image: '/images/makeup/lipstick.jpg', rating: 4.3, category: 'Lipstick' },
-    { id: 6, name: 'Liquid Foundation', price: 29.99, image: '/images/makeup/foundation.jpg', rating: 4.6, category: 'Foundation' },
-    { id: 7, name: 'Mascara', price: 12.99, image: '/images/makeup/mascara.jpg', rating: 4.4, category: 'Mascara' },
-    { id: 8, name: 'Eyeshadow Palette', price: 39.99, image: '/images/makeup/eyeshadow.jpg', rating: 4.7, category: 'Eyeshadow' },
-];
+// Remove the hardcoded mockProducts array
+// const mockProducts = [ ... ];
 
 function Makeup() {
     const { theme, colorValues } = useContext(ThemeContext);
+    const api = useApi(); // Get API methods
+    const [products, setProducts] = useState([]); // State for fetched products
+    const [loading, setLoading] = useState(true); // Loading state
+    const [error, setError] = useState(null); // Error state
     const [filters, setFilters] = useState({ category: 'All', sort: 'default' });
 
-    const filteredProducts = mockProducts
-        .filter((product) => filters.category === 'All' || product.category === filters.category)
+    useEffect(() => {
+        const fetchMakeupProducts = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // Fetch products specifically for the 'Makeup' category
+                // Ensure 'Makeup' matches the category value in your Supabase table
+                const data = await api.getProducts('Makeup');
+                setProducts(Array.isArray(data) ? data : []);
+            } catch (err) {
+                console.error("Error fetching makeup products:", err);
+                setError(err.message || 'Failed to load products.');
+                setProducts([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMakeupProducts();
+    }, []); // Empty dependency array to run once on mount
+
+    // Apply filtering and sorting to the fetched products state
+    const filteredProducts = products
+        .filter((product) => filters.category === 'All' || product.category === filters.category) // Note: This filters by sub-category if available in data, might need adjustment based on Supabase data structure
         .sort((a, b) => {
             if (filters.sort === 'price-low') return a.price - b.price;
             if (filters.sort === 'price-high') return b.price - a.price;
             if (filters.sort === 'rating') return b.rating - a.rating;
             return 0;
         });
+
+    // Extract unique sub-categories from fetched products for the filter bar
+    // This assumes your Supabase 'Makeup' products might have more specific categories like 'Lipstick', 'Foundation' etc.
+    // If all makeup products just have category 'Makeup', adjust FilterBar categories prop accordingly.
+    const makeupSubCategories = ['All', ...new Set(products.map(p => p.category))];
+
 
     return (
         <Box
@@ -64,45 +94,60 @@ function Makeup() {
                     }}
                 >
                     <FilterBar
-                        categories={['All', 'Lipstick', 'Foundation', 'Mascara', 'Eyeshadow']}
+                        // Use dynamic categories from fetched data or define static ones if needed
+                        categories={makeupSubCategories.length > 1 ? makeupSubCategories : ['All', 'Makeup']} // Adjust as needed
                         onFilterChange={setFilters}
                         currentFilters={filters}
                     />
                 </Paper>
 
-                <Grid container spacing={3}>
-                    {filteredProducts.map((product) => (
-                        <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                            <Paper
-                                elevation={theme === 'dark' ? 3 : 1}
-                                sx={{
-                                    backgroundColor: colorValues.bgPaper,
-                                    borderRadius: 2,
-                                    height: '100%',
-                                    transition: 'transform 0.2s, box-shadow 0.2s',
-                                    '&:hover': {
-                                        transform: 'translateY(-4px)',
-                                        boxShadow: theme === 'dark' ? 8 : 4
-                                    }
-                                }}
-                            >
-                                <ProductCard product={product} />
-                            </Paper>
-                        </Grid>
-                    ))}
-                </Grid>
+                {/* Loading and Error Handling */}
+                {loading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
+                        <CircularProgress />
+                    </Box>
+                )}
+                {error && (
+                    <Alert severity="error" sx={{ my: 3 }}>
+                        {error}
+                    </Alert>
+                )}
 
-                <Paper
-                    elevation={theme === 'dark' ? 3 : 1}
-                    sx={{
-                        padding: 3,
-                        marginTop: 6,
-                        backgroundColor: colorValues.bgPaper,
-                        borderRadius: 2
-                    }}
-                >
-                    <ReviewSection />
-                </Paper>
+                {/* Product Grid */}
+                {!loading && !error && (
+                    <Grid container spacing={3}>
+                        {filteredProducts.length > 0 ? (
+                            filteredProducts.map((product) => (
+                                <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+                                    <Paper
+                                        elevation={theme === 'dark' ? 3 : 1}
+                                        sx={{
+                                            backgroundColor: colorValues.bgPaper,
+                                            borderRadius: 2,
+                                            height: '100%',
+                                            transition: 'transform 0.2s, box-shadow 0.2s',
+                                            '&:hover': {
+                                                transform: 'translateY(-4px)',
+                                                boxShadow: theme === 'dark' ? 8 : 4
+                                            }
+                                        }}
+                                    >
+                                        <ProductCard product={product} />
+                                    </Paper>
+                                </Grid>
+                            ))
+                        ) : (
+                            <Grid item xs={12}>
+                                <Typography sx={{ textAlign: 'center', color: colorValues.textSecondary, mt: 4 }}>
+                                    No makeup products found.
+                                </Typography>
+                            </Grid>
+                        )}
+                    </Grid>
+                )}
+
+                {/* Remove ReviewSection if not needed */}
+                {/* <Paper ... > <ReviewSection /> </Paper> */}
             </Container>
         </Box>
     );

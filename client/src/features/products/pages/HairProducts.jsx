@@ -1,28 +1,51 @@
-import React, { useState, useContext } from 'react';
-import { Container, Typography, Grid, Box, Paper } from '@mui/material';
+import React, { useState, useContext, useEffect } from 'react'; // Added useEffect
+import { Container, Typography, Grid, Box, Paper, CircularProgress, Alert } from '@mui/material'; // Added CircularProgress, Alert
 import FilterBar from '../components/FilterBar';
 import ProductCard from '../components/ProductCard';
 import { ThemeContext } from '../../../context/ThemeContext';
-
-const mockProducts = [
-    { id: 13, name: 'Moisturizing Shampoo', price: 18.99, image: '/images/hair/shampoo.jpg', rating: 4.6, category: 'Shampoo' },
-    { id: 14, name: 'Repair Conditioner', price: 16.99, image: '/images/hair/conditioner.jpg', rating: 4.5, category: 'Conditioner' },
-    { id: 15, name: 'Curl Defining Cream', price: 22.99, image: '/images/hair/styling-cream.jpg', rating: 4.7, category: 'Styling' },
-    { id: 16, name: 'Hair Oil Treatment', price: 34.99, image: '/images/hair/oil.jpg', rating: 4.8, category: 'Treatment' },
-];
+import { useApi } from '../../../api/apiClient'; // Import useApi
 
 function HairProducts() {
     const { theme, colorValues } = useContext(ThemeContext);
+    const api = useApi(); // Get API methods
+    const [products, setProducts] = useState([]); // State for fetched products
+    const [loading, setLoading] = useState(true); // Loading state
+    const [error, setError] = useState(null); // Error state
     const [filters, setFilters] = useState({ category: 'All', sort: 'default' });
 
-    const filteredProducts = mockProducts
-        .filter((product) => filters.category === 'All' || product.category === filters.category)
+    useEffect(() => {
+        const fetchHairProducts = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // Fetch products specifically for the 'Hair' category
+                // Ensure 'Hair' matches the category value in your Supabase table
+                const data = await api.getProducts('Hair'); // Or 'Hair Care' etc. depending on your Supabase data
+                setProducts(Array.isArray(data) ? data : []);
+            } catch (err) {
+                console.error("Error fetching hair products:", err);
+                setError(err.message || 'Failed to load products.');
+                setProducts([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHairProducts();
+    }, []); // Empty dependency array to run once on mount
+
+    // Apply filtering and sorting to the fetched products state
+    const filteredProducts = products
+        .filter((product) => filters.category === 'All' || product.category === filters.category) // Adjust if needed
         .sort((a, b) => {
             if (filters.sort === 'price-low') return a.price - b.price;
             if (filters.sort === 'price-high') return b.price - a.price;
             if (filters.sort === 'rating') return b.rating - a.rating;
             return 0;
         });
+
+    // Extract unique sub-categories from fetched products for the filter bar
+    const hairSubCategories = ['All', ...new Set(products.map(p => p.category))];
 
     return (
         <Box
@@ -62,33 +85,57 @@ function HairProducts() {
                     }}
                 >
                     <FilterBar
-                        categories={['All', 'Shampoo', 'Conditioner', 'Styling', 'Treatment']}
+                        // Use dynamic categories from fetched data or define static ones
+                        categories={hairSubCategories.length > 1 ? hairSubCategories : ['All', 'Hair']} // Adjust as needed
                         onFilterChange={setFilters}
                         currentFilters={filters}
                     />
                 </Paper>
 
-                <Grid container spacing={3}>
-                    {filteredProducts.map((product) => (
-                        <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                            <Paper
-                                elevation={theme === 'dark' ? 3 : 1}
-                                sx={{
-                                    backgroundColor: colorValues.bgPaper,
-                                    borderRadius: 2,
-                                    height: '100%',
-                                    transition: 'transform 0.2s, box-shadow 0.2s',
-                                    '&:hover': {
-                                        transform: 'translateY(-4px)',
-                                        boxShadow: theme === 'dark' ? 8 : 4
-                                    }
-                                }}
-                            >
-                                <ProductCard product={product} />
-                            </Paper>
-                        </Grid>
-                    ))}
-                </Grid>
+                {/* Loading and Error Handling */}
+                {loading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
+                        <CircularProgress />
+                    </Box>
+                )}
+                {error && (
+                    <Alert severity="error" sx={{ my: 3 }}>
+                        {error}
+                    </Alert>
+                )}
+
+                {/* Product Grid */}
+                {!loading && !error && (
+                    <Grid container spacing={3}>
+                        {filteredProducts.length > 0 ? (
+                            filteredProducts.map((product) => (
+                                <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+                                    <Paper
+                                        elevation={theme === 'dark' ? 3 : 1}
+                                        sx={{
+                                            backgroundColor: colorValues.bgPaper,
+                                            borderRadius: 2,
+                                            height: '100%',
+                                            transition: 'transform 0.2s, box-shadow 0.2s',
+                                            '&:hover': {
+                                                transform: 'translateY(-4px)',
+                                                boxShadow: theme === 'dark' ? 8 : 4
+                                            }
+                                        }}
+                                    >
+                                        <ProductCard product={product} />
+                                    </Paper>
+                                </Grid>
+                            ))
+                        ) : (
+                            <Grid item xs={12}>
+                                <Typography sx={{ textAlign: 'center', color: colorValues.textSecondary, mt: 4 }}>
+                                    No hair products found.
+                                </Typography>
+                            </Grid>
+                        )}
+                    </Grid>
+                )}
             </Container>
         </Box>
     );
