@@ -31,6 +31,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'; // Wishlist
 import FavoriteIcon from '@mui/icons-material/Favorite'; // Wishlist filled icon
 import { useUser } from "@clerk/clerk-react"; // Keep useUser
 import { useWishlist } from "../../context/WishlistContext"; // Import Wishlist context hook
+import defaultProductImage from '../../assets/images/placeholder.webp'; // Fallback image
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -69,6 +70,7 @@ function ProductDetail() {
     const [selectedShade, setSelectedShade] = useState(null); // State for selected shade
     const { user, isSignedIn } = useUser(); // Get Clerk user status
     const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist(); // Use Wishlist context
+    const [imageError, setImageError] = useState(false);
 
     // Safely parse JSON fields, ensuring an array or null is returned
     const parseJsonField = (field) => {
@@ -99,53 +101,51 @@ function ProductDetail() {
 
     useEffect(() => {
         const fetchProductData = async () => {
+            console.log(`[ProductDetail Effect] Running for ID: ${id}`); // Log effect start
             setLoading(true);
-            setError(null); // Reset error on new fetch
+            setError(null);
+            setProduct(null);
+            setRelatedProducts([]);
+            setImageError(false);
+            setSelectedShade(null);
+
             try {
+                console.log(`[ProductDetail Effect] Fetching product by ID: ${id}`); // Log before API call
                 const fetchedProduct = await api.getProductById(id);
-                console.log("[Effect] Fetched Product:", fetchedProduct);
-                setProduct(fetchedProduct);
+                console.log("[ProductDetail Effect] Fetched product data:", fetchedProduct); // Log fetched data
 
-                // Check stock status
-                if (fetchedProduct && fetchedProduct.stock !== undefined && fetchedProduct.stock <= 0) {
-                    setIsOutOfStock(true);
-                    setQuantity(0);
-                } else if (fetchedProduct) {
-                    setIsOutOfStock(false);
-                    setQuantity(1);
+                if (!fetchedProduct) {
+                    console.error(`[ProductDetail Effect] Product with ID ${id} not found by API.`);
+                    throw new Error('Product not found');
                 }
+                setProduct(fetchedProduct); // Set product state
 
-                // Initialize selected shade
-                if (fetchedProduct?.shades?.length > 0) {
-                    setSelectedShade(fetchedProduct.shades[0]);
-                } else {
-                    setSelectedShade(null);
-                }
-
-                // Fetch related products (using API by MAIN category)
+                // Fetch related products
                 if (fetchedProduct?.category) {
-                    // Fetch by main category
+                    console.log(`[ProductDetail Effect] Fetching related products for category: ${fetchedProduct.category}`); // Log before related API call
                     const allProducts = await api.getProducts(fetchedProduct.category);
+                    console.log("[ProductDetail Effect] Fetched all products for category:", allProducts); // Log related data
                     const related = allProducts
-                        .filter(p => p.id !== fetchedProduct.id) // Exclude current product
+                        .filter(p => p.id !== fetchedProduct.id)
                         .slice(0, 4);
-                    console.log("Related Products Found (API):", related);
-                    setRelatedProducts(related);
+                    console.log("[ProductDetail Effect] Filtered related products:", related);
+                    setRelatedProducts(related); // Set related products state
                 } else {
-                    setRelatedProducts([]);
+                     console.log("[ProductDetail Effect] No category found on product, skipping related products fetch.");
                 }
 
             } catch (err) {
-                console.error("Error fetching product:", err);
-                setError(err.message || 'Failed to load product'); // Set error state
-                setProduct(null); // Ensure product is null on error
+                console.error("[ProductDetail Effect] Error caught:", err); // Log any caught errors
+                setError(err.message || 'Failed to load product details.');
             } finally {
-                setLoading(false);
+                console.log("[ProductDetail Effect] Setting loading to false."); // Log before setting loading false
+                setLoading(false); // Ensure this always runs
             }
         };
 
         fetchProductData();
-    }, [id, api]); // Add api as dependency
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id]); // Remove `api` from the dependency array
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);

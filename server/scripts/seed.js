@@ -117,39 +117,58 @@ async function seedDatabase() {
     console.log(`Placeholder image uploaded successfully. URL: ${placeholderUrl}`);
     // --- End Placeholder Upload ---
 
-    // Prepare products for insertion, including subcategory
-    const productsToInsert = mockProducts.map(product => ({
-        // id: product.id, // REMOVE THIS LINE - Let Supabase generate the UUID
-        name: product.name,
-        price: Math.round(product.price * USD_TO_KES_RATE), // Convert price to KES
-        image: product.image, // Keep the mock image path for now
-        description: product.description,
-        category: product.category, // Main category
-        subcategory: product.subcategory, // Subcategory
-        stock: product.stock,
-        rating: product.rating || 0,
-        benefits: product.benefits ? JSON.stringify(product.benefits) : null,
-        ingredients: product.ingredients ? JSON.stringify(product.ingredients) : null,
-        shades: product.shades ? JSON.stringify(product.shades) : null,
-        notes: product.notes ? JSON.stringify(product.notes) : null,
-        palettetheme: product.paletteTheme || null,
-    }));
+    console.log('\nProcessing and uploading product images...');
+    const productsToInsert = [];
 
-    console.log(`Inserting ${productsToInsert.length} products...`);
+    // Use a for...of loop to handle async uploads sequentially or Promise.all for parallel
+    for (const product of mockProducts) {
+        // Construct local image path (handle potential leading slash)
+        const relativeImagePath = product.image.startsWith('/') ? product.image.substring(1) : product.image;
+        const localImagePath = path.join(projectRoot, 'client', 'src', 'assets', relativeImagePath);
+
+        // Construct storage path (e.g., skincare/moisturizer.jpg)
+        const storagePath = relativeImagePath.replace(/\\/g, '/'); // Ensure forward slashes for storage path
+
+        console.log(`  Uploading image for ${product.name}: ${localImagePath} -> ${storagePath}`);
+        const imageUrl = await uploadImage(localImagePath, storagePath);
+
+        productsToInsert.push({
+            // id: product.id, // Let Supabase generate the UUID
+            name: product.name,
+            price: Math.round(product.price * USD_TO_KES_RATE),
+            // Use the uploaded URL, or the placeholder if upload failed
+            image: imageUrl || placeholderUrl,
+            description: product.description,
+            category: product.category,
+            subcategory: product.subcategory,
+            stock: product.stock,
+            rating: product.rating || 0,
+            benefits: product.benefits ? JSON.stringify(product.benefits) : null,
+            ingredients: product.ingredients ? JSON.stringify(product.ingredients) : null,
+            shades: product.shades ? JSON.stringify(product.shades) : null,
+            notes: product.notes ? JSON.stringify(product.notes) : null,
+            palettetheme: product.paletteTheme || null,
+        });
+    }
+    console.log('Finished processing product images.');
+
+
+    console.log(`\nInserting ${productsToInsert.length} products into database...`);
 
     // Insert new products
     const { data, error: insertError } = await supabase
         .from('products')
         .insert(productsToInsert)
-        .select(); // Select to confirm insertion
+        .select('id, name'); // Select only id and name for confirmation
 
     if (insertError) {
         console.error('Error inserting products:', insertError);
     } else {
         console.log(`Successfully inserted ${data.length} products.`);
+        // console.log('Inserted products:', data); // Optional: Log inserted data details
     }
 
-    console.log('Database seeding finished.');
+    console.log('\nDatabase seeding finished.');
 }
 
 // --- Execute Seeding ---
