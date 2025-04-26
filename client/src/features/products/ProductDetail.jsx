@@ -429,14 +429,17 @@ function ProductDetail() {
 
                             {/* Shade Selector */}
                             {/* Add logging right before the conditional check */}
-                            {console.log("[Render Check] Checking for shades:", product?.shades)}
-                            {product.shades && product.shades.length > 0 ? (
+                            {console.log("[Render Check] Checking parsed shades:", shades)}
+                            {/* --- CHANGE THIS CONDITION --- */}
+                            {Array.isArray(shades) && shades.length > 0 ? (
+                            // --- END CHANGE ---
                                 <Box sx={{ my: 3 }}>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
                                         Shade: {selectedShade ? selectedShade.name : 'Select a shade'}
                                     </Typography>
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                        {product.shades.map((shade) => (
+                                        {/* Use the parsed 'shades' variable here */}
+                                        {shades.map((shade) => (
                                             <Tooltip title={shade.name} key={shade.name} arrow>
                                                 <Box
                                                     onClick={() => handleShadeSelect(shade)}
@@ -468,7 +471,7 @@ function ProductDetail() {
                                 </Box>
                             ) : (
                                 // Optional: Log when the condition is false
-                                console.log("[Render Check] Condition for shades is FALSE.")
+                                console.log("[Render Check] Condition for shades (Array.isArray) is FALSE.")
                             )}
 
                             {/* Stock Status */}
