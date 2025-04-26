@@ -70,6 +70,33 @@ function ProductDetail() {
     const { user, isSignedIn } = useUser(); // Get Clerk user status
     const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist(); // Use Wishlist context
 
+    // Safely parse JSON fields, ensuring an array or null is returned
+    const parseJsonField = (field) => {
+        if (!field) return null; // Return null if field is null, undefined, or empty string
+        try {
+            // If it's already an array (e.g., parsed by Supabase), return it directly
+            if (Array.isArray(field)) {
+                return field;
+            }
+            // If it's an object but not an array, maybe log a warning or return null
+            if (typeof field === 'object' && field !== null) {
+                 console.warn("Expected JSON array string or array, but received object:", field);
+                 return null; // Or handle as needed
+            }
+            // If it's a string, try parsing it
+            if (typeof field === 'string') {
+                const parsed = JSON.parse(field);
+                // Ensure the parsed result is an array
+                return Array.isArray(parsed) ? parsed : null;
+            }
+            // If it's not a string, array, or object we expect, return null
+            return null;
+        } catch (e) {
+            console.error("Error parsing JSON field:", field, e);
+            return null; // Return null on parsing error
+        }
+    };
+
     useEffect(() => {
         const fetchProductData = async () => {
             setLoading(true);
@@ -239,6 +266,12 @@ function ProductDetail() {
     console.log("[Render] Is Product In Wishlist (from context):", isProductInWishlist);
     console.log("[Render] Wishlist Loading State:", wishlistLoading);
     // --- End Debugging Logs ---
+
+    // Use the refined parseJsonField
+    const benefits = parseJsonField(product.benefits);
+    const ingredients = parseJsonField(product.ingredients);
+    const shades = parseJsonField(product.shades);
+    const notes = parseJsonField(product.notes);
 
     return (
         <Box sx={{
@@ -550,21 +583,29 @@ function ProductDetail() {
 
                     <TabPanel value={tabValue} index={1}>
                         <Box component="ul" sx={{ pl: 2 }}>
-                            {product.benefits?.map((benefit, index) => (
-                                <Typography component="li" key={index} sx={{ mb: 1 }}>
-                                    {benefit}
-                                </Typography>
-                            )) || <Typography>No benefits information available.</Typography>}
+                            {Array.isArray(benefits) && benefits.length > 0 ? (
+                                benefits.map((benefit, index) => (
+                                    <Typography component="li" key={index} sx={{ mb: 1 }}>
+                                        {benefit}
+                                    </Typography>
+                                ))
+                            ) : (
+                                <Typography>No benefits information available.</Typography>
+                            )}
                         </Box>
                     </TabPanel>
 
                     <TabPanel value={tabValue} index={2}>
                         <Box component="ul" sx={{ pl: 2 }}>
-                            {product.ingredients?.map((ingredient, index) => (
-                                <Typography component="li" key={index} sx={{ mb: 1 }}>
-                                    {ingredient}
-                                </Typography>
-                            )) || <Typography>No ingredient information available.</Typography>}
+                            {Array.isArray(ingredients) && ingredients.length > 0 ? (
+                                ingredients.map((ingredient, index) => (
+                                    <Typography component="li" key={index} sx={{ mb: 1 }}>
+                                        {ingredient}
+                                    </Typography>
+                                ))
+                            ) : (
+                                <Typography>No ingredient information available.</Typography>
+                            )}
                         </Box>
                     </TabPanel>
 
