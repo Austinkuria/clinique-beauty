@@ -108,7 +108,7 @@ function ProductDetail() {
             setProduct(null);
             setRelatedProducts([]);
             setImageError(false);
-            setSelectedShade(null);
+            setSelectedShade(null); // Reset selected shade initially
 
             try {
                 console.log(`[ProductDetail Effect] Fetching product by ID: ${id}`); // Log before API call
@@ -120,6 +120,14 @@ function ProductDetail() {
                     throw new Error('Product not found');
                 }
                 setProduct(fetchedProduct); // Set product state
+
+                // --- Pre-select first shade if available ---
+                const parsedShades = parseJsonField(fetchedProduct.shades);
+                if (Array.isArray(parsedShades) && parsedShades.length > 0) {
+                    console.log("[ProductDetail Effect] Pre-selecting first shade:", parsedShades[0]);
+                    setSelectedShade(parsedShades[0]); // Set the first shade as default
+                }
+                // --- End pre-selection ---
 
                 // Fetch related products
                 if (fetchedProduct?.category) {
@@ -290,8 +298,11 @@ function ProductDetail() {
     // Use the refined parseJsonField
     const benefits = parseJsonField(product.benefits);
     const ingredients = parseJsonField(product.ingredients);
-    const shades = parseJsonField(product.shades);
+    const shades = parseJsonField(product.shades); // Parsed shades (should be array or null)
     const notes = parseJsonField(product.notes);
+
+    // Determine if a shade selection is required and not yet made
+    const shadeSelectionRequired = Array.isArray(shades) && shades.length > 0 && !selectedShade;
 
     return (
         <Box sx={{
@@ -541,7 +552,8 @@ function ProductDetail() {
                                     fullWidth // Keep fullWidth or adjust based on desired layout
                                     startIcon={<ShoppingCartIcon />}
                                     onClick={handleAddToCart}
-                                    disabled={isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading}
+                                    // Updated disabled logic
+                                    disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading}
                                     sx={{
                                         backgroundColor: colorValues.primary,
                                         color: '#ffffff',
@@ -551,13 +563,14 @@ function ProductDetail() {
                                         '&:hover': {
                                             backgroundColor: colorValues.primaryDark,
                                         },
-                                        opacity: (isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading) ? 0.6 : 1,
+                                        opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
                                         flex: 1, // Allow button to grow
                                     }}
                                 >
+                                    {/* Updated text logic */}
                                     {cartContext.loading ? 'Adding...' :
                                         isOutOfStock ? 'Out of Stock' :
-                                            (product.shades?.length > 0 && !selectedShade) ? 'Select Shade' :
+                                            shadeSelectionRequired ? 'Select Shade' : // Check parsed shades requirement
                                                 `Add ${quantity} to Cart`}
                                 </Button>
 
@@ -568,7 +581,8 @@ function ProductDetail() {
                                     fullWidth // Keep fullWidth or adjust
                                     startIcon={<LocalMallIcon />} // Use a different icon
                                     onClick={handleBuyNow}
-                                    disabled={isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading} // Same disable conditions
+                                    // Updated disabled logic
+                                    disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading} // Same disable conditions
                                     sx={{
                                         borderColor: colorValues.primary, // Match primary color
                                         color: colorValues.primary,
@@ -579,13 +593,13 @@ function ProductDetail() {
                                             backgroundColor: colorValues.buttonHover, // Use theme hover color
                                             borderColor: colorValues.primaryDark,
                                         },
-                                        opacity: (isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading) ? 0.6 : 1,
+                                        opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
                                         flex: 1, // Allow button to grow
                                     }}
                                 >
-                                    {/* Adjust button text based on state */}
+                                    {/* Updated text logic */}
                                     {isOutOfStock ? 'Out of Stock' :
-                                        (product.shades?.length > 0 && !selectedShade) ? 'Select Shade' :
+                                        shadeSelectionRequired ? 'Select Shade' : // Check parsed shades requirement
                                             'Buy Now'}
                                 </Button>
                             </Box>
