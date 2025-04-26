@@ -4,7 +4,7 @@ import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-
 // Define allowed origins - include your local dev and production URLs
 const allowedOrigins = [
     'http://localhost:5173',
-    'https://clinique-beauty.vercel.app/'
+    'https://clinique-beauty.vercel.app' // Ensure this matches your Vercel URL exactly
 ];
 
 // Function to create Supabase client (avoids creating it repeatedly if not needed)
@@ -29,12 +29,15 @@ serve(async (req: Request) => {
     const route = pathSegments.slice(apiPathIndex + 1); // e.g., ['products', '123'] or ['products']
 
     const origin = req.headers.get('Origin');
+    // Ensure the check uses the correct variable and includes the origin
     const isAllowedOrigin = origin && allowedOrigins.includes(origin);
 
     // --- CORS Preflight Request Handling ---
     if (req.method === 'OPTIONS') {
         if (isAllowedOrigin) {
+            // Ensure status 200 is explicitly set
             return new Response('ok', {
+                status: 200, // Explicitly set 200 OK status
                 headers: {
                     'Access-Control-Allow-Origin': origin,
                     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', // Adjust as needed
@@ -51,6 +54,7 @@ serve(async (req: Request) => {
         'Content-Type': 'application/json',
     });
     if (isAllowedOrigin) {
+        // Set CORS header for actual requests too
         headers.set('Access-Control-Allow-Origin', origin);
     }
 
@@ -101,13 +105,21 @@ serve(async (req: Request) => {
 
 
         // --- Fallback for unhandled routes ---
+        // Ensure CORS header is added even for 404s if origin was allowed
         return new Response(JSON.stringify({ message: 'Route not found' }), { headers, status: 404 });
 
     } catch (error) {
         console.error('Error processing request:', error);
+        // Ensure error responses also include CORS headers if the origin was allowed initially
+        const errorHeaders = new Headers({
+            'Content-Type': 'application/json',
+        });
+        if (isAllowedOrigin) {
+            errorHeaders.set('Access-Control-Allow-Origin', origin);
+        }
         return new Response(
             JSON.stringify({ message: error?.message || 'Internal Server Error' }),
-            { headers, status: 500 }
+            { headers: errorHeaders, status: 500 }
         );
     }
 });

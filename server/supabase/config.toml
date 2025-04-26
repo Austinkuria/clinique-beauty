@@ -1,0 +1,10 @@
+# ... other config ...
+
+[functions.api]
+# Ensure this points to the directory containing your index.ts, relative to the supabase directory
+# If your index.ts is in supabase/functions/api/index.ts, this should be correct:
+entrypoint = "functions/api/index.ts"
+# Or sometimes just the directory is needed depending on CLI version/setup:
+# main = "functions/api"
+
+# ... other function configs if any ...
