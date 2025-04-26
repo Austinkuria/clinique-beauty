@@ -1,7 +1,7 @@
 {
     "deno.enable": true,
     "deno.lint": true,
-    "deno.unstable": [],
+    "deno.unstable": true, // Change this back to true (boolean)
     // Set Deno as the default formatter for the workspace
     "editor.defaultFormatter": "denoland.vscode-deno"
 }
