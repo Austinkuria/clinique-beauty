@@ -8,8 +8,9 @@ const mockProducts = [
         price: 29.99,
         image: '/images/skincare/moisturizer.jpg',
         rating: 4.5,
-        category: 'Skincare', // Changed from 'Moisturizers'
-        stock: 50, // Added stock
+        category: 'Skincare', // Main category
+        subcategory: 'Moisturizer', // Specific type
+        stock: 50,
         description: 'A lightweight, oil-free formula that delivers 24-hour hydration, leaving skin smooth and supple.',
         benefits: ['Oil-free formula', '24-hour hydration', 'Suitable for all skin types'],
         ingredients: ['Hyaluronic Acid', 'Glycerin', 'Aloe Vera', 'Vitamin E']
@@ -20,8 +21,9 @@ const mockProducts = [
         price: 19.99,
         image: '/images/skincare/cleanser.jpg',
         rating: 4.2,
-        category: 'Skincare', // Changed from 'Cleansers'
-        stock: 35, // Added stock
+        category: 'Skincare', // Main category
+        subcategory: 'Cleanser', // Specific type
+        stock: 35,
         description: 'Gently removes makeup, dirt, and impurities without stripping skin of essential moisture.',
         benefits: ['Gentle formula', 'Removes makeup and impurities', 'pH balanced'],
         ingredients: ['Glycerin', 'Sodium Hyaluronate', 'Chamomile Extract']
@@ -32,8 +34,9 @@ const mockProducts = [
         price: 24.99,
         image: '/images/skincare/sunscreen.jpg',
         rating: 4.7,
-        category: 'Skincare', // Changed from 'Sunscreens'
-        stock: 40, // Added stock
+        category: 'Skincare', // Main category
+        subcategory: 'Sunscreen', // Specific type
+        stock: 40,
         description: 'Broad spectrum SPF 50 protection against harmful UVA/UVB rays in a lightweight, non-greasy formula.',
         benefits: ['SPF 50 Protection', 'Water-resistant', 'Non-comedogenic'],
         ingredients: ['Zinc Oxide', 'Titanium Dioxide', 'Vitamin E', 'Green Tea Extract']
@@ -44,8 +47,9 @@ const mockProducts = [
         price: 49.99,
         image: '/images/skincare/serum.jpg',
         rating: 4.8,
-        category: 'Skincare', // Changed from 'Serums'
-        stock: 25, // Added stock
+        category: 'Skincare', // Main category
+        subcategory: 'Serum', // Specific type
+        stock: 25,
         description: 'Targets fine lines and wrinkles with advanced peptides and antioxidants for visibly younger-looking skin.',
         benefits: ['Reduces fine lines', 'Improves skin elasticity', 'Brightens complexion'],
         ingredients: ['Peptides', 'Niacinamide', 'Vitamin C', 'Hyaluronic Acid']
@@ -58,8 +62,9 @@ const mockProducts = [
         price: 15.99,
         image: '/images/makeup/lipstick.jpg',
         rating: 4.3,
-        category: 'Lipstick',
-        stock: 60, // Added stock
+        category: 'Makeup', // Main category
+        subcategory: 'Lipstick', // Specific type
+        stock: 60,
         description: "Long-lasting, highly pigmented matte lipstick that doesn't dry out lips.",
         benefits: ['Long-wearing formula', 'Comfortable matte finish', 'Highly pigmented'],
         ingredients: ['Shea Butter', 'Vitamin E', 'Jojoba Oil'],
@@ -77,8 +82,9 @@ const mockProducts = [
         price: 29.99,
         image: '/images/makeup/foundation.jpg',
         rating: 4.6,
-        category: 'Foundation',
-        stock: 30, // Added stock
+        category: 'Makeup', // Main category
+        subcategory: 'Foundation', // Specific type
+        stock: 30,
         description: 'Medium to full coverage foundation with a natural finish that lasts all day.',
         benefits: ['Medium to full coverage', '24-hour wear', 'Natural finish'],
         ingredients: ['Hyaluronic Acid', 'Vitamin E', 'SPF 20'],
@@ -97,8 +103,9 @@ const mockProducts = [
         price: 12.99,
         image: '/images/makeup/mascara.jpg',
         rating: 4.4,
-        category: 'Mascara',
-        stock: 75, // Added stock
+        category: 'Makeup', // Main category
+        subcategory: 'Mascara', // Specific type
+        stock: 75,
         description: 'Volumizing and lengthening mascara that creates dramatic lashes without clumping.',
         benefits: ['Volumizing & lengthening', 'Smudge-proof', 'Easy to remove'],
         ingredients: ['Panthenol', 'Keratin', 'Vitamin B5']
@@ -109,8 +116,9 @@ const mockProducts = [
         price: 39.99,
         image: '/images/makeup/eyeshadow.jpg',
         rating: 4.7,
-        category: 'Eyeshadow',
-        stock: 20, // Added stock
+        category: 'Makeup', // Main category
+        subcategory: 'Eyeshadow', // Specific type
+        stock: 20,
         description: 'Versatile palette with 12 highly pigmented shades in matte and shimmer finishes.',
         benefits: ['12 versatile shades', 'Blend easily', 'Long-lasting wear'],
         ingredients: ['Mica', 'Silica', 'Vitamin E'],
@@ -124,8 +132,9 @@ const mockProducts = [
         price: 59.99,
         image: '/images/fragrance/floral.jpg',
         rating: 4.8,
-        category: 'Eau de Parfum',
-        stock: 15, // Added stock
+        category: 'Fragrance', // Main category
+        subcategory: 'Eau de Parfum', // Specific type
+        stock: 15,
         description: 'A sophisticated floral scent with notes of rose, jasmine, and lily of the valley.',
         benefits: ['Long-lasting scent', 'Elegant glass bottle', 'Suitable for day and evening'],
         notes: ['Top: Bergamot, Pear', 'Middle: Rose, Jasmine', 'Base: Sandalwood, Vanilla']
@@ -136,8 +145,9 @@ const mockProducts = [
         price: 39.99,
         image: '/images/fragrance/citrus.jpg',
         rating: 4.5,
-        category: 'Eau de Toilette',
-        stock: 22, // Added stock
+        category: 'Fragrance', // Main category
+        subcategory: 'Eau de Toilette', // Specific type
+        stock: 22,
         description: 'Refreshing and invigorating citrus scent perfect for everyday wear.',
         benefits: ['Refreshing & invigorating', 'Perfect for everyday', 'Travel-friendly size'],
         notes: ['Top: Lemon, Grapefruit', 'Middle: Orange Blossom', 'Base: Amber, Musk']
@@ -148,8 +158,9 @@ const mockProducts = [
         price: 69.99,
         image: '/images/fragrance/woody.jpg',
         rating: 4.9,
-        category: 'Eau de Parfum',
-        stock: 18, // Added stock
+        category: 'Fragrance', // Main category
+        subcategory: 'Eau de Parfum', // Specific type
+        stock: 18,
         description: 'An elegant woody fragrance with deep, warm notes for a bold statement.',
         benefits: ['Rich, warm scent', 'Long-lasting formula', 'Signature scent potential'],
         notes: ['Top: Cardamom, Pepper', 'Middle: Cedarwood, Vetiver', 'Base: Patchouli, Amber']
@@ -160,8 +171,9 @@ const mockProducts = [
         price: 29.99,
         image: '/images/fragrance/breeze.jpg',
         rating: 4.3,
-        category: 'Body Mist',
-        stock: 30, // Added stock
+        category: 'Fragrance', // Main category
+        subcategory: 'Body Mist', // Specific type
+        stock: 30,
         description: 'Light and airy body mist with hints of ocean breeze and fresh linen.',
         benefits: ['Light & refreshing', 'Perfect for summer', 'Can be layered with other scents'],
         notes: ['Top: Sea Salt, Bergamot', 'Middle: Lavender, Cotton', 'Base: Light Musk']
@@ -174,8 +186,9 @@ const mockProducts = [
         price: 18.99,
         image: '/images/hair/shampoo.jpg',
         rating: 4.6,
-        category: 'Shampoo',
-        stock: 45, // Added stock
+        category: 'Hair', // Main category
+        subcategory: 'Shampoo', // Specific type
+        stock: 45,
         description: 'Hydrating shampoo that cleanses while adding moisture to dry, damaged hair.',
         benefits: ['Hydrates dry hair', 'Gentle cleansing', 'Adds shine'],
         ingredients: ['Argan Oil', 'Shea Butter', 'Keratin', 'Aloe Vera']
@@ -186,8 +199,9 @@ const mockProducts = [
         price: 16.99,
         image: '/images/hair/conditioner.jpg',
         rating: 4.5,
-        category: 'Conditioner',
-        stock: 40, // Added stock
+        category: 'Hair', // Main category
+        subcategory: 'Conditioner', // Specific type
+        stock: 40,
         description: 'Deep conditioning treatment that repairs damaged hair and split ends.',
         benefits: ['Repairs damage', 'Prevents split ends', 'Detangles effectively'],
         ingredients: ['Keratin', 'Avocado Oil', 'Vitamin B5', 'Silk Proteins']
@@ -198,8 +212,9 @@ const mockProducts = [
         price: 22.99,
         image: '/images/hair/styling-cream.jpg',
         rating: 4.7,
-        category: 'Styling',
-        stock: 28, // Added stock
+        category: 'Hair', // Main category
+        subcategory: 'Styling', // Specific type
+        stock: 28,
         description: 'Defines and enhances natural curls while eliminating frizz and adding shine.',
         benefits: ['Defines curls', 'Controls frizz', 'No crunchy feel'],
         ingredients: ['Coconut Oil', 'Shea Butter', 'Jojoba Oil', 'Aloe Vera']
@@ -210,8 +225,9 @@ const mockProducts = [
         price: 34.99,
         image: '/images/hair/oil.jpg',
         rating: 4.8,
-        category: 'Treatment',
-        stock: 20, // Added stock
+        category: 'Hair', // Main category
+        subcategory: 'Treatment', // Specific type
+        stock: 20,
         description: 'Lightweight oil that nourishes hair, adds shine, and tames frizz without weighing hair down.',
         benefits: ['Adds shine', 'Reduces frizz', 'Protects from heat damage'],
         ingredients: ['Argan Oil', 'Jojoba Oil', 'Marula Oil', 'Vitamin E']
