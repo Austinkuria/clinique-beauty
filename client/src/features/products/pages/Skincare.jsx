@@ -30,7 +30,7 @@ function Skincare() {
         };
 
         fetchSkincareProducts();
-    }, [api]); // Dependency on api hook
+    }, []); // Dependency array changed to []
 
     return (
         <Box sx={{ backgroundColor: colorValues.bgDefault, color: colorValues.textPrimary, py: 4, minHeight: '80vh' }}>
