@@ -32,6 +32,7 @@ import FavoriteIcon from '@mui/icons-material/Favorite'; // Wishlist filled icon
 import { useUser } from "@clerk/clerk-react"; // Keep useUser
 import { useWishlist } from "../../context/WishlistContext"; // Import Wishlist context hook
 import defaultProductImage from '../../assets/images/placeholder.webp'; // Fallback image
+import LocalMallIcon from '@mui/icons-material/LocalMall'; // Import Buy Now icon
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -203,6 +204,25 @@ function ProductDetail() {
         if (!isOutOfStock) {
             setQuantity(1);
         }
+    };
+
+    // Handle Buy Now action
+    const handleBuyNow = () => {
+        if (!product || quantity < 1 || isOutOfStock) return;
+
+        // Create product object to pass to context, including selected shade
+        const productToAdd = {
+            ...product,
+            ...(selectedShade && { selectedShade: selectedShade }) // Add shade info if selected
+        };
+
+        // Add the item to the cart
+        cartContext.addToCart(productToAdd, quantity);
+
+        // Immediately navigate to checkout
+        // Ensure the cart update is processed before navigating if needed,
+        // but often immediate navigation is fine as context updates happen quickly.
+        navigate('/checkout');
     };
 
     const handleWishlistClick = () => {
@@ -510,31 +530,60 @@ function ProductDetail() {
                                 </Box>
                             )}
 
-                            <Box sx={{ mt: 'auto', pt: 2 }}> {/* Adjusted padding top */}
+                            <Box sx={{ mt: 'auto', pt: 2, display: 'flex', gap: 2 }}> {/* Use flexbox and gap */}
+                                {/* Add to Cart Button */}
                                 <Button
                                     variant="contained"
                                     size="large"
-                                    fullWidth
+                                    fullWidth // Keep fullWidth or adjust based on desired layout
                                     startIcon={<ShoppingCartIcon />}
-                                    onClick={handleAddToCart} // Use the updated handler
-                                    disabled={isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading} // Also disable if cart context is loading
+                                    onClick={handleAddToCart}
+                                    disabled={isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading}
                                     sx={{
                                         backgroundColor: colorValues.primary,
                                         color: '#ffffff',
                                         py: 1.5,
-                                        fontSize: '1.1rem',
+                                        // fontSize: '1.1rem', // Consider slightly smaller font if needed
                                         borderRadius: '50px',
                                         '&:hover': {
                                             backgroundColor: colorValues.primaryDark,
                                         },
-                                        opacity: (isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading) ? 0.6 : 1, // Indicate disabled state visually
+                                        opacity: (isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading) ? 0.6 : 1,
+                                        flex: 1, // Allow button to grow
+                                    }}
+                                >
+                                    {cartContext.loading ? 'Adding...' :
+                                        isOutOfStock ? 'Out of Stock' :
+                                            (product.shades?.length > 0 && !selectedShade) ? 'Select Shade' :
+                                                `Add ${quantity} to Cart`}
+                                </Button>
+
+                                {/* Buy Now Button */}
+                                <Button
+                                    variant="outlined" // Use outlined or another style to differentiate
+                                    size="large"
+                                    fullWidth // Keep fullWidth or adjust
+                                    startIcon={<LocalMallIcon />} // Use a different icon
+                                    onClick={handleBuyNow}
+                                    disabled={isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading} // Same disable conditions
+                                    sx={{
+                                        borderColor: colorValues.primary, // Match primary color
+                                        color: colorValues.primary,
+                                        py: 1.5,
+                                        // fontSize: '1.1rem',
+                                        borderRadius: '50px',
+                                        '&:hover': {
+                                            backgroundColor: colorValues.buttonHover, // Use theme hover color
+                                            borderColor: colorValues.primaryDark,
+                                        },
+                                        opacity: (isOutOfStock || quantity < 1 || (product.shades?.length > 0 && !selectedShade) || cartContext.loading) ? 0.6 : 1,
+                                        flex: 1, // Allow button to grow
                                     }}
                                 >
                                     {/* Adjust button text based on state */}
-                                    {cartContext.loading ? 'Adding...' : // Show loading state from context
-                                        isOutOfStock ? 'Out of Stock' :
-                                            (product.shades?.length > 0 && !selectedShade) ? 'Select a Shade' :
-                                                `Add ${quantity} to Cart`}
+                                    {isOutOfStock ? 'Out of Stock' :
+                                        (product.shades?.length > 0 && !selectedShade) ? 'Select Shade' :
+                                            'Buy Now'}
                                 </Button>
                             </Box>
                         </Paper>
