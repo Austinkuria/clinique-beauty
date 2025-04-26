@@ -10,6 +10,7 @@ const ProductTable = {
         image: 'text not null',
         description: 'text not null',
         category: 'text not null',
+        subcategory: 'text', // Added subcategory
         stock: 'integer not null default 0',
         rating: 'numeric default 0',          // Added rating
         benefits: 'jsonb',                     // Added benefits
@@ -24,10 +25,11 @@ const ProductTable = {
 
 // Helper for validation before inserting to Supabase
 const validateProduct = (product) => {
+    // Include subcategory in validation if needed, but basic validation remains the same
     const { name, price, image, description, category, stock } = product;
 
     if (!name || !price || !image || !description || !category) {
-        return { valid: false, error: 'All fields are required' };
+        return { valid: false, error: 'All required fields (name, price, image, description, category) must be provided' };
     }
 
     return { valid: true };

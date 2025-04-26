@@ -93,6 +93,19 @@ async function uploadImage(localImagePath, storagePath) {
 async function seedDatabase() {
     console.log('Starting database seeding...');
 
+    // Delete existing products to avoid duplicates (optional)
+    console.log('Deleting existing products...');
+    const { error: deleteError } = await supabase
+        .from('products')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+    if (deleteError) {
+        console.error('Error deleting existing products:', deleteError);
+        return;
+    }
+    console.log('Existing products deleted.');
+
     // --- Upload Placeholder Image ---
     console.log(`\nAttempting to upload placeholder image from: ${localPlaceholderImagePath} to ${placeholderStoragePath}`);
     const placeholderUrl = await uploadImage(localPlaceholderImagePath, placeholderStoragePath);
@@ -104,101 +117,40 @@ async function seedDatabase() {
     console.log(`Placeholder image uploaded successfully. URL: ${placeholderUrl}`);
     // --- End Placeholder Upload ---
 
-    for (const product of mockProducts) {
-        try {
-            console.log(`\nProcessing product: ${product.name}`);
+    // Prepare products for insertion, including subcategory
+    const productsToInsert = mockProducts.map(product => ({
+        id: product.id, // Assuming you want to keep the mock IDs, otherwise omit for auto-generation
+        name: product.name,
+        price: Math.round(product.price * USD_TO_KES_RATE), // Convert price to KES
+        image: product.image,
+        description: product.description,
+        category: product.category, // Main category
+        subcategory: product.subcategory, // Subcategory
+        stock: product.stock,
+        rating: product.rating || 0, // Include rating (ensure column exists)
+        benefits: product.benefits ? JSON.stringify(product.benefits) : null,
+        ingredients: product.ingredients ? JSON.stringify(product.ingredients) : null,
+        shades: product.shades ? JSON.stringify(product.shades) : null,
+        notes: product.notes ? JSON.stringify(product.notes) : null,
+        palettetheme: product.paletteTheme || null, // Ensure correct case
+        // created_at and updated_at will default to now()
+    }));
 
-            // 1. Check if product already exists (by name for idempotency)
-            const { data: existingProduct, error: checkError } = await supabase
-                .from('products')
-                .select('id, name')
-                .eq('name', product.name)
-                .maybeSingle(); // Use maybeSingle to handle 0 or 1 result without error
+    console.log(`Inserting ${productsToInsert.length} products...`);
 
-            if (checkError) {
-                console.error(`Error checking for product ${product.name}:`, checkError.message);
-                continue; // Skip this product on error
-            }
+    // Insert new products
+    const { data, error: insertError } = await supabase
+        .from('products')
+        .insert(productsToInsert)
+        .select(); // Select to confirm insertion
 
-            if (existingProduct) {
-                console.log(`Product "${product.name}" already exists. Skipping.`);
-                continue; // Skip if product exists
-            }
-
-            // 2. Handle Image Upload (with placeholder fallback)
-            let imageUrl = null; // Initialize imageUrl
-            if (product.image) {
-                // Construct local path from the relative web path in mock data
-                // Remove leading '/' if present
-                const relativeImagePath = product.image.startsWith('/') ? product.image.substring(1) : product.image;
-                // Split path and reconstruct for storage path (e.g., 'skincare/moisturizer.jpg')
-                const imagePathParts = relativeImagePath.split('/').slice(1); // Remove 'images' part
-                const localImagePath = path.join(localImagesBasePath, ...imagePathParts);
-                const storagePath = imagePathParts.join('/'); // e.g., 'skincare/moisturizer.jpg'
-
-                console.log(`Attempting to upload image from: ${localImagePath} to ${storagePath}`);
-                imageUrl = await uploadImage(localImagePath, storagePath);
-
-                // *** Use placeholder if specific image upload failed ***
-                if (imageUrl === null) {
-                    console.warn(`Using placeholder image for ${product.name} as specific image was not found or failed to upload.`);
-                    imageUrl = placeholderUrl;
-                }
-            } else {
-                // If no image is specified in mock data, use the placeholder
-                console.log(`No image specified for ${product.name}. Using placeholder.`);
-                imageUrl = placeholderUrl;
-            }
-
-            // *** Remove the previous skip logic ***
-            // The 'if (product.image && imageUrl === null)' block is removed.
-
-            // 3. Prepare Product Data for Insertion - Include all fields
-            const productData = {
-                name: product.name,
-                price: Math.round(product.price * USD_TO_KES_RATE), // Convert price to KES
-                description: product.description,
-                category: product.category,
-                rating: product.rating || 0, // Include rating (ensure column exists)
-                stock: product.stock || 0,
-                image: imageUrl,
-                // Include fields previously commented out or missing (ensure columns exist)
-                benefits: product.benefits || null,         // Assuming JSONB or text[] column
-                ingredients: product.ingredients || null,   // Assuming JSONB or text[] column
-                shades: product.shades || null,             // Assuming JSONB column
-                notes: product.notes || null,               // Assuming JSONB or text[] column
-                palettetheme: product.paletteTheme || null, // Assuming text column
-                // Add created_at, updated_at if your table doesn't auto-set them
-            };
-
-            // 4. Insert Product into Database
-            const { data: newProduct, error: insertError } = await supabase
-                .from('products')
-                .insert(productData)
-                .select()
-                .single(); // Get the inserted product back
-
-            if (insertError) {
-                console.error(`Error inserting product ${product.name}:`, insertError.message);
-                // Attempt to remove uploaded image if insert failed - ONLY if it wasn't the placeholder
-                if (imageUrl && imageUrl !== placeholderUrl && product.image) {
-                    // Construct storage path again for removal
-                    const relativeImagePath = product.image.startsWith('/') ? product.image.substring(1) : product.image;
-                    const imagePathParts = relativeImagePath.split('/').slice(1);
-                    const storagePath = imagePathParts.length > 1 ? imagePathParts.join('/') : path.basename(relativeImagePath); // Use relativeImagePath here
-                    console.log(`Attempting to remove orphaned image: ${storagePath}`);
-                    await supabase.storage.from(imageBucketName).remove([storagePath]);
-                }
-            } else {
-                console.log(`Successfully inserted product: ${newProduct.name} (ID: ${newProduct.id})`);
-            }
-
-        } catch (err) {
-            console.error(`Unexpected error processing product ${product.name}:`, err);
-        }
+    if (insertError) {
+        console.error('Error inserting products:', insertError);
+    } else {
+        console.log(`Successfully inserted ${data.length} products.`);
     }
 
-    console.log('\nDatabase seeding finished.');
+    console.log('Database seeding finished.');
 }
 
 // --- Execute Seeding ---

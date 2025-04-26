@@ -95,9 +95,10 @@ function ProductDetail() {
                     setSelectedShade(null);
                 }
 
-                // Fetch related products (using API)
+                // Fetch related products (using API by MAIN category)
                 if (fetchedProduct?.category) {
-                    const allProducts = await api.getProducts(fetchedProduct.category); // Fetch by category
+                    // Fetch by main category
+                    const allProducts = await api.getProducts(fetchedProduct.category);
                     const related = allProducts
                         .filter(p => p.id !== fetchedProduct.id) // Exclude current product
                         .slice(0, 4);
@@ -260,13 +261,16 @@ function ProductDetail() {
                         <Link component={RouterLink} underline="hover" color="inherit" to="/">
                             Home
                         </Link>
-                        <Link component={RouterLink} underline="hover" color="inherit" to="/products">
-                            Products
-                        </Link>
-                        {/* Display category if available */}
+                        {/* Link to the main category page */}
                         {product?.category && (
-                            <Link component={RouterLink} underline="hover" color="inherit" to={`/products?category=${product.category}`}>
+                            <Link component={RouterLink} underline="hover" color="inherit" to={`/products/${product.category.toLowerCase()}`}>
                                 {product.category}
+                            </Link>
+                        )}
+                        {/* Link to subcategory */}
+                        {product.subcategory && (
+                            <Link component={RouterLink} underline="hover" color="inherit" to={`/products/${product.category.toLowerCase()}?subcategory=${encodeURIComponent(product.subcategory)}`}>
+                                {product.subcategory}
                             </Link>
                         )}
                         <Typography color={colorValues.textPrimary}>{product?.name || 'Product'}</Typography>
@@ -367,7 +371,7 @@ function ProductDetail() {
                             </Typography>
 
                             <Typography variant="body2" sx={{ mb: 1, color: colorValues.textSecondary }}>
-                                Category: {product.category}
+                                Category: {product.category} {product.subcategory ? `> ${product.subcategory}` : ''}
                             </Typography>
 
                             {/* Shade Selector */}

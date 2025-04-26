@@ -64,11 +64,18 @@ serve(async (req: Request) => {
 
         // --- GET /api/products ---
         if (req.method === 'GET' && route[0] === 'products' && route.length === 1) {
-            const category = url.searchParams.get('category');
+            const category = url.searchParams.get('category'); // Main category filter
+            const subcategory = url.searchParams.get('subcategory'); // Subcategory filter
+
             let query = supabase.from('products').select('*');
 
+            // Filter by main category if provided
             if (category) {
                 query = query.eq('category', category);
+            }
+            // Filter by subcategory if provided
+            if (subcategory) {
+                query = query.eq('subcategory', subcategory);
             }
 
             const { data, error } = await query;

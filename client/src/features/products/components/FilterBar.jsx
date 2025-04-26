@@ -2,11 +2,13 @@ import React, { useContext } from 'react';
 import { Box, FormControl, InputLabel, Select, MenuItem, Grid } from '@mui/material';
 import { ThemeContext } from '../../../context/ThemeContext';
 
-function FilterBar({ categories, onFilterChange, currentFilters }) {
+// Add categoryLabel prop with a default value
+function FilterBar({ categories, onFilterChange, currentFilters, categoryLabel = "Category" }) {
     const { colorValues } = useContext(ThemeContext);
 
     const handleCategoryChange = (e) => {
-        onFilterChange({ ...currentFilters, category: e.target.value });
+        // Update the 'subcategory' field in the filters state
+        onFilterChange({ ...currentFilters, subcategory: e.target.value });
     };
 
     const handleSortChange = (e) => {
@@ -18,19 +20,54 @@ function FilterBar({ categories, onFilterChange, currentFilters }) {
             <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} sm={6}>
                     <FormControl fullWidth size="small" variant="outlined">
-                        <InputLabel>Category</InputLabel>
+                        {/* Use the categoryLabel prop */}
+                        <InputLabel>{categoryLabel}</InputLabel>
                         <Select
-                            value={currentFilters.category}
+                            // Use currentFilters.subcategory
+                            value={currentFilters.subcategory}
                             onChange={handleCategoryChange}
-                            label="Category"
+                            label={categoryLabel} // Use the categoryLabel prop
                             sx={{
-                                '&:focus': {
-                                    borderColor: colorValues.primary,
+                                color: colorValues.textPrimary, // Ensure text color matches theme
+                                '.MuiOutlinedInput-notchedOutline': {
+                                    borderColor: colorValues.textSecondary, // Border color
+                                },
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: colorValues.primary, // Hover border color
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: colorValues.primary, // Focus border color
+                                },
+                                '.MuiSvgIcon-root': { // Style dropdown icon
+                                    color: colorValues.textSecondary,
                                 }
+                            }}
+                            MenuProps={{ // Style the dropdown menu itself
+                                PaperProps: {
+                                    sx: {
+                                        backgroundColor: colorValues.bgPaper,
+                                        color: colorValues.textPrimary,
+                                    },
+                                },
                             }}
                         >
                             {categories.map((category) => (
-                                <MenuItem key={category} value={category}>
+                                <MenuItem
+                                    key={category}
+                                    value={category}
+                                    sx={{ // Style individual menu items
+                                        '&:hover': {
+                                            backgroundColor: colorValues.buttonHover,
+                                        },
+                                        '&.Mui-selected': { // Style selected item
+                                            backgroundColor: colorValues.buttonHover,
+                                            fontWeight: 500,
+                                        },
+                                        '&.Mui-selected:hover': { // Style selected item on hover
+                                            backgroundColor: colorValues.buttonHover,
+                                        }
+                                    }}
+                                >
                                     {category}
                                 </MenuItem>
                             ))}
@@ -45,15 +82,33 @@ function FilterBar({ categories, onFilterChange, currentFilters }) {
                             onChange={handleSortChange}
                             label="Sort By"
                             sx={{
-                                '&:focus': {
+                                color: colorValues.textPrimary,
+                                '.MuiOutlinedInput-notchedOutline': {
+                                    borderColor: colorValues.textSecondary,
+                                },
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
                                     borderColor: colorValues.primary,
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: colorValues.primary,
+                                },
+                                '.MuiSvgIcon-root': {
+                                    color: colorValues.textSecondary,
                                 }
                             }}
+                            MenuProps={{
+                                PaperProps: {
+                                    sx: {
+                                        backgroundColor: colorValues.bgPaper,
+                                        color: colorValues.textPrimary,
+                                    },
+                                },
+                            }}
                         >
-                            <MenuItem value="default">Default</MenuItem>
-                            <MenuItem value="price-low">Price: Low to High</MenuItem>
-                            <MenuItem value="price-high">Price: High to Low</MenuItem>
-                            <MenuItem value="rating">Rating</MenuItem>
+                            <MenuItem value="default" sx={{ '&:hover': { backgroundColor: colorValues.buttonHover }, '&.Mui-selected': { backgroundColor: colorValues.buttonHover, fontWeight: 500 }, '&.Mui-selected:hover': { backgroundColor: colorValues.buttonHover } }}>Default</MenuItem>
+                            <MenuItem value="price-low" sx={{ '&:hover': { backgroundColor: colorValues.buttonHover }, '&.Mui-selected': { backgroundColor: colorValues.buttonHover, fontWeight: 500 }, '&.Mui-selected:hover': { backgroundColor: colorValues.buttonHover } }}>Price: Low to High</MenuItem>
+                            <MenuItem value="price-high" sx={{ '&:hover': { backgroundColor: colorValues.buttonHover }, '&.Mui-selected': { backgroundColor: colorValues.buttonHover, fontWeight: 500 }, '&.Mui-selected:hover': { backgroundColor: colorValues.buttonHover } }}>Price: High to Low</MenuItem>
+                            <MenuItem value="rating" sx={{ '&:hover': { backgroundColor: colorValues.buttonHover }, '&.Mui-selected': { backgroundColor: colorValues.buttonHover, fontWeight: 500 }, '&.Mui-selected:hover': { backgroundColor: colorValues.buttonHover } }}>Rating</MenuItem>
                         </Select>
                     </FormControl>
                 </Grid>

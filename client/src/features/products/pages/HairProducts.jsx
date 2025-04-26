@@ -1,17 +1,18 @@
-import React, { useState, useContext, useEffect } from 'react'; // Added useEffect
-import { Container, Typography, Grid, Box, Paper, CircularProgress, Alert } from '@mui/material'; // Added CircularProgress, Alert
+import React, { useState, useContext, useEffect } from 'react';
+import { Container, Typography, Grid, Box, Paper, CircularProgress, Alert } from '@mui/material';
 import FilterBar from '../components/FilterBar';
 import ProductCard from '../components/ProductCard';
 import { ThemeContext } from '../../../context/ThemeContext';
-import { useApi } from '../../../api/apiClient'; // Import useApi
+import { useApi } from '../../../api/apiClient';
 
 function HairProducts() {
     const { theme, colorValues } = useContext(ThemeContext);
-    const api = useApi(); // Get API methods
-    const [products, setProducts] = useState([]); // State for fetched products
-    const [loading, setLoading] = useState(true); // Loading state
-    const [error, setError] = useState(null); // Error state
-    const [filters, setFilters] = useState({ category: 'All', sort: 'default' });
+    const api = useApi();
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    // Initialize filters with subcategory 'All'
+    const [filters, setFilters] = useState({ subcategory: 'All', sort: 'default' });
 
     useEffect(() => {
         const fetchHairProducts = async () => {
@@ -19,8 +20,7 @@ function HairProducts() {
             setError(null);
             try {
                 // Fetch products specifically for the 'Hair' category
-                // Ensure 'Hair' matches the category value in your Supabase table
-                const data = await api.getProducts('Hair'); // Or 'Hair Care' etc. depending on your Supabase data
+                const data = await api.getProducts('Hair');
                 setProducts(Array.isArray(data) ? data : []);
             } catch (err) {
                 console.error("Error fetching hair products:", err);
@@ -32,11 +32,12 @@ function HairProducts() {
         };
 
         fetchHairProducts();
-    }, []); // Empty dependency array to run once on mount
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Change dependency array to empty
 
-    // Apply filtering and sorting to the fetched products state
+    // Apply filtering based on subcategory and sorting
     const filteredProducts = products
-        .filter((product) => filters.category === 'All' || product.category === filters.category) // Adjust if needed
+        .filter((product) => filters.subcategory === 'All' || product.subcategory === filters.subcategory) // Filter by subcategory
         .sort((a, b) => {
             if (filters.sort === 'price-low') return a.price - b.price;
             if (filters.sort === 'price-high') return b.price - a.price;
@@ -45,7 +46,7 @@ function HairProducts() {
         });
 
     // Extract unique sub-categories from fetched products for the filter bar
-    const hairSubCategories = ['All', ...new Set(products.map(p => p.category))];
+    const hairSubCategories = ['All', ...new Set(products.map(p => p.subcategory).filter(Boolean))];
 
     return (
         <Box
@@ -85,10 +86,10 @@ function HairProducts() {
                     }}
                 >
                     <FilterBar
-                        // Use dynamic categories from fetched data or define static ones
-                        categories={hairSubCategories.length > 1 ? hairSubCategories : ['All', 'Hair']} // Adjust as needed
+                        categories={hairSubCategories} // Pass subcategories
                         onFilterChange={setFilters}
                         currentFilters={filters}
+                        categoryLabel="Type" // Pass the desired label
                     />
                 </Paper>
 
