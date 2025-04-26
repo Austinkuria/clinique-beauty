@@ -119,21 +119,20 @@ async function seedDatabase() {
 
     // Prepare products for insertion, including subcategory
     const productsToInsert = mockProducts.map(product => ({
-        id: product.id, // Assuming you want to keep the mock IDs, otherwise omit for auto-generation
+        // id: product.id, // REMOVE THIS LINE - Let Supabase generate the UUID
         name: product.name,
         price: Math.round(product.price * USD_TO_KES_RATE), // Convert price to KES
-        image: product.image,
+        image: product.image, // Keep the mock image path for now
         description: product.description,
         category: product.category, // Main category
         subcategory: product.subcategory, // Subcategory
         stock: product.stock,
-        rating: product.rating || 0, // Include rating (ensure column exists)
+        rating: product.rating || 0,
         benefits: product.benefits ? JSON.stringify(product.benefits) : null,
         ingredients: product.ingredients ? JSON.stringify(product.ingredients) : null,
         shades: product.shades ? JSON.stringify(product.shades) : null,
         notes: product.notes ? JSON.stringify(product.notes) : null,
-        palettetheme: product.paletteTheme || null, // Ensure correct case
-        // created_at and updated_at will default to now()
+        palettetheme: product.paletteTheme || null,
     }));
 
     console.log(`Inserting ${productsToInsert.length} products...`);
