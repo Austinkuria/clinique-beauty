@@ -2,14 +2,23 @@ import { useAuth } from '@clerk/clerk-react';
 import { useCallback } from 'react';
 
 // Base URL and Anon Key - Check if they are loaded
-const API_BASE_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+const functionsBaseUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || '').trim();
+const apiUrl = (import.meta.env.VITE_API_URL || '').trim(); // Also trim the local API URL
+
+// Choose the correct base URL depending on your setup
+// If using Supabase functions for products:
+const API_BASE_URL = functionsBaseUrl;
+// If using your local Express server (http://localhost:5000/api):
+// const BASE_URL = apiUrl;
+
+// Ensure BASE_URL is defined before creating the instance
+if (!API_BASE_URL) {
+    console.error("Error: API Base URL (VITE_SUPABASE_FUNCTIONS_URL or VITE_API_URL) is not defined or invalid in .env");
+    // Handle the error appropriately, maybe throw an error or use a default
+}
+
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!API_BASE_URL) {
-    console.error("Error: VITE_SUPABASE_FUNCTIONS_URL environment variable is not set.");
-    // Optionally throw an error to halt execution if critical
-    // throw new Error("Missing VITE_SUPABASE_FUNCTIONS_URL environment variable.");
-}
 if (!SUPABASE_ANON_KEY) {
     console.error("Error: VITE_SUPABASE_ANON_KEY environment variable is not set.");
     // Optionally throw an error
@@ -52,7 +61,12 @@ export const useApi = () => {
             config.body = JSON.stringify(body);
         }
 
-        const response = await fetch(`${API_BASE_URL}/${endpoint}`, config);
+        // Construct the URL carefully to avoid double slashes
+        // Ensure endpoint doesn't start with '/' if API_BASE_URL ends with '/'
+        const url = `${API_BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+
+        // Use the corrected URL
+        const response = await fetch(url, config);
 
         // Check if the response is ok (status in the range 200-299)
         if (!response.ok) {
