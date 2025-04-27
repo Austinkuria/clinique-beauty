@@ -48,7 +48,7 @@ export const router = createBrowserRouter([
                         element: <ClerkVerification type="factorTwo" />
                     },
                     {
-                        path: '/auth/register',
+                        path: '/auth/register/*',
                         element: <RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>
                     },
                     // Clerk verification routes

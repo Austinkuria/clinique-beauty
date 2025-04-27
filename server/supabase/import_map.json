@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "djwt": "https://deno.land/x/djwt@v3.0.1/mod.ts",
+    "supabase": "https://esm.sh/@supabase/supabase-js@2"
+  }
+}

@@ -40,9 +40,7 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     // API_BASE_URL should now correctly point to the Supabase function
     const url = `${API_BASE_URL}${cleanEndpoint}`;
-    const headers = {
-        'Content-Type': 'application/json',
-    };
+    const headers = new Headers({ 'Content-Type': 'application/json' }); // Initialize as Headers object
     let token = null;
 
     // --- Add Logging Here ---
@@ -55,22 +53,25 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
             throw new Error("API client not ready. Authentication function missing.");
         }
         try {
-            // Use the stored getToken function
-            token = await clerkGetToken({ template: 'supabase' }); // Assuming 'supabase' template
+            // --- CHANGE: Request default Clerk session token ---
+            console.log("API Client: Requesting default Clerk session token...");
+            token = await clerkGetToken(); // Remove { template: 'supabase' }
+            // --- END CHANGE ---
+
             if (!token) {
-                // --- CHANGE: Throw error if token is null/undefined ---
-                console.error(`API Client Error: Failed to retrieve authentication token (template: supabase).`);
+                console.error(`API Client Error: Failed to retrieve default authentication token.`);
                 throw new Error("Authentication token could not be retrieved.");
-                // --- END CHANGE ---
             }
-            headers['Authorization'] = `Bearer ${token}`;
-            console.log(`API Client: ${method} ${endpoint} - Using token (template: supabase)`);
+            headers.set('Authorization', `Bearer ${token}`);
+
+            // --- ADD TOKEN LOGGING ---
+            const tokenSnippet = token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'null/undefined';
+            console.log(`API Client: ${method} ${endpoint} - Using default token. Snippet: ${tokenSnippet}`);
+            // --- END TOKEN LOGGING ---
 
         } catch (error) {
-            console.error(`API Client Error: Error retrieving authentication token (template: supabase).`, error);
-            // --- CHANGE: Re-throw or throw a specific error ---
+            console.error(`API Client Error: Error retrieving default authentication token.`, error);
             throw new Error(`Authentication token retrieval failed: ${error.message}`);
-            // --- END CHANGE ---
         }
     } else {
         console.log(`API Client: ${method} ${endpoint} - No authentication required.`);
@@ -79,7 +80,7 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
 
     const config = {
         method: method,
-        headers: headers,
+        headers: headers, // Pass the Headers object
     };
 
     if (body) {
@@ -87,6 +88,10 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
     }
 
     try {
+        // --- ADJUST LOGGING BEFORE FETCH ---
+        // Log headers by iterating if needed, or just log the config object
+        console.log(`[API Client _request] Sending fetch for ${method} ${endpoint}. Config:`, { method: config.method, headers: Object.fromEntries(config.headers.entries()), hasBody: !!config.body });
+        // --- END ADJUST LOGGING ---
         const response = await fetch(url, config);
 
         if (!response.ok) {
