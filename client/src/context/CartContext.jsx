@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from 'react'; // Import useMemo
 import { useAuth, useUser } from '@clerk/clerk-react';
-import { useNavigate } from 'react-router-dom'; // Keep useNavigate
 import toast from 'react-hot-toast';
 import { useApi } from '../api/apiClient';
 
@@ -13,9 +12,7 @@ export const CartProvider = ({ children }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const { isSignedIn, isLoaded } = useUser();
-    const { getToken } = useAuth();
     const api = useApi();
-    const navigate = useNavigate();
 
     // --- Calculate cartTotal and itemCount dynamically ---
     const { cartTotal, itemCount } = useMemo(() => {
