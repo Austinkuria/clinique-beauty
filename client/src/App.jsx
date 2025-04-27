@@ -7,10 +7,14 @@ import { Box, CircularProgress } from '@mui/material';
 // Import the context providers
 import { CartProvider } from './context/CartContext.jsx';
 import { WishlistProvider } from './context/WishlistContext.jsx';
+import { useInitializeApi } from './api/apiClient'; // Import the initialization hook
 
 function App() {
   // Get the MUI theme from ThemeContext
   const { muiTheme } = useContext(ThemeContext);
+
+  // Call the hook here to ensure it runs when App mounts
+  useInitializeApi();
 
   return (
     <MUIThemeProvider theme={muiTheme}>

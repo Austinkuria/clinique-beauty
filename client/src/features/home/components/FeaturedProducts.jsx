@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react'; // Import useState and useEffect
 import { Link as RouterLink } from 'react-router-dom';
 import {
     Container,
@@ -9,55 +9,46 @@ import {
     CardContent,
     CardActions,
     Button,
-    Box
+    Box,
+    CircularProgress // Import CircularProgress for loading state
 } from '@mui/material';
 import { useCart } from '../../../context/CartContext';
-import moisturizer from '../../../assets/images/products/skincare/moisturizer.webp';
-import cleanser from '../../../assets/images/products/skincare/cleanser.webp';
-import serum from '../../../assets/images/products/skincare/serum.webp';
+import { useApi } from '../../../api/apiClient'; // Import useApi
+import defaultProductImage from '../../../assets/images/placeholder.webp'; // Import a fallback image
 
 function FeaturedProducts() {
-    const { cartItems, setCartItems } = useCart();
+    const { addToCart, loading: cartLoading } = useCart(); // Use addToCart from context, get loading state
+    const api = useApi(); // Get API methods
+    const [featuredProducts, setFeaturedProducts] = useState([]); // State for products
+    const [loading, setLoading] = useState(true); // State for loading
+    const [error, setError] = useState(null); // State for errors
 
-    const products = [
-        {
-            id: 1,
-            name: 'Moisturizer',
-            price: 29.99,
-            image: moisturizer,
-            stock: 50, // Added stock
-            description: 'Deeply hydrating formula for all skin types'
-        },
-        {
-            id: 2,
-            name: 'Cleanser',
-            price: 19.99,
-            image: cleanser,
-            stock: 35, // Added stock
-            description: 'Gentle daily cleanser that removes impurities'
-        },
-        {
-            id: 3,
-            name: 'Serum',
-            price: 39.99,
-            image: serum,
-            stock: 25, // Added stock
-            description: '2 in 1 Collagen Face Serum Anti Aging Collagen Serum'
-        }
-    ];
+    useEffect(() => {
+        const fetchFeatured = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // Fetch all products (or modify API if you have a specific 'featured' endpoint)
+                const allProducts = await api.getProducts();
+                // Select the first 3 products as featured (or implement other logic)
+                setFeaturedProducts(allProducts.slice(0, 3));
+            } catch (err) {
+                console.error("Error fetching featured products:", err);
+                setError(err.message || 'Failed to load featured products.');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const addToCart = (product) => {
-        const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
+        fetchFeatured();
+    }, [api]); // Dependency array includes api
 
-        if (existingItemIndex >= 0) {
-            // Item already exists, update quantity
-            const newCartItems = [...cartItems];
-            newCartItems[existingItemIndex].quantity += 1;
-            setCartItems(newCartItems);
-        } else {
-            // Add new item with quantity 1
-            setCartItems([...cartItems, { ...product, quantity: 1 }]);
-        }
+    // Remove the hardcoded addToCart function, use context's directly
+
+    // Handle image errors
+    const handleImageError = (e) => {
+        e.target.onerror = null; // Prevent infinite loop
+        e.target.src = defaultProductImage;
     };
 
     return (
@@ -93,62 +84,88 @@ function FeaturedProducts() {
                     Featured Products
                 </Typography>
 
-                <Grid container spacing={4}>
-                    {products.map((product) => (
-                        <Grid item key={product.id} xs={12} sm={6} md={4}>
-                            <Card
-                                elevation={2}
-                                sx={{
-                                    height: '100%',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    transition: 'transform 0.3s, box-shadow 0.3s',
-                                    '&:hover': {
-                                        transform: 'translateY(-5px)',
-                                        boxShadow: 6
-                                    }
-                                }}
-                            >
-                                <CardMedia
-                                    component="img"
-                                    height="200"
-                                    image={product.image}
-                                    alt={product.name}
-                                />
-                                <CardContent sx={{ flexGrow: 1 }}>
-                                    <Typography gutterBottom variant="h5" component="h3">
-                                        {product.name}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {product.description}
-                                    </Typography>
-                                    <Typography variant="h6" color="primary" sx={{ mt: 2 }}>
-                                        ${product.price.toFixed(2)}
-                                    </Typography>
-                                </CardContent>
-                                <CardActions>
-                                    <Button
-                                        size="medium"
-                                        component={RouterLink}
-                                        to={`/products/${product.id}`}
-                                        fullWidth
-                                    >
-                                        View Details
-                                    </Button>
-                                    <Button
-                                        size="medium"
-                                        color="primary"
-                                        variant="contained"
-                                        fullWidth
-                                        onClick={() => addToCart(product)}
-                                    >
-                                        Add to Cart
-                                    </Button>
-                                </CardActions>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
+                {loading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                        <CircularProgress />
+                    </Box>
+                )}
+
+                {error && (
+                    <Typography color="error" align="center" sx={{ my: 4 }}>
+                        Error: {error}
+                    </Typography>
+                )}
+
+                {!loading && !error && (
+                    <Grid container spacing={4}>
+                        {/* Map over featuredProducts state */}
+                        {featuredProducts.map((product) => (
+                            <Grid item key={product.id} xs={12} sm={6} md={4}>
+                                <Card
+                                    elevation={2}
+                                    sx={{
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        transition: 'transform 0.3s, box-shadow 0.3s',
+                                        '&:hover': {
+                                            transform: 'translateY(-5px)',
+                                            boxShadow: 6
+                                        }
+                                    }}
+                                >
+                                    <CardMedia
+                                        component="img"
+                                        height="200"
+                                        // Use product.image, provide fallback
+                                        image={product.image || defaultProductImage}
+                                        alt={product.name}
+                                        onError={handleImageError} // Add error handler
+                                    />
+                                    <CardContent sx={{ flexGrow: 1 }}>
+                                        <Typography gutterBottom variant="h5" component="h3">
+                                            {product.name}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary" noWrap> {/* Use noWrap to prevent long descriptions */}
+                                            {product.description}
+                                        </Typography>
+                                        <Typography variant="h6" color="primary" sx={{ mt: 2 }}>
+                                            {/* Ensure price exists and is a number */}
+                                            ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
+                                        </Typography>
+                                    </CardContent>
+                                    <CardActions>
+                                        <Button
+                                            size="medium"
+                                            component={RouterLink}
+                                            // Link to the correct product detail page URL structure
+                                            to={`/product/${product.id}`}
+                                            fullWidth
+                                        >
+                                            View Details
+                                        </Button>
+                                        <Button
+                                            size="medium"
+                                            color="primary"
+                                            variant="contained"
+                                            fullWidth
+                                            // Call context's addToCart, pass the full product and quantity 1
+                                            onClick={() => addToCart(product, 1)}
+                                            disabled={cartLoading} // Disable button while cart is processing
+                                        >
+                                            {cartLoading ? 'Adding...' : 'Add to Cart'}
+                                        </Button>
+                                    </CardActions>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                )}
+                 {!loading && !error && featuredProducts.length === 0 && (
+                    <Typography align="center" sx={{ my: 4 }}>
+                        No featured products available at the moment.
+                    </Typography>
+                )}
             </Container>
         </Box>
     );

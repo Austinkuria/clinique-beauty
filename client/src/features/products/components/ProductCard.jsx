@@ -3,32 +3,31 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Card, CardMedia, CardContent, CardActions, Rating } from '@mui/material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import { useCart } from '../../../context/CartContext';
+import { useCart } from '../../../context/CartContext'; // Import useCart
 // Update path to use the general placeholder image
 import defaultProductImage from '../../../assets/images/placeholder.webp';
 
 function ProductCard({ product }) {
     const { theme, colorValues } = useContext(ThemeContext);
-    const { cartItems, setCartItems } = useCart();
+    // Get addToCart and loading state from CartContext
+    const { addToCart: contextAddToCart, loading: cartLoading } = useCart();
     const [imageError, setImageError] = useState(false);
     const navigate = useNavigate();
 
-    const addToCart = (e, product) => {
+    // Remove the local addToCart function
+
+    const handleAddToCartClick = (e) => {
         // Stop event propagation to prevent navigation when clicking the button
         e.stopPropagation();
-
-        const existingItemIndex = cartItems.findIndex((item) => item.id === product.id);
-        if (existingItemIndex >= 0) {
-            const newCartItems = [...cartItems];
-            newCartItems[existingItemIndex].quantity = (newCartItems[existingItemIndex].quantity || 1) + 1;
-            setCartItems(newCartItems);
-        } else {
-            setCartItems([...cartItems, { ...product, quantity: 1 }]);
-        }
+        // Call the context's addToCart function, passing the product and quantity 1
+        // Assuming product object has all necessary details (id, name, price, image, etc.)
+        contextAddToCart(product, 1);
     };
 
+
     const handleCardClick = () => {
-        navigate(`/products/${product.id}`);
+        // Navigate to the specific product detail page
+        navigate(`/product/${product.id}`); // Use /product/:id route
     };
 
     return (
@@ -53,6 +52,7 @@ function ProductCard({ product }) {
             <CardMedia
                 component="img"
                 height="200"
+                // Use product.image directly, handle error with state
                 image={imageError ? defaultProductImage : product.image}
                 alt={product.name}
                 onError={() => setImageError(true)}
@@ -77,18 +77,21 @@ function ProductCard({ product }) {
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <Rating
-                        value={product.rating}
+                        // Use product.rating directly
+                        value={product.rating || 0} // Default to 0 if rating is missing
                         precision={0.1}
                         readOnly
                         size="small"
                         sx={{ color: colorValues.primary }}
                     />
                     <Typography variant="body2" sx={{ ml: 1, color: colorValues.textSecondary }}>
-                        ({product.rating})
+                        {/* Display rating value */}
+                        ({product.rating || 0})
                     </Typography>
                 </Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, color: colorValues.primary }}>
-                    ${product.price.toFixed(2)}
+                    {/* Ensure price is a number before calling toFixed */}
+                    ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
                 </Typography>
             </CardContent>
             <CardActions sx={{ p: 2, pt: 0 }}>
@@ -96,7 +99,10 @@ function ProductCard({ product }) {
                     variant="contained"
                     fullWidth
                     startIcon={<ShoppingCartIcon />}
-                    onClick={(e) => addToCart(e, product)}
+                    // Use the new handler
+                    onClick={handleAddToCartClick}
+                    // Disable button if cart is loading
+                    disabled={cartLoading}
                     sx={{
                         backgroundColor: colorValues.primary,
                         color: '#ffffff',
@@ -112,7 +118,8 @@ function ProductCard({ product }) {
                         zIndex: 2, // Ensure button is above card for clicks
                     }}
                 >
-                    Add to Cart
+                    {/* Show loading state */}
+                    {cartLoading ? 'Adding...' : 'Add to Cart'}
                 </Button>
             </CardActions>
         </Card>

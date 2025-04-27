@@ -1,52 +1,63 @@
 import React, { useContext } from 'react';
 import { Container, Typography, Box, Grid, Paper, Button, IconButton, TextField, CircularProgress, Alert } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom'; // Import useNavigate
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { useCart } from '../../context/CartContext'; // Import useCart hook
 import { ThemeContext } from '../../context/ThemeContext';
+import defaultProductImage from '../../assets/images/placeholder.webp'; // Fallback image
 
 function Cart() {
   // Use the cart context
-  const { cartItems, total, loading, error, updateCartItem, removeFromCart, itemCount } = useCart();
-  const { colorValues } = useContext(ThemeContext);
+  const {
+      cartItems,
+      total, // Use total calculated by context if available, otherwise calculate here
+      loading,
+      error,
+      updateCartItem, // Use context function
+      removeFromCart, // Use context function
+      itemCount,
+      cartTotal // Use cartTotal from context for summary
+  } = useCart();
+  const { theme, colorValues } = useContext(ThemeContext); // Get theme context
+  const navigate = useNavigate(); // Get navigate function
 
   const handleQuantityChange = (item, newQuantity) => {
     const quantityNum = parseInt(newQuantity, 10);
     if (!isNaN(quantityNum) && quantityNum >= 1) {
-      // Check against stock if available on the item.product object
-      const maxQuantity = item.product?.stock ?? Infinity;
+      // Check against stock if available on the item object directly
+      const maxQuantity = item.stock ?? Infinity;
       if (quantityNum <= maxQuantity) {
-        updateCartItem(item.id, quantityNum);
+        updateCartItem(item.id, quantityNum); // Use context function
       } else {
-        // Optionally show a toast message about stock limit
         console.warn(`Quantity limited to ${maxQuantity} due to stock.`);
         updateCartItem(item.id, maxQuantity); // Update to max stock
       }
     } else if (!isNaN(quantityNum) && quantityNum < 1) {
-      // If user tries to set quantity below 1, treat as removal or set to 1
-      // Option 1: Remove item
-      removeFromCart(item.id);
-      // Option 2: Set to 1 (current updateCartItem might handle this if API enforces >= 1)
-      // updateCartItem(item.id, 1);
+      // If user tries to set quantity below 1, remove item
+      removeFromCart(item.id); // Use context function
     }
   };
 
   const handleIncrement = (item) => {
-    const maxQuantity = item.product?.stock ?? Infinity;
+    const maxQuantity = item.stock ?? Infinity;
     if (item.quantity < maxQuantity) {
-      updateCartItem(item.id, item.quantity + 1);
+      updateCartItem(item.id, item.quantity + 1); // Use context function
     }
   };
 
   const handleDecrement = (item) => {
     if (item.quantity > 1) {
-      updateCartItem(item.id, item.quantity - 1);
+      updateCartItem(item.id, item.quantity - 1); // Use context function
     } else {
-      // Optionally confirm removal or just remove
-      removeFromCart(item.id);
+      // Remove item if quantity becomes 0 or less
+      removeFromCart(item.id); // Use context function
     }
+  };
+
+  const handleCheckout = () => {
+      navigate('/checkout'); // Navigate to checkout page
   };
 
 
@@ -73,7 +84,7 @@ function Cart() {
         {!loading && !error && cartItems.length === 0 && (
           <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: colorValues.bgPaper }}>
             <Typography variant="h6" sx={{ mb: 2 }}>Your cart is empty.</Typography>
-            <Button variant="contained" component={RouterLink} to="/" sx={{ backgroundColor: colorValues.primary, '&:hover': { backgroundColor: colorValues.primaryDark } }}>
+            <Button variant="contained" component={RouterLink} to="/products" sx={{ backgroundColor: colorValues.primary, '&:hover': { backgroundColor: colorValues.primaryDark } }}>
               Continue Shopping
             </Button>
           </Paper>
@@ -84,18 +95,22 @@ function Cart() {
             {/* Cart Items List */}
             <Grid item xs={12} md={8}>
               {cartItems.map((item) => (
-                <Paper key={item.id} sx={{ display: 'flex', alignItems: 'center', mb: 2, p: 2, backgroundColor: colorValues.bgPaper }}>
+                <Paper key={`${item.id}-${item.selectedShade?.name || 'nosha'}`} sx={{ display: 'flex', alignItems: 'center', mb: 2, p: 2, backgroundColor: colorValues.bgPaper }}>
                   <Box
                     component="img"
-                    src={item.product?.image}
-                    alt={item.product?.name}
+                    // Access image directly from item
+                    src={item.image || defaultProductImage}
+                    // Access name directly from item
+                    alt={item.name || 'Product Image'}
                     sx={{ width: 80, height: 80, objectFit: 'contain', mr: 2, borderRadius: 1 }}
-                    onError={(e) => { e.target.onerror = null; e.target.src = "/src/assets/images/products/cleanser.webp"; }} // Fallback image
+                    onError={(e) => { e.target.onerror = null; e.target.src = defaultProductImage; }} // Use correct fallback
                   />
                   <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" component="div">{item.product?.name || 'Product Name Unavailable'}</Typography>
+                    {/* Access name directly from item */}
+                    <Typography variant="h6" component="div">{item.name || 'Product Name Unavailable'}</Typography>
                     <Typography variant="body2" color={colorValues.textSecondary}>
-                      Price: ${item.product?.price?.toFixed(2) || 'N/A'}
+                      {/* Access price directly from item */}
+                      Price: ${typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
                     </Typography>
                     {/* Display selected shade if available */}
                     {item.selectedShade && (
@@ -106,7 +121,7 @@ function Cart() {
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 150, justifyContent: 'space-between' }}>
                     {/* Quantity Controls */}
-                    <IconButton onClick={() => handleDecrement(item)} size="small" aria-label="Decrease quantity">
+                    <IconButton onClick={() => handleDecrement(item)} size="small" aria-label="Decrease quantity" disabled={loading}>
                       <RemoveIcon fontSize="small" />
                     </IconButton>
                     <TextField
@@ -114,10 +129,13 @@ function Cart() {
                       onChange={(e) => handleQuantityChange(item, e.target.value)}
                       type="number"
                       size="small"
-                      aria-label={`Quantity for ${item.product?.name}`}
+                      // Access name directly from item
+                      aria-label={`Quantity for ${item.name}`}
+                      disabled={loading}
                       inputProps={{
                         min: 1,
-                        max: item.product?.stock, // Use stock from product data
+                        // Access stock directly from item
+                        max: item.stock,
                         style: { textAlign: 'center', width: '40px', MozAppearance: 'textfield' },
                       }}
                       sx={{ mx: 0.5, '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 } }}
@@ -126,12 +144,14 @@ function Cart() {
                       onClick={() => handleIncrement(item)}
                       size="small"
                       aria-label="Increase quantity"
-                      disabled={item.product?.stock !== undefined && item.quantity >= item.product.stock} // Disable based on stock
+                      // Access stock directly from item
+                      disabled={loading || (item.stock !== undefined && item.quantity >= item.stock)}
                     >
                       <AddIcon fontSize="small" />
                     </IconButton>
                     {/* Remove Button */}
-                    <IconButton onClick={() => removeFromCart(item.id)} color="error" aria-label={`Remove ${item.product?.name} from cart`} sx={{ ml: 1 }}>
+                    {/* Use context function */}
+                    <IconButton onClick={() => removeFromCart(item.id)} color="error" aria-label={`Remove ${item.name} from cart`} sx={{ ml: 1 }} disabled={loading}>
                       <DeleteIcon />
                     </IconButton>
                   </Box>
@@ -146,26 +166,34 @@ function Cart() {
                   Order Summary
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  {/* Use itemCount from context */}
                   <Typography>Subtotal ({itemCount} items)</Typography>
-                  <Typography sx={{ fontWeight: 500 }}>${total.toFixed(2)}</Typography>
+                  {/* Use cartTotal from context */}
+                  <Typography sx={{ fontWeight: 500 }}>${cartTotal.toFixed(2)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography>Shipping</Typography>
-                  <Typography sx={{ fontWeight: 500 }}>FREE</Typography> {/* Or calculate shipping */}
+                  <Typography sx={{ fontWeight: 500, color: colorValues.success }}>FREE</Typography> {/* Or calculate shipping */}
                 </Box>
                 <hr />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, mb: 3 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>Total</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>${total.toFixed(2)}</Typography>
+                  {/* Use cartTotal from context */}
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>${cartTotal.toFixed(2)}</Typography>
                 </Box>
                 <Button
                   variant="contained"
                   fullWidth
                   size="large"
-                  component={RouterLink}
-                  to="/checkout" // Link to your checkout page
-                  sx={{ backgroundColor: colorValues.primary, '&:hover': { backgroundColor: colorValues.primaryDark }, color: 'white' }}
-                  disabled={loading} // Disable button during cart operations
+                  onClick={handleCheckout} // Use handler to navigate
+                  sx={{
+                      backgroundColor: colorValues.primary,
+                      '&:hover': { backgroundColor: colorValues.primaryDark },
+                      color: 'white',
+                      py: 1.5,
+                      borderRadius: '50px'
+                  }}
+                  disabled={loading || cartItems.length === 0} // Disable button during cart operations or if empty
                 >
                   Proceed to Checkout
                 </Button>

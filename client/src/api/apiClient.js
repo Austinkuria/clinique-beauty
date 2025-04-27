@@ -1,20 +1,17 @@
 import { useAuth } from '@clerk/clerk-react';
 import { useCallback } from 'react';
 
-// Base URL and Anon Key - Check if they are loaded
-const functionsBaseUrl = (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || '').trim();
-const apiUrl = (import.meta.env.VITE_API_URL || '').trim(); // Also trim the local API URL
+// Base URL for your API - Use the Supabase Functions URL + function name
+const SUPABASE_FUNCTIONS_BASE = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+const API_FUNCTION_NAME = 'api'; // The name of your edge function
 
-// Choose the correct base URL depending on your setup
-// If using Supabase functions for products:
-const API_BASE_URL = functionsBaseUrl;
-// If using your local Express server (http://localhost:5000/api):
-// const BASE_URL = apiUrl;
+// Construct the final base URL, ensuring no double slashes if VITE_SUPABASE_FUNCTIONS_URL ends with one
+const API_BASE_URL = SUPABASE_FUNCTIONS_BASE
+    ? `${SUPABASE_FUNCTIONS_BASE.replace(/\/$/, '')}/${API_FUNCTION_NAME}`
+    : `http://localhost:3001/${API_FUNCTION_NAME}`; // Fallback for local testing if needed, adjust port
 
-// Ensure BASE_URL is defined before creating the instance
-if (!API_BASE_URL) {
-    console.error("Error: API Base URL (VITE_SUPABASE_FUNCTIONS_URL or VITE_API_URL) is not defined or invalid in .env");
-    // Handle the error appropriately, maybe throw an error or use a default
+if (!SUPABASE_FUNCTIONS_BASE) {
+    console.warn("VITE_SUPABASE_FUNCTIONS_URL is not defined in .env. Falling back to local URL:", API_BASE_URL);
 }
 
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -39,7 +36,10 @@ export const useInitializeApi = () => {
 
 // Helper function to make authenticated requests
 const _request = async (method, endpoint, body = null, requiresAuth = true) => {
-    const url = `${API_BASE_URL}${endpoint}`;
+    // Ensure endpoint starts with '/' and combine carefully
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    // API_BASE_URL should now correctly point to the Supabase function
+    const url = `${API_BASE_URL}${cleanEndpoint}`;
     const headers = {
         'Content-Type': 'application/json',
     };
@@ -117,7 +117,13 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
 
 
 // --- API Methods ---
-// ... (getProducts, getProductById - likely don't require auth) ...
+
+// Product methods
+const getProducts = (category = null) => {
+    const endpoint = category ? `/products?category=${encodeURIComponent(category)}` : '/products';
+    return _request('GET', endpoint, null, false); // Assuming public access (requiresAuth = false)
+};
+const getProductById = (id) => _request('GET', `/products/${id}`, null, false); // Assuming public access
 
 // Cart methods (likely require auth)
 const getCart = () => _request('GET', '/cart', null, true); // requiresAuth = true
@@ -129,6 +135,8 @@ const clearCart = () => _request('DELETE', '/cart/clear', null, true); // requir
 // ... (other methods like getWishlist, addToWishlist, etc. - set requiresAuth accordingly) ...
 
 export const api = {
+    getProducts, // Add getProducts here
+    getProductById,
     // ... other methods
     getCart,
     addToCart,
