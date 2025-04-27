@@ -1,86 +1,140 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient, SupabaseClient, User } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts'; // Assuming corsHeaders are defined in a shared file
+import { corsHeaders } from '../_shared/cors.ts'; // Import from the new shared file
 
-// Define allowed origins - include your local dev and production URLs
-const allowedOrigins = [
-    'http://localhost:5173',
-    'https://clinique-beauty.vercel.app' // Ensure this matches your Vercel URL exactly
-];
+// Remove allowedOrigins definition from here
+// const allowedOrigins = [ ... ];
 
 // Helper to get user from JWT
 async function getUser(supabaseClient: SupabaseClient): Promise<User | null> {
-    const { data: { user }, error } = await supabaseClient.auth.getUser();
-    if (error) {
-        console.error('Error getting user:', error);
+    console.log('[getUser] Attempting to get user from Supabase client...'); // Log entry
+    try {
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        if (error) {
+            // Log the specific error from Supabase auth
+            console.error('[getUser] Error from supabaseClient.auth.getUser():', error.message);
+            return null;
+        }
+        if (!user) {
+            console.log('[getUser] supabaseClient.auth.getUser() returned null user.'); // Log if no user found
+        } else {
+            console.log('[getUser] Successfully retrieved user:', user.id); // Log success
+        }
+        return user;
+    } catch (catchError) {
+        // Catch any unexpected errors during the process
+        console.error('[getUser] Unexpected error:', catchError);
         return null;
     }
-    return user;
 }
-
 
 // Function to create Supabase client
 const getSupabaseClient = (req: Request): SupabaseClient => {
     const authHeader = req.headers.get('Authorization');
 
-    // If Authorization header exists, create client with user's auth context
+    // Log whether the Authorization header was found
     if (authHeader) {
+        console.log('[getSupabaseClient] Authorization header found.');
+        // Avoid logging the full token for security, maybe just the type 'Bearer'
+        // console.log('[getSupabaseClient] Auth Header Type:', authHeader.split(' ')[0]);
         return createClient(
             Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
             Deno.env.get('PROJECT_SUPABASE_ANON_KEY') ?? '',
             { global: { headers: { Authorization: authHeader } } } // Pass the received token
         );
+    } else {
+        console.log('[getSupabaseClient] No Authorization header found. Creating client with ANON KEY.');
+        // Create client using the ANON KEY (for public routes like getting products)
+        return createClient(
+            Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
+            Deno.env.get('PROJECT_SUPABASE_ANON_KEY') ?? ''
+        );
     }
-
-    // Otherwise, create client using the ANON KEY (for public routes like getting products)
-    // Note: Service Role Key should generally NOT be used directly in functions accessed by users.
-    // Use RLS and user context instead. If you need elevated privileges, consider a separate secure function.
-    return createClient(
-        Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
-        Deno.env.get('PROJECT_SUPABASE_ANON_KEY') ?? ''
-    );
 };
-
 
 serve(async (req: Request) => {
     const url = new URL(req.url);
     const pathSegments = url.pathname.split('/').filter(Boolean);
     const apiPathIndex = pathSegments.findIndex(segment => segment === 'api');
+
+    // --- Add Detailed Routing Logs ---
+    console.log(`[Router] Incoming URL: ${req.url}`);
+    console.log(`[Router] Pathname: ${url.pathname}`);
+    console.log(`[Router] Path Segments: ${JSON.stringify(pathSegments)}`);
+    console.log(`[Router] API Path Index: ${apiPathIndex}`);
+    // --- End Detailed Routing Logs ---
+
+    // If 'api' is not found, or it's the last segment, the route is effectively empty or invalid
+    if (apiPathIndex === -1) { // Simplified check: if 'api' isn't found at all
+        console.warn(`[Router] 'api' segment not found in path: ${url.pathname}`);
+        // Return 404 early if '/api/' structure is expected but missing
+        const headers = new Headers({
+            'Content-Type': 'application/json',
+            ...corsHeaders(req.headers.get('Origin')) // Add CORS headers
+        });
+        return new Response(JSON.stringify({ message: "Base path '/api' not found in URL" }), { headers, status: 404 });
+    }
+
+    // Slice the array *after* the 'api' segment to get the actual route parts
     const route = pathSegments.slice(apiPathIndex + 1);
+    // Example: if path is /functions/v1/api/cart/add, route should be ['cart', 'add']
+    // Example: if path is /functions/v1/api, route should be []
+
+    // --- Add Detailed Routing Logs ---
+    console.log(`[Router] Calculated Route: ${JSON.stringify(route)}`);
+    // --- End Detailed Routing Logs ---
 
     const origin = req.headers.get('Origin');
-    const isAllowedOrigin = origin && allowedOrigins.includes(origin);
+    // isAllowedOrigin check is implicitly handled by corsHeaders function now
 
     // --- CORS Preflight Request Handling ---
     if (req.method === 'OPTIONS') {
-        if (isAllowedOrigin) {
-            return new Response('ok', { headers: corsHeaders(origin) }); // Use shared CORS headers
-        } else {
-            return new Response('Forbidden', { status: 403 });
-        }
+        // Let corsHeaders handle origin checking logic implicitly if needed,
+        // or explicitly check if required by your logic before returning headers.
+        // For simplicity, we return the headers generated by corsHeaders.
+        return new Response('ok', { headers: corsHeaders(origin) });
     }
 
     // --- Prepare Response Headers ---
     const headers = new Headers({
         'Content-Type': 'application/json',
-        ...corsHeaders(origin) // Add CORS headers to actual responses
+        ...corsHeaders(origin) // Add CORS headers generated by the shared function
     });
 
     // --- API Routing ---
     try {
+        console.log(`[Request Start] ${req.method} ${req.url}`); // Log incoming request
         const supabase = getSupabaseClient(req); // Get client (potentially authenticated)
 
         // --- Public Product Routes ---
         // GET /api/products
         if (req.method === 'GET' && route[0] === 'products' && route.length === 1) {
-            // ... existing product fetching logic ...
+            console.log('[Route Handler] Matched GET /api/products'); // Log route match
             const category = url.searchParams.get('category');
             const subcategory = url.searchParams.get('subcategory');
             let query = supabase.from('products').select('*');
-            if (category) query = query.eq('category', category);
-            if (subcategory) query = query.eq('subcategory', subcategory);
+            if (category) {
+                console.log(`[Route Handler GET /api/products] Filtering by category: ${category}`);
+                query = query.eq('category', category);
+            }
+            if (subcategory) {
+                console.log(`[Route Handler GET /api/products] Filtering by subcategory: ${subcategory}`);
+                query = query.eq('subcategory', subcategory);
+            }
+
+            console.log('[Route Handler GET /api/products] Executing query...');
             const { data, error } = await query;
-            if (error) throw error;
+
+            if (error) {
+                console.error('[Route Handler GET /api/products] Error fetching products:', error);
+                throw error;
+            }
+
+            // --- Add Logging Here ---
+            console.log(`[Route Handler GET /api/products] Query successful. Data received:`, data);
+            console.log(`[Route Handler GET /api/products] Returning ${data?.length ?? 0} products.`);
+            // --- End Logging ---
+
             return new Response(JSON.stringify(data || []), { headers, status: 200 });
         }
         // GET /api/products/:id
@@ -102,11 +156,17 @@ serve(async (req: Request) => {
 
         // GET /api/cart
         if (req.method === 'GET' && route[0] === 'cart' && route.length === 1) {
+            console.log('[Route Handler] Matched GET /api/cart'); // Log route match
             const user = await getUser(supabase);
-            if (!user) return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+            if (!user) {
+                // Log the reason for 401
+                console.log('[Route Handler GET /api/cart] No authenticated user found. Returning 401.');
+                return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+            }
 
             // Fetch cart items joined with product details for the user
             // Adjust table/column names ('cart_items', 'product_id', 'user_id', 'products(*)') as needed
+            console.log(`[Route Handler GET /api/cart] User ${user.id} authenticated. Fetching cart items...`);
             const { data: cartItems, error } = await supabase
                 .from('cart_items')
                 .select(`
@@ -118,7 +178,11 @@ serve(async (req: Request) => {
                 `)
                 .eq('user_id', user.id);
 
-            if (error) throw error;
+            if (error) {
+                 console.error(`[Route Handler GET /api/cart] Error fetching cart items for user ${user.id}:`, error);
+                 throw error; // Let the main error handler catch it
+            }
+            console.log(`[Route Handler GET /api/cart] Successfully fetched cart items for user ${user.id}.`);
 
             // Format the response to match frontend expectations (flatten product details)
             const formattedCart = (cartItems || []).map(item => ({
@@ -132,14 +196,33 @@ serve(async (req: Request) => {
 
         // POST /api/cart/add
         if (req.method === 'POST' && route[0] === 'cart' && route[1] === 'add') {
+            console.log('[Route Handler] Matched POST /api/cart/add'); // Log route match
             const user = await getUser(supabase);
-            if (!user) return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+            if (!user) {
+                console.log('[Route Handler POST /api/cart/add] No authenticated user found. Returning 401.');
+                return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+            }
+            console.log(`[Route Handler POST /api/cart/add] User ${user.id} authenticated.`);
 
-            const { productId, quantity, shade } = await req.json(); // Add shade if needed
+            const { productId, quantity, shade } = await req.json(); // Assuming shade might be used later
 
             if (!productId || !quantity || quantity < 1) {
                 return new Response(JSON.stringify({ message: 'Product ID and valid quantity required' }), { headers, status: 400 });
             }
+
+            // --- Get Product Stock ---
+            const { data: productData, error: productError } = await supabase
+                .from('products')
+                .select('stock')
+                .eq('id', productId)
+                .single();
+
+            if (productError || !productData) {
+                return new Response(JSON.stringify({ message: 'Product not found or stock information unavailable' }), { headers, status: 404 });
+            }
+            const availableStock = productData.stock;
+            // --- End Get Product Stock ---
+
 
             // Check if item already exists in cart for this user
             const { data: existingItem, error: findError } = await supabase
@@ -147,51 +230,103 @@ serve(async (req: Request) => {
                 .select('id, quantity')
                 .eq('user_id', user.id)
                 .eq('product_id', productId)
-                // Add .eq('shade', shade) if tracking shades
+                // Add .eq('shade_name', shade) if tracking shades in DB
                 .maybeSingle();
 
             if (findError) throw findError;
 
-            let resultData, resultError;
+            let updatedOrNewItemId: string | null = null;
+            let operationStatus = 200; // Default to 200 OK for update
 
             if (existingItem) {
-                // Update quantity
+                // --- Update existing item ---
                 const newQuantity = existingItem.quantity + quantity;
-                const { data, error } = await supabase
+
+                // Check stock before updating
+                if (newQuantity > availableStock) {
+                    return new Response(JSON.stringify({ message: `Not enough stock. Only ${availableStock} available.` }), { headers, status: 400 });
+                }
+
+                const { data: updatedItem, error: updateError } = await supabase
                     .from('cart_items')
-                    .update({ quantity: newQuantity })
+                    .update({ quantity: newQuantity, updated_at: new Date() })
                     .eq('id', existingItem.id)
-                    .select() // Select updated item
-                    .single(); // Expect single result
-                resultData = data;
-                resultError = error;
+                    .select('id') // Only need the ID
+                    .single();
+
+                if (updateError) throw updateError;
+                updatedOrNewItemId = updatedItem.id;
+                // operationStatus remains 200 OK
+
             } else {
-                // Insert new item
-                const { data, error } = await supabase
+                // --- Insert new item ---
+                // Check stock before inserting
+                if (quantity > availableStock) {
+                    return new Response(JSON.stringify({ message: `Not enough stock. Only ${availableStock} available.` }), { headers, status: 400 });
+                }
+
+                const { data: newItem, error: insertError } = await supabase
                     .from('cart_items')
                     .insert({
                         user_id: user.id,
                         product_id: productId,
                         quantity: quantity,
-                        // shade: shade // Add shade if tracking
+                        // shade_name: shade // Add if tracking shades
                     })
-                    .select() // Select inserted item
-                    .single(); // Expect single result
-                resultData = data;
-                resultError = error;
+                    .select('id') // Only need the ID
+                    .single();
+
+                if (insertError) throw insertError;
+                updatedOrNewItemId = newItem.id;
+                operationStatus = 201; // 201 Created for new item
             }
 
-            if (resultError) throw resultError;
+            if (!updatedOrNewItemId) {
+                 throw new Error("Failed to get ID of updated/inserted cart item.");
+            }
 
-            return new Response(JSON.stringify(resultData), { headers, status: 201 }); // 201 Created or 200 OK
+            // --- Refetch the item with product details to return ---
+            const { data: finalItem, error: finalError } = await supabase
+                .from('cart_items')
+                .select(`
+                    id,
+                    quantity,
+                    product_id,
+                    products (
+                        id, name, price, image, description, category, subcategory, stock
+                    )
+                `)
+                .eq('id', updatedOrNewItemId) // Use the ID from the insert/update result
+                .single();
+
+            if (finalError) {
+                console.error("Error fetching final cart item details after add/update:", finalError);
+                // If refetch fails, return a simple success message with the ID
+                return new Response(JSON.stringify({ id: updatedOrNewItemId, message: "Operation successful, but failed to fetch full details." }), { headers, status: operationStatus });
+            }
+
+            // Format the final response similar to GET /cart item structure expected by client's formatCartItem
+            const formattedItem = {
+                cartItemId: finalItem.id, // Keep the actual cart_items PK if needed
+                id: finalItem.product_id, // Product ID (used as primary ID in client state)
+                quantity: finalItem.quantity,
+                ...(finalItem.products || {}) // Spread product details
+            };
+
+            return new Response(JSON.stringify(formattedItem), { headers, status: operationStatus });
         }
 
         // PUT /api/cart/update (or similar, e.g., /api/cart/item/:itemId)
         // Example using /api/cart/update with body { itemId, quantity }
         // Note: itemId here refers to the cart_items table primary key, NOT product_id
         if (req.method === 'PUT' && route[0] === 'cart' && route[1] === 'update') {
+             console.log('[Route Handler] Matched PUT /api/cart/update'); // Log route match
              const user = await getUser(supabase);
-             if (!user) return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+             if (!user) {
+                 console.log('[Route Handler PUT /api/cart/update] No authenticated user found. Returning 401.');
+                 return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+             }
+             console.log(`[Route Handler PUT /api/cart/update] User ${user.id} authenticated.`);
 
              const { itemId, quantity } = await req.json();
 
@@ -230,12 +365,16 @@ serve(async (req: Request) => {
              }
         }
 
-
         // DELETE /api/cart/remove (or similar, e.g., /api/cart/item/:itemId)
         // Example using /api/cart/remove with body { itemId }
         if (req.method === 'DELETE' && route[0] === 'cart' && route[1] === 'remove') {
+             console.log('[Route Handler] Matched DELETE /api/cart/remove'); // Log route match
              const user = await getUser(supabase);
-             if (!user) return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+             if (!user) {
+                 console.log('[Route Handler DELETE /api/cart/remove] No authenticated user found. Returning 401.');
+                 return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+             }
+             console.log(`[Route Handler DELETE /api/cart/remove] User ${user.id} authenticated.`);
 
              const { itemId } = await req.json();
 
@@ -256,8 +395,13 @@ serve(async (req: Request) => {
 
         // DELETE /api/cart/clear
         if (req.method === 'DELETE' && route[0] === 'cart' && route[1] === 'clear') {
+             console.log('[Route Handler] Matched DELETE /api/cart/clear'); // Log route match
              const user = await getUser(supabase);
-             if (!user) return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+             if (!user) {
+                 console.log('[Route Handler DELETE /api/cart/clear] No authenticated user found. Returning 401.');
+                 return new Response(JSON.stringify({ message: 'Unauthorized' }), { headers, status: 401 });
+             }
+             console.log(`[Route Handler DELETE /api/cart/clear] User ${user.id} authenticated.`);
 
              const { error } = await supabase
                  .from('cart_items')
@@ -269,19 +413,16 @@ serve(async (req: Request) => {
              return new Response(JSON.stringify({ message: 'Cart cleared successfully' }), { headers, status: 200 });
         }
 
-
         // --- Fallback for unhandled routes ---
-        return new Response(JSON.stringify({ message: 'Route not found' }), { headers, status: 404 });
+        console.warn(`[Route Handler] Route not found: ${req.method} ${url.pathname}`); // Add logging for 404s
+        return new Response(JSON.stringify({ message: 'Route not found' }), { headers, status: 404 }); // Use headers
 
     } catch (error) {
         console.error('Error processing request:', error);
-        const errorHeaders = new Headers({
-            'Content-Type': 'application/json',
-            ...corsHeaders(origin) // Add CORS headers to error responses
-        });
+        // Use the headers object for error responses too
         return new Response(
             JSON.stringify({ message: error?.message || 'Internal Server Error' }),
-            { headers: errorHeaders, status: 500 }
+            { headers: headers, status: 500 } // Use headers
         );
     }
 });

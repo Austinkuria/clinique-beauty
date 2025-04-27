@@ -366,7 +366,10 @@ function ProductDetail() {
                                 }}
                                 onError={(e) => {
                                     e.target.onerror = null;
-                                    e.target.src = "/src/assets/images/products/cleanser.webp";
+                                    // Correct path: Assume 'placeholder.webp' is in the public folder
+                                    e.target.src = "/placeholder.webp";
+                                    // Or use the imported defaultProductImage if it's correctly configured
+                                    // e.target.src = defaultProductImage;
                                 }}
                             />
                         </Paper>

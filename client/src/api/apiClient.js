@@ -45,6 +45,10 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
     };
     let token = null;
 
+    // --- Add Logging Here ---
+    console.log(`[API Client _request] Attempting ${method} request to URL: ${url}`);
+    // --- End Logging ---
+
     if (requiresAuth) {
         if (!clerkGetToken) {
             console.error("API Client Error: clerkGetToken function not initialized. Call useInitializeApi in your App component.");
