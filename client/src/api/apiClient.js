@@ -25,97 +25,122 @@ if (!SUPABASE_ANON_KEY) {
     // throw new Error("Missing VITE_SUPABASE_ANON_KEY environment variable.");
 }
 
-export const useApi = () => {
+// Store the getToken function reference
+let clerkGetToken = null;
+
+// Hook to initialize the getToken function reference
+export const useInitializeApi = () => {
     const { getToken } = useAuth();
+    if (getToken && !clerkGetToken) {
+        clerkGetToken = getToken;
+        console.log("API Client: Clerk getToken function initialized.");
+    }
+};
 
-    const makeRequest = useCallback(async (endpoint, method = 'GET', body = null) => {
-        let token = null;
+// Helper function to make authenticated requests
+const _request = async (method, endpoint, body = null, requiresAuth = true) => {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    let token = null;
+
+    if (requiresAuth) {
+        if (!clerkGetToken) {
+            console.error("API Client Error: clerkGetToken function not initialized. Call useInitializeApi in your App component.");
+            throw new Error("API client not ready. Authentication function missing.");
+        }
         try {
-            // Attempt to get Supabase token from Clerk
-            token = await getToken({ template: 'supabase' });
-        } catch (error) {
-            // Handle cases where user might not be logged in or token retrieval fails
-            console.warn("Could not retrieve authentication token. Proceeding without it for GET request.");
-            // If it's not a GET request, we might still want to enforce authentication
-            if (method !== 'GET') {
-                throw new Error("Authentication token is required for this action.");
+            // Use the stored getToken function
+            token = await clerkGetToken({ template: 'supabase' }); // Assuming 'supabase' template
+            if (!token) {
+                // --- CHANGE: Throw error if token is null/undefined ---
+                console.error(`API Client Error: Failed to retrieve authentication token (template: supabase).`);
+                throw new Error("Authentication token could not be retrieved.");
+                // --- END CHANGE ---
             }
-        }
-
-        const headers = {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY // Use the variable checked above
-        };
-
-        // Only add the Authorization header if a token was successfully retrieved
-        if (token) {
             headers['Authorization'] = `Bearer ${token}`;
+            console.log(`API Client: ${method} ${endpoint} - Using token (template: supabase)`);
+
+        } catch (error) {
+            console.error(`API Client Error: Error retrieving authentication token (template: supabase).`, error);
+            // --- CHANGE: Re-throw or throw a specific error ---
+            throw new Error(`Authentication token retrieval failed: ${error.message}`);
+            // --- END CHANGE ---
         }
+    } else {
+        console.log(`API Client: ${method} ${endpoint} - No authentication required.`);
+    }
 
-        const config = {
-            method: method,
-            headers: headers,
-        };
 
-        if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-            config.body = JSON.stringify(body);
-        }
+    const config = {
+        method: method,
+        headers: headers,
+    };
 
-        // Construct the URL carefully to avoid double slashes
-        // Ensure endpoint doesn't start with '/' if API_BASE_URL ends with '/'
-        const url = `${API_BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+    if (body) {
+        config.body = JSON.stringify(body);
+    }
 
-        // Use the corrected URL
+    try {
         const response = await fetch(url, config);
 
-        // Check if the response is ok (status in the range 200-299)
         if (!response.ok) {
             let errorData;
             try {
-                // Try to parse error response from the function
                 errorData = await response.json();
             } catch (e) {
-                // If parsing fails, use status text
-                errorData = { message: response.statusText };
+                errorData = { message: `HTTP error ${response.status}: ${response.statusText}` };
             }
-            // Throw an error with details from the response or status text
-            throw new Error(errorData?.message || `Request failed with status ${response.status}`);
+            console.error(`API Client Error: ${method} ${endpoint} failed with status ${response.status}`, errorData);
+            throw new Error(errorData.message || `Request failed with status ${response.status}`);
         }
 
-        // Handle cases where the response might be empty (e.g., DELETE, some PUTs)
-        const contentType = response.headers.get("content-type");
-        if (response.status === 204 || !contentType || !contentType.includes("application/json")) {
-            return null; // Or return { success: true } or similar if appropriate
+        // Handle cases with no content response (e.g., DELETE, sometimes PUT/POST)
+        if (response.status === 204 || response.headers.get('content-length') === '0') {
+            console.log(`API Client: ${method} ${endpoint} - Success (No Content)`);
+            return { success: true }; // Indicate success even with no body
         }
 
-        // If response is ok and has JSON content, parse and return it
-        return response.json();
+        const data = await response.json();
+        console.log(`API Client: ${method} ${endpoint} - Success`, data);
+        // Optionally wrap data in a success object if needed consistently
+        // return { success: true, data: data };
+        return data; // Return data directly if backend doesn't wrap it
 
-    }, [getToken]);
+    } catch (error) {
+        console.error(`API Client Error: Network or other error during ${method} ${endpoint}.`, error);
+        // Re-throw the error to be caught by the calling function (e.g., in CartContext)
+        throw error;
+    }
+};
 
-    // Define specific API methods using makeRequest
-    const getCart = useCallback(() => makeRequest('api/cart', 'GET'), [makeRequest]);
-    const addToCart = useCallback((productId, quantity) => makeRequest('api/cart', 'POST', { productId, quantity }), [makeRequest]);
-    const updateCartItem = useCallback((itemId, quantity) => makeRequest(`api/cart/${itemId}`, 'PUT', { quantity }), [makeRequest]);
-    const removeFromCart = useCallback((itemId) => makeRequest(`api/cart/${itemId}`, 'DELETE'), [makeRequest]);
 
-    // Add missing product methods
-    const getProducts = useCallback((category) => {
-        const endpoint = category
-            ? `api/products?category=${encodeURIComponent(category)}`
-            : 'api/products';
-        return makeRequest(endpoint, 'GET');
-    }, [makeRequest]);
+// --- API Methods ---
+// ... (getProducts, getProductById - likely don't require auth) ...
 
-    const getProductById = useCallback((id) => makeRequest(`api/products/${id}`, 'GET'), [makeRequest]);
+// Cart methods (likely require auth)
+const getCart = () => _request('GET', '/cart', null, true); // requiresAuth = true
+const addToCart = (itemData) => _request('POST', '/cart/add', itemData, true); // requiresAuth = true
+const removeFromCart = (itemData) => _request('DELETE', '/cart/remove', itemData, true); // requiresAuth = true
+const updateCartItemQuantity = (itemData) => _request('PUT', '/cart/update', itemData, true); // requiresAuth = true
+const clearCart = () => _request('DELETE', '/cart/clear', null, true); // requiresAuth = true
 
-    return {
-        getCart,
-        addToCart,
-        updateCartItem,
-        removeFromCart,
-        getProducts,      // Export the new method
-        getProductById,   // Export the new method
-        // Export other methods
-    };
+// ... (other methods like getWishlist, addToWishlist, etc. - set requiresAuth accordingly) ...
+
+export const api = {
+    // ... other methods
+    getCart,
+    addToCart,
+    removeFromCart,
+    updateCartItemQuantity,
+    clearCart,
+};
+
+// Hook to use the API client instance
+export const useApi = () => {
+    // This hook doesn't need to do much now,
+    // as initialization happens via useInitializeApi
+    // and the api object uses the stored clerkGetToken.
+    return api;
 };

@@ -55,6 +55,29 @@ function TabPanel(props) {
     );
 }
 
+// --- Helper moved outside component ---
+// Safely parse JSON fields, ensuring an array or null is returned
+const parseJsonField = (field) => {
+    if (!field) return null;
+    try {
+        if (Array.isArray(field)) return field;
+        if (typeof field === 'object' && field !== null) {
+             console.warn("[parseJsonField] Expected JSON array string or array, but received object:", field);
+             return null;
+        }
+        if (typeof field === 'string') {
+            const parsed = JSON.parse(field);
+            return Array.isArray(parsed) ? parsed : null;
+        }
+        console.warn("[parseJsonField] Field is not a parsable string, array, or expected object:", field);
+        return null;
+    } catch (e) {
+        console.error("[parseJsonField] Error parsing JSON field:", field, e);
+        return null;
+    }
+};
+// --- End Helper ---
+
 function ProductDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -73,82 +96,57 @@ function ProductDetail() {
     const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist(); // Use Wishlist context
     const [imageError, setImageError] = useState(false);
 
-    // Safely parse JSON fields, ensuring an array or null is returned
-    const parseJsonField = (field) => {
-        if (!field) return null; // Return null if field is null, undefined, or empty string
-        try {
-            // If it's already an array (e.g., parsed by Supabase), return it directly
-            if (Array.isArray(field)) {
-                return field;
-            }
-            // If it's an object but not an array, maybe log a warning or return null
-            if (typeof field === 'object' && field !== null) {
-                 console.warn("Expected JSON array string or array, but received object:", field);
-                 return null; // Or handle as needed
-            }
-            // If it's a string, try parsing it
-            if (typeof field === 'string') {
-                const parsed = JSON.parse(field);
-                // Ensure the parsed result is an array
-                return Array.isArray(parsed) ? parsed : null;
-            }
-            // If it's not a string, array, or object we expect, return null
-            return null;
-        } catch (e) {
-            console.error("Error parsing JSON field:", field, e);
-            return null; // Return null on parsing error
-        }
-    };
-
     useEffect(() => {
         const fetchProductData = async () => {
-            console.log(`[ProductDetail Effect] Running for ID: ${id}`); // Log effect start
+            // Add ID to logs for clarity
+            console.log(`[Effect ${id}] START`);
             setLoading(true);
             setError(null);
             setProduct(null);
             setRelatedProducts([]);
             setImageError(false);
-            setSelectedShade(null); // Reset selected shade initially
+            setSelectedShade(null);
 
             try {
-                console.log(`[ProductDetail Effect] Fetching product by ID: ${id}`); // Log before API call
+                console.log(`[Effect ${id}] TRY block entered`);
                 const fetchedProduct = await api.getProductById(id);
-                console.log("[ProductDetail Effect] Fetched product data:", fetchedProduct); // Log fetched data
+                console.log(`[Effect ${id}] Fetched product:`, fetchedProduct ? 'Yes' : 'No');
 
                 if (!fetchedProduct) {
-                    console.error(`[ProductDetail Effect] Product with ID ${id} not found by API.`);
                     throw new Error('Product not found');
                 }
-                setProduct(fetchedProduct); // Set product state
+                // Set product state *before* parsing its fields
+                setProduct(fetchedProduct);
+                console.log(`[Effect ${id}] setProduct called`);
 
-                // --- Pre-select first shade if available ---
+                // Pre-select first shade using the moved helper
                 const parsedShades = parseJsonField(fetchedProduct.shades);
                 if (Array.isArray(parsedShades) && parsedShades.length > 0) {
-                    console.log("[ProductDetail Effect] Pre-selecting first shade:", parsedShades[0]);
-                    setSelectedShade(parsedShades[0]); // Set the first shade as default
+                    setSelectedShade(parsedShades[0]);
+                    console.log(`[Effect ${id}] setSelectedShade called with:`, parsedShades[0]);
+                } else {
+                    console.log(`[Effect ${id}] No shades to pre-select or parse error`);
                 }
-                // --- End pre-selection ---
 
                 // Fetch related products
                 if (fetchedProduct?.category) {
-                    console.log(`[ProductDetail Effect] Fetching related products for category: ${fetchedProduct.category}`); // Log before related API call
+                    console.log(`[Effect ${id}] Fetching related products...`);
                     const allProducts = await api.getProducts(fetchedProduct.category);
-                    console.log("[ProductDetail Effect] Fetched all products for category:", allProducts); // Log related data
-                    const related = allProducts
-                        .filter(p => p.id !== fetchedProduct.id)
-                        .slice(0, 4);
-                    console.log("[ProductDetail Effect] Filtered related products:", related);
-                    setRelatedProducts(related); // Set related products state
+                    const related = allProducts.filter(p => p.id !== fetchedProduct.id).slice(0, 4);
+                    setRelatedProducts(related);
+                    console.log(`[Effect ${id}] setRelatedProducts called`);
                 } else {
-                     console.log("[ProductDetail Effect] No category found on product, skipping related products fetch.");
+                    console.log(`[Effect ${id}] No category for related products`);
                 }
+                console.log(`[Effect ${id}] TRY block finished successfully`);
 
             } catch (err) {
-                console.error("[ProductDetail Effect] Error caught:", err); // Log any caught errors
+                console.error(`[Effect ${id}] CATCH block error:`, err); // Log any caught errors
                 setError(err.message || 'Failed to load product details.');
             } finally {
-                console.log("[ProductDetail Effect] Setting loading to false."); // Log before setting loading false
-                setLoading(false); // Ensure this always runs
+                // This log is crucial - does it appear?
+                console.log(`[Effect ${id}] FINALLY block entered, setting loading false`);
+                setLoading(false);
             }
         };
 
