@@ -51,9 +51,23 @@ function Skincare() {
     return (
         <Box sx={{ backgroundColor: colorValues.bgDefault, color: colorValues.textPrimary, py: 4, minHeight: '80vh' }}>
             <Container>
-                <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
-                    Skincare Essentials
-                </Typography>
+                <Typography
+                                    variant="h4"
+                                    sx={{
+                                        fontWeight: 600,
+                                        marginBottom: 3,
+                                        textAlign: 'center',
+                                        width: '100%',
+                                        color: theme === 'dark' ? colorValues.primary : colorValues.primaryDark,
+                                        padding: '12px 0',
+                                        borderBottom: `2px solid ${colorValues.primaryLight}`,
+                                        marginLeft: 'auto',
+                                        marginRight: 'auto'
+                                    }}
+                                >
+                                    Skincare Essentials
+                                </Typography>
+                
 
                 {/* Filter Bar */}
                 <Paper
