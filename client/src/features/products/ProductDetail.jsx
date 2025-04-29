@@ -33,6 +33,17 @@ import { useUser } from "@clerk/clerk-react"; // Keep useUser
 import { useWishlist } from "../../context/WishlistContext"; // Import Wishlist context hook
 import defaultProductImage from '../../assets/images/placeholder.webp'; // Fallback image
 import LocalMallIcon from '@mui/icons-material/LocalMall'; // Import Buy Now icon
+// Import react-share components and icons
+import {
+    FacebookShareButton,
+    TwitterShareButton,
+    PinterestShareButton,
+    WhatsappShareButton,
+} from "react-share";
+import FacebookIcon from '@mui/icons-material/Facebook';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import PinterestIcon from '@mui/icons-material/Pinterest';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -95,8 +106,12 @@ function ProductDetail() {
     const { user, isSignedIn } = useUser(); // Get Clerk user status
     const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist(); // Use Wishlist context
     const [imageError, setImageError] = useState(false);
+    const [currentUrl, setCurrentUrl] = useState(''); // State for current URL
 
     useEffect(() => {
+        // Set the current URL when the component mounts or id changes
+        setCurrentUrl(window.location.href);
+
         const fetchProductData = async () => {
             // Add ID to logs for clarity
             console.log(`[Effect ${id}] START`);
@@ -301,6 +316,9 @@ function ProductDetail() {
 
     // Determine if a shade selection is required and not yet made
     const shadeSelectionRequired = Array.isArray(shades) && shades.length > 0 && !selectedShade;
+
+    const shareTitle = product ? `${product.name} - Clinique Beauty` : 'Check out this product!';
+    const shareImage = product?.image || defaultProductImage; // Use product image or fallback
 
     return (
         <Box sx={{
@@ -603,6 +621,40 @@ function ProductDetail() {
                                         shadeSelectionRequired ? 'Select Shade' : // Check parsed shades requirement
                                             'Buy Now'}
                                 </Button>
+                            </Box>
+
+                            {/* Share Buttons Section */}
+                            <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${colorValues.divider}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="body2" sx={{ color: colorValues.textSecondary, mr: 1 }}>Share:</Typography>
+                                <Tooltip title="Share on Facebook">
+                                    <FacebookShareButton url={currentUrl} quote={shareTitle}>
+                                        <IconButton size="small" aria-label="Share on Facebook" sx={{ color: '#1877F2' }}>
+                                            <FacebookIcon />
+                                        </IconButton>
+                                    </FacebookShareButton>
+                                </Tooltip>
+                                <Tooltip title="Share on Twitter">
+                                    <TwitterShareButton url={currentUrl} title={shareTitle}>
+                                        <IconButton size="small" aria-label="Share on Twitter" sx={{ color: '#1DA1F2' }}>
+                                            <TwitterIcon />
+                                        </IconButton>
+                                    </TwitterShareButton>
+                                </Tooltip>
+                                <Tooltip title="Share on Pinterest">
+                                    {/* Pinterest requires media URL */}
+                                    <PinterestShareButton url={currentUrl} media={shareImage} description={shareTitle}>
+                                        <IconButton size="small" aria-label="Share on Pinterest" sx={{ color: '#E60023' }}>
+                                            <PinterestIcon />
+                                        </IconButton>
+                                    </PinterestShareButton>
+                                </Tooltip>
+                                <Tooltip title="Share on WhatsApp">
+                                    <WhatsappShareButton url={currentUrl} title={shareTitle} separator=":: ">
+                                        <IconButton size="small" aria-label="Share on WhatsApp" sx={{ color: '#25D366' }}>
+                                            <WhatsAppIcon />
+                                        </IconButton>
+                                    </WhatsappShareButton>
+                                </Tooltip>
                             </Box>
                         </Paper>
                     </Grid>

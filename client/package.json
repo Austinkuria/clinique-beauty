@@ -24,7 +24,8 @@
     "react-hot-toast": "^2.5.2",
     "react-inner-image-zoom": "^4.0.1",
     "react-medium-image-zoom": "^5.2.14",
-    "react-router-dom": "^7.5.0"
+    "react-router-dom": "^7.5.0",
+    "react-share": "^5.2.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
