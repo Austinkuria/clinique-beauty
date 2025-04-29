@@ -103,7 +103,7 @@ function ProductDetail() {
     const [isOutOfStock, setIsOutOfStock] = useState(false); // State for stock status
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [selectedShade, setSelectedShade] = useState(null); // State for selected shade
-    const { user, isSignedIn } = useUser(); // Get Clerk user status
+    const { isSignedIn } = useUser(); // Get Clerk user status
     const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist(); // Use Wishlist context
     const [imageError, setImageError] = useState(false);
     const [currentUrl, setCurrentUrl] = useState(''); // State for current URL
@@ -121,6 +121,8 @@ function ProductDetail() {
             setRelatedProducts([]);
             setImageError(false);
             setSelectedShade(null);
+            // Reset stock status
+            setIsOutOfStock(false);
 
             try {
                 console.log(`[Effect ${id}] TRY block entered`);
@@ -133,6 +135,16 @@ function ProductDetail() {
                 // Set product state *before* parsing its fields
                 setProduct(fetchedProduct);
                 console.log(`[Effect ${id}] setProduct called`);
+
+                // --- Add stock check ---
+                if (fetchedProduct.stock !== undefined && fetchedProduct.stock <= 0) {
+                    setIsOutOfStock(true);
+                    console.log(`[Effect ${id}] setIsOutOfStock called (true)`);
+                } else {
+                    setIsOutOfStock(false); // Ensure it's false if stock > 0 or undefined
+                    console.log(`[Effect ${id}] setIsOutOfStock called (false)`);
+                }
+                // --- End stock check ---
 
                 // Pre-select first shade using the moved helper
                 const parsedShades = parseJsonField(fetchedProduct.shades);
@@ -312,7 +324,6 @@ function ProductDetail() {
     const benefits = parseJsonField(product.benefits);
     const ingredients = parseJsonField(product.ingredients);
     const shades = parseJsonField(product.shades); // Parsed shades (should be array or null)
-    const notes = parseJsonField(product.notes);
 
     // Determine if a shade selection is required and not yet made
     const shadeSelectionRequired = Array.isArray(shades) && shades.length > 0 && !selectedShade;
@@ -374,7 +385,7 @@ function ProductDetail() {
                         >
                             <Box
                                 component="img"
-                                src={product.image}
+                                src={imageError ? defaultProductImage : product.image}
                                 alt={product.name}
                                 sx={{
                                     width: '100%',
@@ -385,9 +396,7 @@ function ProductDetail() {
                                 onError={(e) => {
                                     e.target.onerror = null;
                                     // Correct path: Assume 'placeholder.webp' is in the public folder
-                                    e.target.src = "/placeholder.webp";
-                                    // Or use the imported defaultProductImage if it's correctly configured
-                                    // e.target.src = defaultProductImage;
+                                    setImageError(true);
                                 }}
                             />
                         </Paper>
