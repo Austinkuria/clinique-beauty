@@ -24,51 +24,55 @@ export const router = createBrowserRouter([
         element: <App />,
         errorElement: <RouteErrorElement />,
         children: [
-            // Main layout with navbar and footer
+            // Auth routes might live here, outside MainLayout
             {
-                path: '/',
+                path: '/auth/login',
+                element: <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
+            },
+            {
+                path: '/auth/login/factor-one',
+                element: <ClerkVerification type="factorOne" />
+            },
+            {
+                path: '/auth/login/factor-two',
+                element: <ClerkVerification type="factorTwo" />
+            },
+            {
+                path: '/auth/register/*',
+                element: <RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>
+            },
+            { path: '/auth/register/verify-email-address', element: <ClerkVerification type="verifyEmail" /> },
+            { path: '/auth/register/sso-callback', element: <Register /> },
+            { path: '/auth/verify', element: <ClerkVerification type="verify" /> },
+            { path: '/auth/reset-password', element: <ClerkVerification type="resetPassword" /> },
+
+            // Main layout route - renders Navbar/Footer + Outlet for its children
+            {
+                path: '/', // Matches the root and subsequent paths
                 element: <MainLayout />,
                 errorElement: <RouteErrorElement />,
                 children: [
-                    { path: '/', element: <Home /> },
-                    // Protected route
+                    // Routes rendered within MainLayout's Outlet
+                    { index: true, element: <Home /> }, // Use index route for home
                     { path: '/cart', element: <RequireAuth><Cart /></RequireAuth> },
-                    // Auth routes - redirect if already signed in
-                    {
-                        path: '/auth/login',
-                        element: <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
-                    },
-                    // Add support for Clerk's multi-factor authentication 
-                    {
-                        path: '/auth/login/factor-one',
-                        element: <ClerkVerification type="factorOne" />
-                    },
-                    {
-                        path: '/auth/login/factor-two',
-                        element: <ClerkVerification type="factorTwo" />
-                    },
-                    {
-                        path: '/auth/register/*',
-                        element: <RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>
-                    },
-                    // Clerk verification routes
-                    { path: '/auth/register/verify-email-address', element: <ClerkVerification type="verifyEmail" /> },
-                    // Add route for Clerk SSO callback during registration
-                    { path: '/auth/register/sso-callback', element: <Register /> },
-                    { path: '/auth/verify', element: <ClerkVerification type="verify" /> },
-                    { path: '/auth/reset-password', element: <ClerkVerification type="resetPassword" /> },
                     { path: '/products/skincare', element: <Skincare /> },
                     { path: '/products/makeup', element: <Makeup /> },
                     { path: '/products/fragrance', element: <Fragrance /> },
                     { path: '/products/hair', element: <HairProducts /> },
-                    // { path: '/products', element: <ProductList /> },
-                    { path: '/products/:id', element: <ProductDetail /> },
+                    // Correct path for product detail
+                    { path: '/product/:id', element: <ProductDetail /> },
+                    // Remove the duplicate /products/:id route
+                    // { path: '/products/:id', element: <ProductDetail /> },
+                    // ... other routes needing MainLayout ...
                     // { path: '/checkout', element: <RequireAuth><Checkout /></RequireAuth> },
                     // { path: '/profile', element: <RequireAuth><Profile /></RequireAuth> },
                     // { path: '/search', element: <Search /> },
+                    // Consider adding a NotFound route here
                     // { path: '*', element: <NotFound /> },
                 ]
-            }
+            },
+            // Add other routes that *don't* need MainLayout here
+            // e.g., { path: '/admin', element: <AdminLayout />, children: [...] }
         ]
     }
 ]);
