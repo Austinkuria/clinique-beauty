@@ -4,6 +4,7 @@ import FilterBar from '../components/FilterBar';
 import ProductCard from '../components/ProductCard';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
+import { motion } from 'framer-motion'; // Add Framer Motion import
 
 function Makeup() {
     const { theme, colorValues } = useContext(ThemeContext);
@@ -48,6 +49,26 @@ function Makeup() {
     // Extract unique sub-categories from fetched products for the filter bar
     const makeupSubCategories = ['All', ...new Set(products.map(p => p.subcategory).filter(Boolean))];
 
+    // Animation variants
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+    
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { 
+            opacity: 1, 
+            y: 0,
+            transition: { duration: 0.4 }
+        }
+    };
+
     return (
         <Box
             sx={{
@@ -59,39 +80,51 @@ function Makeup() {
             }}
         >
             <Container maxWidth="lg">
-                <Typography
-                    variant="h4"
-                    sx={{
-                        fontWeight: 600,
-                        marginBottom: 3,
-                        textAlign: 'center',
-                        width: '100%',
-                        color: theme === 'dark' ? colorValues.primary : colorValues.primaryDark,
-                        padding: '12px 0',
-                        borderBottom: `2px solid ${colorValues.primaryLight}`,
-                        marginLeft: 'auto',
-                        marginRight: 'auto'
-                    }}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
                 >
-                    Makeup
-                </Typography>
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            fontWeight: 600,
+                            marginBottom: 3,
+                            textAlign: 'center',
+                            width: '100%',
+                            color: theme === 'dark' ? colorValues.primary : colorValues.primaryDark,
+                            padding: '12px 0',
+                            borderBottom: `2px solid ${colorValues.primaryLight}`,
+                            marginLeft: 'auto',
+                            marginRight: 'auto'
+                        }}
+                    >
+                        Makeup
+                    </Typography>
+                </motion.div>
 
-                <Paper
-                    elevation={theme === 'dark' ? 3 : 1}
-                    sx={{
-                        padding: 2,
-                        marginBottom: 4,
-                        backgroundColor: colorValues.bgPaper,
-                        borderRadius: 2
-                    }}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                    <FilterBar
-                        categories={makeupSubCategories} // Pass subcategories
-                        onFilterChange={setFilters}
-                        currentFilters={filters}
-                        categoryLabel="Type" // Pass the desired label
-                    />
-                </Paper>
+                    <Paper
+                        elevation={theme === 'dark' ? 3 : 1}
+                        sx={{
+                            padding: 2,
+                            marginBottom: 4,
+                            backgroundColor: colorValues.bgPaper,
+                            borderRadius: 2
+                        }}
+                    >
+                        <FilterBar
+                            categories={makeupSubCategories} // Pass subcategories
+                            onFilterChange={setFilters}
+                            currentFilters={filters}
+                            categoryLabel="Type" // Pass the desired label
+                        />
+                    </Paper>
+                </motion.div>
 
                 {/* Loading and Error Handling */}
                 {loading && (
@@ -105,37 +138,43 @@ function Makeup() {
                     </Alert>
                 )}
 
-                {/* Product Grid */}
+                {/* Product Grid with Staggered Animation */}
                 {!loading && !error && (
-                    <Grid container spacing={3}>
-                        {filteredProducts.length > 0 ? (
-                            filteredProducts.map((product) => (
-                                <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                                    <Paper
-                                        elevation={theme === 'dark' ? 3 : 1}
-                                        sx={{
-                                            backgroundColor: colorValues.bgPaper,
-                                            borderRadius: 2,
-                                            height: '100%',
-                                            transition: 'transform 0.2s, box-shadow 0.2s',
-                                            '&:hover': {
-                                                transform: 'translateY(-4px)',
-                                                boxShadow: theme === 'dark' ? 8 : 4
-                                            }
-                                        }}
-                                    >
-                                        <ProductCard product={product} />
-                                    </Paper>
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <Grid container spacing={3}>
+                            {filteredProducts.length > 0 ? (
+                                filteredProducts.map((product) => (
+                                    <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+                                        <motion.div variants={itemVariants}>
+                                            <Paper
+                                                elevation={theme === 'dark' ? 3 : 1}
+                                                sx={{
+                                                    backgroundColor: colorValues.bgPaper,
+                                                    borderRadius: 2,
+                                                    height: '100%',
+                                                    // Remove transition styles as they're handled by Framer Motion
+                                                }}
+                                            >
+                                                <ProductCard product={product} />
+                                            </Paper>
+                                        </motion.div>
+                                    </Grid>
+                                ))
+                            ) : (
+                                <Grid item xs={12}>
+                                    <motion.div variants={itemVariants}>
+                                        <Typography sx={{ textAlign: 'center', color: colorValues.textSecondary, mt: 4 }}>
+                                            No makeup products found.
+                                        </Typography>
+                                    </motion.div>
                                 </Grid>
-                            ))
-                        ) : (
-                            <Grid item xs={12}>
-                                <Typography sx={{ textAlign: 'center', color: colorValues.textSecondary, mt: 4 }}>
-                                    No makeup products found.
-                                </Typography>
-                            </Grid>
-                        )}
-                    </Grid>
+                            )}
+                        </Grid>
+                    </motion.div>
                 )}
 
                 {/* Remove ReviewSection if not needed */}

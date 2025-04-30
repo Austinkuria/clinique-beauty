@@ -47,6 +47,7 @@ import PinterestIcon from '@mui/icons-material/Pinterest';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email'; // Add Email icon back
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Add Copy icon back
+import { motion, AnimatePresence } from 'framer-motion'; // Add Framer Motion import
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -110,6 +111,30 @@ function ProductDetail() {
     const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist(); // Use Wishlist context
     const [imageError, setImageError] = useState(false);
     const [currentUrl, setCurrentUrl] = useState(''); // State for current URL
+
+    // Animation variants
+    const fadeIn = {
+        hidden: { opacity: 0, scale: 0.98 },
+        visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: "easeOut" } }
+    };
+    
+    const buttonHover = {
+        rest: { scale: 1 },
+        hover: { scale: 1.05, transition: { duration: 0.2 } },
+        tap: { scale: 0.95 }
+    };
+    
+    const shareIconHover = {
+        rest: { scale: 1 },
+        hover: { scale: 1.15, transition: { duration: 0.2 } },
+        tap: { scale: 0.9 }
+    };
+    
+    const tabContentVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+        exit: { opacity: 0, y: -10, transition: { duration: 0.2 } }
+    };
 
     useEffect(() => {
         // Set the current URL when the component mounts or id changes
@@ -384,7 +409,7 @@ function ProductDetail() {
                 </Box>
 
                 <Grid container spacing={4}>
-                    {/* Product Image */}
+                    {/* Product Image with Fade-in Animation */}
                     <Grid item xs={12} md={6}>
                         <Paper
                             elevation={theme === 'dark' ? 3 : 1}
@@ -398,22 +423,28 @@ function ProductDetail() {
                                 justifyContent: 'center'
                             }}
                         >
-                            <Box
-                                component="img"
-                                src={imageError ? defaultProductImage : product.image}
-                                alt={product.name}
-                                sx={{
-                                    width: '100%',
-                                    maxHeight: 400,
-                                    objectFit: 'contain',
-                                    borderRadius: 1
-                                }}
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    // Correct path: Assume 'placeholder.webp' is in the public folder
-                                    setImageError(true);
-                                }}
-                            />
+                            <motion.div
+                                initial="hidden"
+                                animate="visible"
+                                variants={fadeIn}
+                            >
+                                <Box
+                                    component="img"
+                                    src={imageError ? defaultProductImage : product.image}
+                                    alt={product.name}
+                                    sx={{
+                                        width: '100%',
+                                        maxHeight: 400,
+                                        objectFit: 'contain',
+                                        borderRadius: 1
+                                    }}
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        // Correct path: Assume 'placeholder.webp' is in the public folder
+                                        setImageError(true);
+                                    }}
+                                />
+                            </motion.div>
                         </Paper>
                     </Grid>
 
@@ -436,29 +467,36 @@ function ProductDetail() {
                                     {product.name}
                                 </Typography>
                                 <Tooltip title={isProductInWishlist ? "Remove from Wishlist" : "Add to Wishlist"} arrow>
-                                    <span> {/* Span needed for tooltip when button is disabled */}
-                                        <IconButton
-                                            onClick={handleWishlistClick} // Use the handler
-                                            disabled={wishlistLoading || !product} // Disable while loading or if product not loaded
-                                            aria-label={isProductInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-                                            sx={{
-                                                // Use theme colors
-                                                color: isProductInWishlist ? (theme === 'light' ? '#d32f2f' : '#ef5350') : colorValues.textSecondary, // Use error color when in wishlist, secondary otherwise
-                                                transition: 'color 0.2s, transform 0.1s',
-                                                '&:hover': {
-                                                    color: isProductInWishlist ? (theme === 'light' ? '#c62828' : '#e57373') : colorValues.primary, // Darker error on hover, primary on hover otherwise
-                                                    transform: 'scale(1.1)',
-                                                },
-                                                '&:disabled': {
-                                                    color: colorValues.textSecondary, // Ensure disabled state has a neutral color
-                                                    opacity: 0.5,
-                                                }
-                                            }}
-                                        >
-                                            {/* Use context state to determine icon */}
-                                            {isProductInWishlist ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                                        </IconButton>
-                                    </span>
+                                    <motion.span
+                                        initial="rest"
+                                        whileHover="hover"
+                                        whileTap="tap" 
+                                        variants={shareIconHover}
+                                    >
+                                        <span> {/* Span needed for tooltip when button is disabled */}
+                                            <IconButton
+                                                onClick={handleWishlistClick} // Use the handler
+                                                disabled={wishlistLoading || !product} // Disable while loading or if product not loaded
+                                                aria-label={isProductInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                                                sx={{
+                                                    // Use theme colors
+                                                    color: isProductInWishlist ? (theme === 'light' ? '#d32f2f' : '#ef5350') : colorValues.textSecondary, // Use error color when in wishlist, secondary otherwise
+                                                    transition: 'color 0.2s, transform 0.1s',
+                                                    '&:hover': {
+                                                        color: isProductInWishlist ? (theme === 'light' ? '#c62828' : '#e57373') : colorValues.primary, // Darker error on hover, primary on hover otherwise
+                                                        transform: 'scale(1.1)',
+                                                    },
+                                                    '&:disabled': {
+                                                        color: colorValues.textSecondary, // Ensure disabled state has a neutral color
+                                                        opacity: 0.5,
+                                                    }
+                                                }}
+                                            >
+                                                {/* Use context state to determine icon */}
+                                                {isProductInWishlist ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                                            </IconButton>
+                                        </span>
+                                    </motion.span>
                                 </Tooltip>
                             </Box>
 
@@ -495,30 +533,38 @@ function ProductDetail() {
                                         {/* Use the parsed 'shades' variable here */}
                                         {shades.map((shade) => (
                                             <Tooltip title={shade.name} key={shade.name} arrow>
-                                                <Box
-                                                    onClick={() => handleShadeSelect(shade)}
-                                                    sx={{
-                                                        width: 32,
-                                                        height: 32,
-                                                        borderRadius: '50%',
-                                                        backgroundColor: shade.color,
-                                                        cursor: 'pointer',
-                                                        border: selectedShade?.name === shade.name
-                                                            ? `3px solid ${colorValues.primary}` // Highlight selected
-                                                            : `1px solid ${colorValues.textSecondary}`,
-                                                        outline: selectedShade?.name === shade.name
-                                                            ? `1px solid ${colorValues.bgPaper}` // Inner outline for contrast
-                                                            : 'none',
-                                                        outlineOffset: '-3px',
-                                                        transition: 'border 0.2s ease-in-out',
-                                                        '&:hover': {
-                                                            transform: 'scale(1.1)',
-                                                            boxShadow: '0px 2px 5px rgba(0,0,0,0.2)'
-                                                        }
+                                                <motion.div
+                                                    whileHover={{ 
+                                                        scale: 1.1,
+                                                        boxShadow: '0px 3px 8px rgba(0,0,0,0.25)' 
                                                     }}
-                                                    aria-label={`Select shade ${shade.name}`}
-                                                    role="button"
-                                                />
+                                                    whileTap={{ scale: 0.95 }}
+                                                >
+                                                    <Box
+                                                        onClick={() => handleShadeSelect(shade)}
+                                                        sx={{
+                                                            width: 32,
+                                                            height: 32,
+                                                            borderRadius: '50%',
+                                                            backgroundColor: shade.color,
+                                                            cursor: 'pointer',
+                                                            border: selectedShade?.name === shade.name
+                                                                ? `3px solid ${colorValues.primary}` // Highlight selected
+                                                                : `1px solid ${colorValues.textSecondary}`,
+                                                            outline: selectedShade?.name === shade.name
+                                                                ? `1px solid ${colorValues.bgPaper}` // Inner outline for contrast
+                                                                : 'none',
+                                                            outlineOffset: '-3px',
+                                                            transition: 'border 0.2s ease-in-out',
+                                                            '&:hover': {
+                                                                transform: 'scale(1.1)',
+                                                                boxShadow: '0px 2px 5px rgba(0,0,0,0.2)'
+                                                            }
+                                                        }}
+                                                        aria-label={`Select shade ${shade.name}`}
+                                                        role="button"
+                                                    />
+                                                </motion.div>
                                             </Tooltip>
                                         ))}
                                     </Box>
@@ -589,62 +635,78 @@ function ProductDetail() {
 
                             <Box sx={{ mt: 'auto', pt: 2, display: 'flex', gap: 2 }}> {/* Use flexbox and gap */}
                                 {/* Add to Cart Button */}
-                                <Button
-                                    variant="contained"
-                                    size="large"
-                                    fullWidth // Keep fullWidth or adjust based on desired layout
-                                    startIcon={<ShoppingCartIcon />}
-                                    onClick={handleAddToCart}
-                                    // Updated disabled logic
-                                    disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading}
-                                    sx={{
-                                        backgroundColor: colorValues.primary,
-                                        color: '#ffffff',
-                                        py: 1.5,
-                                        // fontSize: '1.1rem', // Consider slightly smaller font if needed
-                                        borderRadius: '50px',
-                                        '&:hover': {
-                                            backgroundColor: colorValues.primaryDark,
-                                        },
-                                        opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
-                                        flex: 1, // Allow button to grow
-                                    }}
+                                <motion.div
+                                    initial="rest"
+                                    whileHover={!(isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? "hover" : "rest"}
+                                    whileTap={!(isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? "tap" : "rest"}
+                                    variants={buttonHover}
+                                    style={{ flex: 1 }}
                                 >
-                                    {/* Updated text logic */}
-                                    {cartContext.loading ? 'Adding...' :
-                                        isOutOfStock ? 'Out of Stock' :
-                                            shadeSelectionRequired ? 'Select Shade' : // Check parsed shades requirement
-                                                `Add ${quantity} to Cart`}
-                                </Button>
+                                    <Button
+                                        variant="contained"
+                                        size="large"
+                                        fullWidth // Keep fullWidth or adjust based on desired layout
+                                        startIcon={<ShoppingCartIcon />}
+                                        onClick={handleAddToCart}
+                                        // Updated disabled logic
+                                        disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading}
+                                        sx={{
+                                            backgroundColor: colorValues.primary,
+                                            color: '#ffffff',
+                                            py: 1.5,
+                                            // fontSize: '1.1rem', // Consider slightly smaller font if needed
+                                            borderRadius: '50px',
+                                            '&:hover': {
+                                                backgroundColor: colorValues.primaryDark,
+                                            },
+                                            opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
+                                            flex: 1, // Allow button to grow
+                                        }}
+                                    >
+                                        {/* Updated text logic */}
+                                        {cartContext.loading ? 'Adding...' :
+                                            isOutOfStock ? 'Out of Stock' :
+                                                shadeSelectionRequired ? 'Select Shade' : // Check parsed shades requirement
+                                                    `Add ${quantity} to Cart`}
+                                    </Button>
+                                </motion.div>
 
                                 {/* Buy Now Button */}
-                                <Button
-                                    variant="outlined" // Use outlined or another style to differentiate
-                                    size="large"
-                                    fullWidth // Keep fullWidth or adjust
-                                    startIcon={<LocalMallIcon />} // Use a different icon
-                                    onClick={handleBuyNow}
-                                    // Updated disabled logic
-                                    disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading} // Same disable conditions
-                                    sx={{
-                                        borderColor: colorValues.primary, // Match primary color
-                                        color: colorValues.primary,
-                                        py: 1.5,
-                                        // fontSize: '1.1rem',
-                                        borderRadius: '50px',
-                                        '&:hover': {
-                                            backgroundColor: colorValues.buttonHover, // Use theme hover color
-                                            borderColor: colorValues.primaryDark,
-                                        },
-                                        opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
-                                        flex: 1, // Allow button to grow
-                                    }}
+                                <motion.div
+                                    initial="rest"
+                                    whileHover={!(isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? "hover" : "rest"}
+                                    whileTap={!(isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? "tap" : "rest"}
+                                    variants={buttonHover}
+                                    style={{ flex: 1 }}
                                 >
-                                    {/* Updated text logic */}
-                                    {isOutOfStock ? 'Out of Stock' :
-                                        shadeSelectionRequired ? 'Select Shade' : // Check parsed shades requirement
-                                            'Buy Now'}
-                                </Button>
+                                    <Button
+                                        variant="outlined" // Use outlined or another style to differentiate
+                                        size="large"
+                                        fullWidth // Keep fullWidth or adjust
+                                        startIcon={<LocalMallIcon />} // Use a different icon
+                                        onClick={handleBuyNow}
+                                        // Updated disabled logic
+                                        disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading} // Same disable conditions
+                                        sx={{
+                                            borderColor: colorValues.primary, // Match primary color
+                                            color: colorValues.primary,
+                                            py: 1.5,
+                                            // fontSize: '1.1rem',
+                                            borderRadius: '50px',
+                                            '&:hover': {
+                                                backgroundColor: colorValues.buttonHover, // Use theme hover color
+                                                borderColor: colorValues.primaryDark,
+                                            },
+                                            opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
+                                            flex: 1, // Allow button to grow
+                                        }}
+                                    >
+                                        {/* Updated text logic */}
+                                        {isOutOfStock ? 'Out of Stock' :
+                                            shadeSelectionRequired ? 'Select Shade' : // Check parsed shades requirement
+                                                'Buy Now'}
+                                    </Button>
+                                </motion.div>
                             </Box>
 
                             {/* Share Buttons Section */}
@@ -652,54 +714,66 @@ function ProductDetail() {
                             <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${colorValues.divider}`, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                                 <Typography variant="body2" sx={{ color: colorValues.textSecondary, mr: 1, width: '100%', mb: 1 }}>Share:</Typography>
                                 <Tooltip title="Share on Facebook">
-                                    <FacebookShareButton url={currentUrl} quote={shareTitle}>
-                                        <IconButton size="small" aria-label="Share on Facebook" sx={{ color: '#1877F2' }}>
-                                            <FacebookIcon />
-                                        </IconButton>
-                                    </FacebookShareButton>
+                                    <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
+                                        <FacebookShareButton url={currentUrl} quote={shareTitle}>
+                                            <IconButton size="small" aria-label="Share on Facebook" sx={{ color: '#1877F2' }}>
+                                                <FacebookIcon />
+                                            </IconButton>
+                                        </FacebookShareButton>
+                                    </motion.div>
                                 </Tooltip>
                                 <Tooltip title="Share on Twitter">
-                                    <TwitterShareButton url={currentUrl} title={shareTitle}>
-                                        <IconButton size="small" aria-label="Share on Twitter" sx={{ color: '#1DA1F2' }}>
-                                            <TwitterIcon />
-                                        </IconButton>
-                                    </TwitterShareButton>
+                                    <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
+                                        <TwitterShareButton url={currentUrl} title={shareTitle}>
+                                            <IconButton size="small" aria-label="Share on Twitter" sx={{ color: '#1DA1F2' }}>
+                                                <TwitterIcon />
+                                            </IconButton>
+                                        </TwitterShareButton>
+                                    </motion.div>
                                 </Tooltip>
                                 <Tooltip title="Share on Pinterest">
-                                    {/* Pinterest requires media URL */}
-                                    <PinterestShareButton url={currentUrl} media={shareImage} description={shareTitle}>
-                                        <IconButton size="small" aria-label="Share on Pinterest" sx={{ color: '#E60023' }}>
-                                            <PinterestIcon />
-                                        </IconButton>
-                                    </PinterestShareButton>
+                                    <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
+                                        {/* Pinterest requires media URL */}
+                                        <PinterestShareButton url={currentUrl} media={shareImage} description={shareTitle}>
+                                            <IconButton size="small" aria-label="Share on Pinterest" sx={{ color: '#E60023' }}>
+                                                <PinterestIcon />
+                                            </IconButton>
+                                        </PinterestShareButton>
+                                    </motion.div>
                                 </Tooltip>
                                 <Tooltip title="Share on WhatsApp">
-                                    <WhatsappShareButton url={currentUrl} title={shareTitle} separator=":: ">
-                                        <IconButton size="small" aria-label="Share on WhatsApp" sx={{ color: '#25D366' }}>
-                                            <WhatsAppIcon />
-                                        </IconButton>
-                                    </WhatsappShareButton>
+                                    <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
+                                        <WhatsappShareButton url={currentUrl} title={shareTitle} separator=":: ">
+                                            <IconButton size="small" aria-label="Share on WhatsApp" sx={{ color: '#25D366' }}>
+                                                <WhatsAppIcon />
+                                            </IconButton>
+                                        </WhatsappShareButton>
+                                    </motion.div>
                                 </Tooltip>
                                 {/* Add Email Button Back */}
                                 <Tooltip title="Share via Email">
-                                    <EmailShareButton url={currentUrl} subject={shareTitle} body={`Check out this product: ${currentUrl}`}>
-                                        <IconButton size="small" aria-label="Share via Email" sx={{ color: colorValues.primary }}>
-                                            <EmailIcon />
-                                        </IconButton>
-                                    </EmailShareButton>
+                                    <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
+                                        <EmailShareButton url={currentUrl} subject={shareTitle} body={`Check out this product: ${currentUrl}`}>
+                                            <IconButton size="small" aria-label="Share via Email" sx={{ color: colorValues.primary }}>
+                                                <EmailIcon />
+                                            </IconButton>
+                                        </EmailShareButton>
+                                    </motion.div>
                                 </Tooltip>
                                 {/* Add Copy Link Button Back */}
                                 <Tooltip title="Copy Link">
-                                    <IconButton size="small" onClick={handleCopyLink} aria-label="Copy product link" sx={{ color: colorValues.textSecondary }}>
-                                        <ContentCopyIcon />
-                                    </IconButton>
+                                    <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
+                                        <IconButton size="small" onClick={handleCopyLink} aria-label="Copy product link" sx={{ color: colorValues.textSecondary }}>
+                                            <ContentCopyIcon />
+                                        </IconButton>
+                                    </motion.div>
                                 </Tooltip>
                             </Box>
                         </Paper>
                     </Grid>
                 </Grid>
 
-                {/* Product Tabs */}
+                {/* Product Tabs with Animated Content Transitions */}
                 <Paper
                     elevation={theme === 'dark' ? 3 : 1}
                     sx={{
@@ -733,44 +807,54 @@ function ProductDetail() {
                         <Tab label="Reviews" id="product-tab-3" aria-controls="product-tabpanel-3" /> {/* Add Reviews Tab */}
                     </Tabs>
 
-                    <TabPanel value={tabValue} index={0}>
-                        <Typography variant="body1">
-                            {product.description}
-                        </Typography>
-                    </TabPanel>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={tabValue}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            variants={tabContentVariants}
+                        >
+                            <TabPanel value={tabValue} index={0}>
+                                <Typography variant="body1">
+                                    {product.description}
+                                </Typography>
+                            </TabPanel>
 
-                    <TabPanel value={tabValue} index={1}>
-                        <Box component="ul" sx={{ pl: 2 }}>
-                            {Array.isArray(benefits) && benefits.length > 0 ? (
-                                benefits.map((benefit, index) => (
-                                    <Typography component="li" key={index} sx={{ mb: 1 }}>
-                                        {benefit}
-                                    </Typography>
-                                ))
-                            ) : (
-                                <Typography>No benefits information available.</Typography>
-                            )}
-                        </Box>
-                    </TabPanel>
+                            <TabPanel value={tabValue} index={1}>
+                                <Box component="ul" sx={{ pl: 2 }}>
+                                    {Array.isArray(benefits) && benefits.length > 0 ? (
+                                        benefits.map((benefit, index) => (
+                                            <Typography component="li" key={index} sx={{ mb: 1 }}>
+                                                {benefit}
+                                            </Typography>
+                                        ))
+                                    ) : (
+                                        <Typography>No benefits information available.</Typography>
+                                    )}
+                                </Box>
+                            </TabPanel>
 
-                    <TabPanel value={tabValue} index={2}>
-                        <Box component="ul" sx={{ pl: 2 }}>
-                            {Array.isArray(ingredients) && ingredients.length > 0 ? (
-                                ingredients.map((ingredient, index) => (
-                                    <Typography component="li" key={index} sx={{ mb: 1 }}>
-                                        {ingredient}
-                                    </Typography>
-                                ))
-                            ) : (
-                                <Typography>No ingredient information available.</Typography>
-                            )}
-                        </Box>
-                    </TabPanel>
+                            <TabPanel value={tabValue} index={2}>
+                                <Box component="ul" sx={{ pl: 2 }}>
+                                    {Array.isArray(ingredients) && ingredients.length > 0 ? (
+                                        ingredients.map((ingredient, index) => (
+                                            <Typography component="li" key={index} sx={{ mb: 1 }}>
+                                                {ingredient}
+                                            </Typography>
+                                        ))
+                                    ) : (
+                                        <Typography>No ingredient information available.</Typography>
+                                    )}
+                                </Box>
+                            </TabPanel>
 
-                    {/* Reviews Tab Panel */}
-                    <TabPanel value={tabValue} index={3}>
-                        <ReviewSection productId={product?.id} />
-                    </TabPanel>
+                            {/* Reviews Tab Panel */}
+                            <TabPanel value={tabValue} index={3}>
+                                <ReviewSection productId={product?.id} />
+                            </TabPanel>
+                        </motion.div>
+                    </AnimatePresence>
                 </Paper>
 
                 {/* Related Products Section */}
@@ -782,22 +866,26 @@ function ProductDetail() {
                         <Grid container spacing={3}>
                             {relatedProducts.map((relatedProduct) => (
                                 <Grid item xs={12} sm={6} md={4} lg={3} key={relatedProduct.id}>
-                                    <Paper
-                                        elevation={theme === 'dark' ? 3 : 1}
-                                        sx={{
-                                            backgroundColor: colorValues.bgPaper,
-                                            borderRadius: 2,
-                                            height: '100%',
-                                            transition: 'transform 0.2s, box-shadow 0.2s',
-                                            '&:hover': {
-                                                transform: 'translateY(-4px)',
-                                                boxShadow: theme === 'dark' ? 8 : 4
-                                            }
+                                    <motion.div
+                                        whileHover={{ 
+                                            y: -10,
+                                            boxShadow: theme === 'dark' ? '0 12px 20px rgba(0,0,0,0.4)' : '0 10px 15px rgba(0,0,0,0.15)'
                                         }}
+                                        transition={{ duration: 0.3 }}
                                     >
-                                        {/* Use ProductCard for consistency */}
-                                        <ProductCard product={relatedProduct} />
-                                    </Paper>
+                                        <Paper
+                                            elevation={theme === 'dark' ? 3 : 1}
+                                            sx={{
+                                                backgroundColor: colorValues.bgPaper,
+                                                borderRadius: 2,
+                                                height: '100%',
+                                                // Remove hover effects from here since they're handled by motion
+                                            }}
+                                        >
+                                            {/* Use ProductCard for consistency */}
+                                            <ProductCard product={relatedProduct} />
+                                        </Paper>
+                                    </motion.div>
                                 </Grid>
                             ))}
                         </Grid>
