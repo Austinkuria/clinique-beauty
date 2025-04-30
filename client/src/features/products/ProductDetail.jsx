@@ -39,11 +39,14 @@ import {
     TwitterShareButton,
     PinterestShareButton,
     WhatsappShareButton,
+    EmailShareButton, // Add EmailShareButton back
 } from "react-share";
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import PinterestIcon from '@mui/icons-material/Pinterest';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import EmailIcon from '@mui/icons-material/Email'; // Add Email icon back
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Add Copy icon back
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -270,6 +273,18 @@ function ProductDetail() {
             // Signed-in user: context handles Clerk metadata update
             toggleWishlist(product.id);
         }
+    };
+
+    // Handler for copying the link
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(currentUrl)
+            .then(() => {
+                toast.success('Link copied to clipboard!');
+            })
+            .catch(err => {
+                console.error('Failed to copy link: ', err);
+                toast.error('Failed to copy link.');
+            });
     };
 
     if (loading) {
@@ -633,8 +648,9 @@ function ProductDetail() {
                             </Box>
 
                             {/* Share Buttons Section */}
-                            <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${colorValues.divider}`, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Typography variant="body2" sx={{ color: colorValues.textSecondary, mr: 1 }}>Share:</Typography>
+                            {/* Ensure borderTop uses colorValues.divider */}
+                            <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${colorValues.divider}`, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+                                <Typography variant="body2" sx={{ color: colorValues.textSecondary, mr: 1, width: '100%', mb: 1 }}>Share:</Typography>
                                 <Tooltip title="Share on Facebook">
                                     <FacebookShareButton url={currentUrl} quote={shareTitle}>
                                         <IconButton size="small" aria-label="Share on Facebook" sx={{ color: '#1877F2' }}>
@@ -663,6 +679,20 @@ function ProductDetail() {
                                             <WhatsAppIcon />
                                         </IconButton>
                                     </WhatsappShareButton>
+                                </Tooltip>
+                                {/* Add Email Button Back */}
+                                <Tooltip title="Share via Email">
+                                    <EmailShareButton url={currentUrl} subject={shareTitle} body={`Check out this product: ${currentUrl}`}>
+                                        <IconButton size="small" aria-label="Share via Email" sx={{ color: colorValues.primary }}>
+                                            <EmailIcon />
+                                        </IconButton>
+                                    </EmailShareButton>
+                                </Tooltip>
+                                {/* Add Copy Link Button Back */}
+                                <Tooltip title="Copy Link">
+                                    <IconButton size="small" onClick={handleCopyLink} aria-label="Copy product link" sx={{ color: colorValues.textSecondary }}>
+                                        <ContentCopyIcon />
+                                    </IconButton>
                                 </Tooltip>
                             </Box>
                         </Paper>
