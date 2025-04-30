@@ -17,7 +17,7 @@ import {
     Link, // Import Link for Breadcrumbs
     Tooltip // Import Tooltip
 } from "@mui/material";
-import toast from 'react-hot-toast'; // Ensure toast is imported
+import toast from 'react-hot-toast'; // Import toast
 import { ThemeContext } from "../../context/ThemeContext.jsx";
 import { useCart } from "../../context/CartContext";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
@@ -36,18 +36,14 @@ import LocalMallIcon from '@mui/icons-material/LocalMall'; // Import Buy Now ico
 // Import react-share components and icons
 import {
     FacebookShareButton,
-    TwitterShareButton, // Keep this
+    TwitterShareButton,
     PinterestShareButton,
     WhatsappShareButton,
-    EmailShareButton, // Add EmailShareButton
 } from "react-share";
 import FacebookIcon from '@mui/icons-material/Facebook';
-import XIcon from '@mui/icons-material/X'; // Import X icon for Twitter
+import TwitterIcon from '@mui/icons-material/Twitter';
 import PinterestIcon from '@mui/icons-material/Pinterest';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import EmailIcon from '@mui/icons-material/Email'; // Import Email icon
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Import Copy icon
-// Remove Instagram icon import
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -274,18 +270,6 @@ function ProductDetail() {
             // Signed-in user: context handles Clerk metadata update
             toggleWishlist(product.id);
         }
-    };
-
-    // Handler for copying the link
-    const handleCopyLink = () => {
-        navigator.clipboard.writeText(currentUrl)
-            .then(() => {
-                toast.success('Link copied to clipboard!');
-            })
-            .catch(err => {
-                console.error('Failed to copy link: ', err);
-                toast.error('Failed to copy link.');
-            });
     };
 
     if (loading) {
@@ -649,8 +633,8 @@ function ProductDetail() {
                             </Box>
 
                             {/* Share Buttons Section */}
-                            <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${colorValues.divider}`, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                                <Typography variant="body2" sx={{ color: colorValues.textSecondary, mr: 1, width: '100%', mb: 1 }}>Share:</Typography>
+                            <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${colorValues.divider}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="body2" sx={{ color: colorValues.textSecondary, mr: 1 }}>Share:</Typography>
                                 <Tooltip title="Share on Facebook">
                                     <FacebookShareButton url={currentUrl} quote={shareTitle}>
                                         <IconButton size="small" aria-label="Share on Facebook" sx={{ color: '#1877F2' }}>
@@ -658,14 +642,15 @@ function ProductDetail() {
                                         </IconButton>
                                     </FacebookShareButton>
                                 </Tooltip>
-                                <Tooltip title="Share on X (Twitter)">
+                                <Tooltip title="Share on Twitter">
                                     <TwitterShareButton url={currentUrl} title={shareTitle}>
-                                        <IconButton size="small" aria-label="Share on X (Twitter)" sx={{ color: theme === 'dark' ? '#ffffff' : '#000000' /* Adjust X color based on theme */ }}>
-                                            <XIcon /> {/* Use XIcon */}
+                                        <IconButton size="small" aria-label="Share on Twitter" sx={{ color: '#1DA1F2' }}>
+                                            <TwitterIcon />
                                         </IconButton>
                                     </TwitterShareButton>
                                 </Tooltip>
                                 <Tooltip title="Share on Pinterest">
+                                    {/* Pinterest requires media URL */}
                                     <PinterestShareButton url={currentUrl} media={shareImage} description={shareTitle}>
                                         <IconButton size="small" aria-label="Share on Pinterest" sx={{ color: '#E60023' }}>
                                             <PinterestIcon />
@@ -678,20 +663,6 @@ function ProductDetail() {
                                             <WhatsAppIcon />
                                         </IconButton>
                                     </WhatsappShareButton>
-                                </Tooltip>
-                                <Tooltip title="Share via Email">
-                                    <EmailShareButton url={currentUrl} subject={shareTitle} body={`Check out this product: ${currentUrl}`}>
-                                        {/* Change color here */}
-                                        <IconButton size="small" aria-label="Share via Email" sx={{ color: colorValues.primary }}>
-                                            <EmailIcon />
-                                        </IconButton>
-                                    </EmailShareButton>
-                                </Tooltip>
-                                {/* Instagram Icon Removed */}
-                                <Tooltip title="Copy Link">
-                                    <IconButton size="small" onClick={handleCopyLink} aria-label="Copy product link" sx={{ color: colorValues.textSecondary }}>
-                                        <ContentCopyIcon />
-                                    </IconButton>
                                 </Tooltip>
                             </Box>
                         </Paper>
