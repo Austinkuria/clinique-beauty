@@ -47,7 +47,7 @@ import PinterestIcon from '@mui/icons-material/Pinterest';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email'; // Import Email icon
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Import Copy icon
-import InstagramIcon from '@mui/icons-material/Instagram'; // Import Instagram icon
+// Remove Instagram icon import
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -687,12 +687,7 @@ function ProductDetail() {
                                         </IconButton>
                                     </EmailShareButton>
                                 </Tooltip>
-                                {/* Instagram Icon - Triggers Copy Link */}
-                                <Tooltip title="Copy link for Instagram">
-                                    <IconButton size="small" onClick={handleCopyLink} aria-label="Copy link for Instagram" sx={{ color: '#E4405F' /* Instagram color */ }}>
-                                        <InstagramIcon />
-                                    </IconButton>
-                                </Tooltip>
+                                {/* Instagram Icon Removed */}
                                 <Tooltip title="Copy Link">
                                     <IconButton size="small" onClick={handleCopyLink} aria-label="Copy product link" sx={{ color: colorValues.textSecondary }}>
                                         <ContentCopyIcon />
