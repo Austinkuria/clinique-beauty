@@ -4,7 +4,8 @@ import FilterBar from '../components/FilterBar';
 import ProductCard from '../components/ProductCard';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
-import { motion } from 'framer-motion'; // Add Framer Motion import
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion'; // Import is used for motion.div components
 
 function Fragrance() {
     const { theme, colorValues } = useContext(ThemeContext);

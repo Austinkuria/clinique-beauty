@@ -47,6 +47,7 @@ import PinterestIcon from '@mui/icons-material/Pinterest';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email'; // Add Email icon back
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Add Copy icon back
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'; // Add Framer Motion import
 
 // Helper component for tab panels
