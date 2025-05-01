@@ -116,14 +116,9 @@ function ProductDetail() {
     const magnifierSize = 100; // Size for magnifier
     const zoomLevel = 2.5; // Magnification level
     const [selectedImage, setSelectedImage] = useState(null); // Track current main image
-
-    // Static array of product images (replace with product.images if available)
-    const productImages = [
-        { url: product?.image || defaultProductImage, alt: `${product?.name} - Main` },
-        { url: '/assets/images/hands-with-cleanser.jpg', alt: `${product?.name} - Applied on Hands` },
-        { url: '/assets/images/cleanser-side-view.jpg', alt: `${product?.name} - Side View` },
-        // Add more images as needed
-    ];
+    
+    // Change static array to state
+    const [productImages, setProductImages] = useState([]);
 
     // Animation variants
     const fadeIn = {
@@ -167,6 +162,7 @@ function ProductDetail() {
             setImageError(false);
             setSelectedShade(null);
             setIsOutOfStock(false);
+            setProductImages([]); // Reset product images
 
             try {
                 console.log(`[Effect ${id}] TRY block entered`);
@@ -177,8 +173,47 @@ function ProductDetail() {
                     throw new Error('Product not found');
                 }
                 setProduct(fetchedProduct);
-                setSelectedImage(fetchedProduct.image || defaultProductImage); // Set initial main image
-                console.log(`[Effect ${id}] setProduct called`, fetchedProduct);
+                
+                // Set the main image
+                const mainImageUrl = fetchedProduct.image || defaultProductImage;
+                setSelectedImage(mainImageUrl);
+                
+                // Build the product images array
+                let imagesArray = [
+                    { url: mainImageUrl, alt: `${fetchedProduct.name} - Main` }
+                ];
+                
+                // Check if the product has an images array from the API
+                if (fetchedProduct.images && Array.isArray(fetchedProduct.images) && fetchedProduct.images.length > 0) {
+                    console.log(`[Effect ${id}] Product has ${fetchedProduct.images.length} additional images`);
+                    
+                    // Add each image from the API to our images array
+                    fetchedProduct.images.forEach((imageUrl, index) => {
+                        if (imageUrl && typeof imageUrl === 'string') {
+                            imagesArray.push({
+                                url: imageUrl,
+                                alt: `${fetchedProduct.name} - View ${index + 1}`
+                            });
+                        }
+                    });
+                } else {
+                    console.log(`[Effect ${id}] No additional images found for this product`);
+                    
+                    // If we need to have at least a few images for testing, we can keep some placeholders
+                    // These should be removed in production if you want to show only actual product images
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log(`[Effect ${id}] Adding placeholder images for development`);
+                        imagesArray.push(
+                            { url: '/assets/images/hands-with-cleanser.jpg', alt: `${fetchedProduct.name} - Applied on Hands` },
+                            { url: '/assets/images/cleanser-side-view.jpg', alt: `${fetchedProduct.name} - Side View` }
+                        );
+                    }
+                }
+                
+                // Update the product images state
+                setProductImages(imagesArray);
+                
+                console.log(`[Effect ${id}] Set product images array with ${imagesArray.length} images`);
 
                 // Log image data for debugging
                 console.log(`[Effect ${id}] Main Image:`, fetchedProduct.image);
@@ -504,7 +539,15 @@ function ProductDetail() {
                             </Box>
 
                             {/* Thumbnail Gallery */}
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+                            <Box sx={{ 
+                                display: 'flex', 
+                                gap: 1, 
+                                flexWrap: 'wrap', 
+                                justifyContent: 'center',
+                                maxWidth: '100%',
+                                overflowX: 'auto',
+                                py: 1
+                            }}>
                                 {productImages.map((image, index) => (
                                     <motion.div
                                         key={index}
@@ -535,7 +578,10 @@ function ProductDetail() {
                                                     height: '100%',
                                                     objectFit: 'cover',
                                                 }}
-                                                onError={() => setImageError(true)}
+                                                onError={(e) => {
+                                                    e.target.onerror = null; 
+                                                    e.target.src = defaultProductImage;
+                                                }}
                                             />
                                         </Box>
                                     </motion.div>
