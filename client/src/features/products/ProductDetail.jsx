@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from "react";
-import { useParams, useNavigate, Link as RouterLink } from "react-router-dom"; // Import RouterLink
+import React, { useState, useEffect, useContext, useRef } from "react";
+import { useParams, useNavigate, Link as RouterLink } from "react-router-dom";
 import {
     Box,
     Container,
@@ -13,42 +13,41 @@ import {
     Divider,
     IconButton,
     TextField,
-    Breadcrumbs, // Import Breadcrumbs
-    Link, // Import Link for Breadcrumbs
-    Tooltip // Import Tooltip
+    Breadcrumbs,
+    Link,
+    Tooltip
 } from "@mui/material";
-import toast from 'react-hot-toast'; // Import toast
+import toast from 'react-hot-toast';
 import { ThemeContext } from "../../context/ThemeContext.jsx";
 import { useCart } from "../../context/CartContext";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Import Back icon
-import { useApi } from "../../api/apiClient"; // Import useApi
-import ReviewSection from "./components/ReviewSection"; // Import ReviewSection
-import ProductCard from "./components/ProductCard"; // Import ProductCard
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'; // Wishlist outlined icon
-import FavoriteIcon from '@mui/icons-material/Favorite'; // Wishlist filled icon
-import { useUser } from "@clerk/clerk-react"; // Keep useUser
-import { useWishlist } from "../../context/WishlistContext"; // Import Wishlist context hook
-import defaultProductImage from '../../assets/images/placeholder.webp'; // Fallback image
-import LocalMallIcon from '@mui/icons-material/LocalMall'; // Import Buy Now icon
-// Import react-share components and icons
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useApi } from "../../api/apiClient";
+import ReviewSection from "./components/ReviewSection";
+import ProductCard from "./components/ProductCard";
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import { useUser } from "@clerk/clerk-react";
+import { useWishlist } from "../../context/WishlistContext";
+import defaultProductImage from '../../assets/images/placeholder.webp';
+import LocalMallIcon from '@mui/icons-material/LocalMall';
 import {
     FacebookShareButton,
     TwitterShareButton,
     PinterestShareButton,
     WhatsappShareButton,
-    EmailShareButton, // Add EmailShareButton back
+    EmailShareButton,
 } from "react-share";
 import FacebookIcon from '@mui/icons-material/Facebook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import PinterestIcon from '@mui/icons-material/Pinterest';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import EmailIcon from '@mui/icons-material/Email'; // Add Email icon back
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'; // Add Copy icon back
-// eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from 'framer-motion'; // Add Framer Motion import
+import EmailIcon from '@mui/icons-material/Email';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { motion, AnimatePresence } from 'framer-motion';
+import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap';
 
 // Helper component for tab panels
 function TabPanel(props) {
@@ -71,15 +70,14 @@ function TabPanel(props) {
     );
 }
 
-// --- Helper moved outside component ---
 // Safely parse JSON fields, ensuring an array or null is returned
 const parseJsonField = (field) => {
     if (!field) return null;
     try {
         if (Array.isArray(field)) return field;
         if (typeof field === 'object' && field !== null) {
-             console.warn("[parseJsonField] Expected JSON array string or array, but received object:", field);
-             return null;
+            console.warn("[parseJsonField] Expected JSON array string or array, but received object:", field);
+            return null;
         }
         if (typeof field === 'string') {
             const parsed = JSON.parse(field);
@@ -92,45 +90,52 @@ const parseJsonField = (field) => {
         return null;
     }
 };
-// --- End Helper ---
 
 function ProductDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { theme, colorValues } = useContext(ThemeContext);
-    const cartContext = useCart(); // Get cart context methods
-    const api = useApi(); // Get API methods
+    const cartContext = useCart();
+    const api = useApi();
     const [tabValue, setTabValue] = useState(0);
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null); // Add error state
-    const [quantity, setQuantity] = useState(1); // State for quantity
-    const [isOutOfStock, setIsOutOfStock] = useState(false); // State for stock status
+    const [error, setError] = useState(null);
+    const [quantity, setQuantity] = useState(1);
+    const [isOutOfStock, setIsOutOfStock] = useState(false);
     const [relatedProducts, setRelatedProducts] = useState([]);
-    const [selectedShade, setSelectedShade] = useState(null); // State for selected shade
-    const { isSignedIn } = useUser(); // Get Clerk user status
-    const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist(); // Use Wishlist context
-    const [imageError, setImageError] = useState(false);
-    const [currentUrl, setCurrentUrl] = useState(''); // State for current URL
+    const [selectedShade, setSelectedShade] = useState(null);
+    const { isSignedIn } = useUser();
+    const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist();
+    const [imageError, setImageError] = useState({ main: false, secondary: false });
+    const [currentUrl, setCurrentUrl] = useState('');
+    const imageContainerRef = useRef(null);
+    const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0, clientX: 0, clientY: 0 });
+    const [showMagnifier, setShowMagnifier] = useState(false);
+    const [activeImage, setActiveImage] = useState(null); // Track which image is being hovered
+    const magnifierSize = 120; // Reduced size for closer alignment
+    const zoomLevel = 2.5; // Magnification level
+    const mainImgRef = useRef(null); // Ref for main image (cleanser)
+    const secondaryImgRef = useRef(null); // Ref for secondary image (hands with cleanser)
 
     // Animation variants
     const fadeIn = {
         hidden: { opacity: 0, scale: 0.98 },
         visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: "easeOut" } }
     };
-    
+
     const buttonHover = {
         rest: { scale: 1 },
         hover: { scale: 1.05, transition: { duration: 0.2 } },
         tap: { scale: 0.95 }
     };
-    
+
     const shareIconHover = {
         rest: { scale: 1 },
         hover: { scale: 1.15, transition: { duration: 0.2 } },
         tap: { scale: 0.9 }
     };
-    
+
     const tabContentVariants = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
@@ -138,19 +143,16 @@ function ProductDetail() {
     };
 
     useEffect(() => {
-        // Set the current URL when the component mounts or id changes
         setCurrentUrl(window.location.href);
 
         const fetchProductData = async () => {
-            // Add ID to logs for clarity
             console.log(`[Effect ${id}] START`);
             setLoading(true);
             setError(null);
             setProduct(null);
             setRelatedProducts([]);
-            setImageError(false);
+            setImageError({ main: false, secondary: false });
             setSelectedShade(null);
-            // Reset stock status
             setIsOutOfStock(false);
 
             try {
@@ -161,21 +163,17 @@ function ProductDetail() {
                 if (!fetchedProduct) {
                     throw new Error('Product not found');
                 }
-                // Set product state *before* parsing its fields
                 setProduct(fetchedProduct);
                 console.log(`[Effect ${id}] setProduct called`);
 
-                // --- Add stock check ---
                 if (fetchedProduct.stock !== undefined && fetchedProduct.stock <= 0) {
                     setIsOutOfStock(true);
                     console.log(`[Effect ${id}] setIsOutOfStock called (true)`);
                 } else {
-                    setIsOutOfStock(false); // Ensure it's false if stock > 0 or undefined
+                    setIsOutOfStock(false);
                     console.log(`[Effect ${id}] setIsOutOfStock called (false)`);
                 }
-                // --- End stock check ---
 
-                // Pre-select first shade using the moved helper
                 const parsedShades = parseJsonField(fetchedProduct.shades);
                 if (Array.isArray(parsedShades) && parsedShades.length > 0) {
                     setSelectedShade(parsedShades[0]);
@@ -184,7 +182,6 @@ function ProductDetail() {
                     console.log(`[Effect ${id}] No shades to pre-select or parse error`);
                 }
 
-                // Fetch related products
                 if (fetchedProduct?.category) {
                     console.log(`[Effect ${id}] Fetching related products...`);
                     const allProducts = await api.getProducts(fetchedProduct.category);
@@ -197,18 +194,16 @@ function ProductDetail() {
                 console.log(`[Effect ${id}] TRY block finished successfully`);
 
             } catch (err) {
-                console.error(`[Effect ${id}] CATCH block error:`, err); // Log any caught errors
+                console.error(`[Effect ${id}] CATCH block error:`, err);
                 setError(err.message || 'Failed to load product details.');
             } finally {
-                // This log is crucial - does it appear?
                 console.log(`[Effect ${id}] FINALLY block entered, setting loading false`);
                 setLoading(false);
             }
         };
 
         fetchProductData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id]); // Remove `api` from the dependency array
+    }, [id]);
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
@@ -218,15 +213,13 @@ function ProductDetail() {
         let value = parseInt(event.target.value, 10);
 
         if (isNaN(value) || value < 1) {
-            value = 1; // Default to 1 if input is invalid or less than 1
+            value = 1;
         }
 
-        // Check against stock if available
         if (product && product.stock !== undefined && value > product.stock) {
-            value = product.stock; // Cap at max stock
+            value = product.stock;
         }
 
-        // Prevent setting quantity if out of stock
         if (isOutOfStock) {
             value = 0;
         }
@@ -237,71 +230,56 @@ function ProductDetail() {
     const handleIncrement = () => {
         setQuantity(prevQuantity => {
             const maxQuantity = (product && product.stock !== undefined) ? product.stock : Infinity;
-            return Math.min(prevQuantity + 1, maxQuantity); // Increment but not beyond stock
+            return Math.min(prevQuantity + 1, maxQuantity);
         });
     };
 
     const handleDecrement = () => {
-        setQuantity(prevQuantity => Math.max(1, prevQuantity - 1)); // Prevent quantity < 1
+        setQuantity(prevQuantity => Math.max(1, prevQuantity - 1));
     };
 
     const handleShadeSelect = (shade) => {
         setSelectedShade(shade);
     };
 
-    // Use CartContext's addToCart function
     const handleAddToCart = () => {
         if (!product || quantity < 1 || isOutOfStock) return;
 
-        // Create product object to pass to context, including selected shade
         const productToAdd = {
             ...product,
-            ...(selectedShade && { selectedShade: selectedShade }) // Add shade info if selected
+            ...(selectedShade && { selectedShade: selectedShade })
         };
 
-        // Call the context function
         cartContext.addToCart(productToAdd, quantity);
 
-        // Reset quantity input after adding
         if (!isOutOfStock) {
             setQuantity(1);
         }
     };
 
-    // Handle Buy Now action
     const handleBuyNow = () => {
         if (!product || quantity < 1 || isOutOfStock) return;
 
-        // Create product object to pass to context, including selected shade
         const productToAdd = {
             ...product,
-            ...(selectedShade && { selectedShade: selectedShade }) // Add shade info if selected
+            ...(selectedShade && { selectedShade: selectedShade })
         };
 
-        // Add the item to the cart
         cartContext.addToCart(productToAdd, quantity);
-
-        // Immediately navigate to checkout
-        // Ensure the cart update is processed before navigating if needed,
-        // but often immediate navigation is fine as context updates happen quickly.
         navigate('/checkout');
     };
 
     const handleWishlistClick = () => {
-        if (!product) return; // Don't do anything if product isn't loaded
+        if (!product) return;
 
         if (!isSignedIn) {
-            // Optionally prompt anonymous users to sign in, or let context handle local storage
-            toast("Sign in to sync your wishlist across devices!"); // Example prompt
-            // Allow context to handle local storage update anyway
+            toast("Sign in to sync your wishlist across devices!");
             toggleWishlist(product.id);
         } else {
-            // Signed-in user: context handles Clerk metadata update
             toggleWishlist(product.id);
         }
     };
 
-    // Handler for copying the link
     const handleCopyLink = () => {
         navigator.clipboard.writeText(currentUrl)
             .then(() => {
@@ -313,6 +291,35 @@ function ProductDetail() {
             });
     };
 
+    // Handle mouse move for precise magnifying glass effect
+    const handleImageMouseMove = (e, imageRef, imageKey) => {
+        if (!imageRef.current) return;
+
+        const { left, top, width, height } = imageRef.current.getBoundingClientRect();
+
+        const x = e.clientX - left;
+        const y = e.clientY - top;
+
+        if (x < 0 || x > width || y < 0 || y > height) {
+            setShowMagnifier(false);
+            setActiveImage(null);
+            return;
+        }
+
+        setShowMagnifier(true);
+        setActiveImage(imageKey);
+
+        const xPercent = (x / width) * 100;
+        const yPercent = (y / height) * 100;
+
+        setCursorPosition({
+            x: xPercent,
+            y: yPercent,
+            clientX: x,
+            clientY: y,
+        });
+    };
+
     if (loading) {
         return (
             <Container sx={{ py: 4, minHeight: '60vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -321,7 +328,6 @@ function ProductDetail() {
         );
     }
 
-    // Display error message if fetching failed
     if (error) {
         return (
             <Container sx={{ py: 4, minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
@@ -345,32 +351,29 @@ function ProductDetail() {
         );
     }
 
-    // Add logging right before the return statement for the main component render
     console.log("[Render] Product State:", product);
     console.log("[Render] Product Shades:", product?.shades);
     console.log("[Render] Selected Shade State:", selectedShade);
     console.log("[Render] Is In Wishlist (from context):", isInWishlist(product.id));
 
-    // Determine wishlist status using context function
     const isProductInWishlist = product ? isInWishlist(product.id) : false;
 
-    // --- Add Debugging Logs ---
     console.log("[Render] Product Loaded:", !!product);
     console.log("[Render] Is Signed In:", isSignedIn);
     console.log("[Render] Is Product In Wishlist (from context):", isProductInWishlist);
     console.log("[Render] Wishlist Loading State:", wishlistLoading);
-    // --- End Debugging Logs ---
 
-    // Use the refined parseJsonField
     const benefits = parseJsonField(product.benefits);
     const ingredients = parseJsonField(product.ingredients);
-    const shades = parseJsonField(product.shades); // Parsed shades (should be array or null)
+    const shades = parseJsonField(product.shades);
 
-    // Determine if a shade selection is required and not yet made
     const shadeSelectionRequired = Array.isArray(shades) && shades.length > 0 && !selectedShade;
 
     const shareTitle = product ? `${product.name} - Clinique Beauty` : 'Check out this product!';
-    const shareImage = product?.image || defaultProductImage; // Use product image or fallback
+    const shareImage = product?.image || defaultProductImage;
+
+    // Assume secondary image URL (replace with actual secondary image URL or prop)
+    const secondaryImage = product?.secondaryImage || defaultProductImage;
 
     return (
         <Box sx={{
@@ -383,7 +386,7 @@ function ProductDetail() {
                 {/* Back Button and Breadcrumbs */}
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <IconButton
-                        onClick={() => navigate(-1)} // Go back to previous page
+                        onClick={() => navigate(-1)}
                         aria-label="Go back"
                         sx={{ mr: 1, color: colorValues.textSecondary }}
                     >
@@ -393,13 +396,11 @@ function ProductDetail() {
                         <Link component={RouterLink} underline="hover" color="inherit" to="/">
                             Home
                         </Link>
-                        {/* Link to the main category page */}
                         {product?.category && (
                             <Link component={RouterLink} underline="hover" color="inherit" to={`/products/${product.category.toLowerCase()}`}>
                                 {product.category}
                             </Link>
                         )}
-                        {/* Link to subcategory */}
                         {product.subcategory && (
                             <Link component={RouterLink} underline="hover" color="inherit" to={`/products/${product.category.toLowerCase()}?subcategory=${encodeURIComponent(product.subcategory)}`}>
                                 {product.subcategory}
@@ -410,7 +411,7 @@ function ProductDetail() {
                 </Box>
 
                 <Grid container spacing={4}>
-                    {/* Product Image with Fade-in Animation */}
+                    {/* Product Images with Magnifying Glass Zoom */}
                     <Grid item xs={12} md={6}>
                         <Paper
                             elevation={theme === 'dark' ? 3 : 1}
@@ -418,34 +419,133 @@ function ProductDetail() {
                                 p: 2,
                                 borderRadius: 2,
                                 backgroundColor: colorValues.bgPaper,
-                                height: '100%',
                                 display: 'flex',
+                                flexDirection: 'column',
                                 alignItems: 'center',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                minHeight: 400,
+                                width: '100%',
                             }}
                         >
-                            <motion.div
-                                initial="hidden"
-                                animate="visible"
-                                variants={fadeIn}
-                            >
+                            <Tooltip title="Hover to magnify details" arrow>
                                 <Box
-                                    component="img"
-                                    src={imageError ? defaultProductImage : product.image}
-                                    alt={product.name}
                                     sx={{
-                                        width: '100%',
-                                        maxHeight: 400,
+                                        position: 'absolute',
+                                        top: 10,
+                                        right: 10,
+                                        backgroundColor: 'rgba(0,0,0,0.5)',
+                                        borderRadius: '50%',
+                                        p: 1,
+                                        zIndex: 5,
+                                        color: 'white',
+                                    }}
+                                >
+                                    <ZoomOutMapIcon fontSize="small" />
+                                </Box>
+                            </Tooltip>
+
+                            {/* Main Image (Cleanser) */}
+                            <Box
+                                sx={{
+                                    width: '100%',
+                                    maxHeight: '350px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    position: 'relative',
+                                    mb: 2,
+                                    cursor: 'crosshair', // Always show a crosshair cursor for precision
+                                }}
+                                onMouseMove={(e) => handleImageMouseMove(e, mainImgRef, 'main')}
+                                onMouseEnter={() => mainImgRef.current && setActiveImage('main')}
+                                onMouseLeave={() => {
+                                    setShowMagnifier(false);
+                                    setActiveImage(null);
+                                }}
+                            >
+                                <img
+                                    ref={mainImgRef}
+                                    src={imageError.main ? defaultProductImage : product.image}
+                                    alt={`${product.name} - Cleanser`}
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '300px',
                                         objectFit: 'contain',
-                                        borderRadius: 1
+                                        borderRadius: '4px',
                                     }}
-                                    onError={(e) => {
-                                        e.target.onerror = null;
-                                        // Correct path: Assume 'placeholder.webp' is in the public folder
-                                        setImageError(true);
-                                    }}
+                                    onError={() => setImageError(prev => ({ ...prev, main: true }))}
                                 />
-                            </motion.div>
+                            </Box>
+
+                            {/* Secondary Image (Hands with Cleanser) */}
+                            <Box
+                                sx={{
+                                    width: '100%',
+                                    maxHeight: '350px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    position: 'relative',
+                                    cursor: 'crosshair', // Always show a crosshair cursor for precision
+                                }}
+                                onMouseMove={(e) => handleImageMouseMove(e, secondaryImgRef, 'secondary')}
+                                onMouseEnter={() => secondaryImgRef.current && setActiveImage('secondary')}
+                                onMouseLeave={() => {
+                                    setShowMagnifier(false);
+                                    setActiveImage(null);
+                                }}
+                            >
+                                <img
+                                    ref={secondaryImgRef}
+                                    src={imageError.secondary ? defaultProductImage : secondaryImage}
+                                    alt={`${product.name} - Applied on Hands`}
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '300px',
+                                        objectFit: 'contain',
+                                        borderRadius: '4px',
+                                    }}
+                                    onError={() => setImageError(prev => ({ ...prev, secondary: true }))}
+                                />
+                            </Box>
+
+                            {/* Magnifying Glass */}
+                            {showMagnifier && activeImage && (
+                                <Box
+                                    sx={{
+                                        position: 'absolute',
+                                        left: `calc(${cursorPosition.clientX}px)`,
+                                        top: `calc(${cursorPosition.clientY}px)`,
+                                        width: `${magnifierSize}px`,
+                                        height: `${magnifierSize}px`,
+                                        border: `2px solid ${colorValues.primary}`,
+                                        borderRadius: '50%',
+                                        overflow: 'hidden',
+                                        backgroundColor: colorValues.bgPaper,
+                                        boxShadow: '0 3px 10px rgba(0,0,0,0.25)',
+                                        zIndex: 10,
+                                        pointerEvents: 'none',
+                                        transform: 'translate(-50%, -50%)',
+                                    }}
+                                >
+                                    <Box
+                                        component="div"
+                                        sx={{
+                                            width: '100%',
+                                            height: '100%',
+                                            backgroundImage: `url(${
+                                                imageError[activeImage] ? defaultProductImage :
+                                                activeImage === 'main' ? product.image : secondaryImage
+                                            })`,
+                                            backgroundPosition: `${cursorPosition.x}% ${cursorPosition.y}%`,
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundSize: `${zoomLevel * 100}%`,
+                                        }}
+                                    />
+                                </Box>
+                            )}
                         </Paper>
                     </Grid>
 
@@ -462,7 +562,6 @@ function ProductDetail() {
                                 flexDirection: 'column'
                             }}
                         >
-                            {/* Product Title and Wishlist Button */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                                 <Typography variant="h4" component="h1" sx={{ fontWeight: 600, flexGrow: 1, pr: 1 }}>
                                     {product.name}
@@ -471,29 +570,27 @@ function ProductDetail() {
                                     <motion.span
                                         initial="rest"
                                         whileHover="hover"
-                                        whileTap="tap" 
+                                        whileTap="tap"
                                         variants={shareIconHover}
                                     >
-                                        <span> {/* Span needed for tooltip when button is disabled */}
+                                        <span>
                                             <IconButton
-                                                onClick={handleWishlistClick} // Use the handler
-                                                disabled={wishlistLoading || !product} // Disable while loading or if product not loaded
+                                                onClick={handleWishlistClick}
+                                                disabled={wishlistLoading || !product}
                                                 aria-label={isProductInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
                                                 sx={{
-                                                    // Use theme colors
-                                                    color: isProductInWishlist ? (theme === 'light' ? '#d32f2f' : '#ef5350') : colorValues.textSecondary, // Use error color when in wishlist, secondary otherwise
+                                                    color: isProductInWishlist ? (theme === 'light' ? '#d32f2f' : '#ef5350') : colorValues.textSecondary,
                                                     transition: 'color 0.2s, transform 0.1s',
                                                     '&:hover': {
-                                                        color: isProductInWishlist ? (theme === 'light' ? '#c62828' : '#e57373') : colorValues.primary, // Darker error on hover, primary on hover otherwise
+                                                        color: isProductInWishlist ? (theme === 'light' ? '#c62828' : '#e57373') : colorValues.primary,
                                                         transform: 'scale(1.1)',
                                                     },
                                                     '&:disabled': {
-                                                        color: colorValues.textSecondary, // Ensure disabled state has a neutral color
+                                                        color: colorValues.textSecondary,
                                                         opacity: 0.5,
                                                     }
                                                 }}
                                             >
-                                                {/* Use context state to determine icon */}
                                                 {isProductInWishlist ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                                             </IconButton>
                                         </span>
@@ -520,24 +617,18 @@ function ProductDetail() {
                                 Category: {product.category} {product.subcategory ? `> ${product.subcategory}` : ''}
                             </Typography>
 
-                            {/* Shade Selector */}
-                            {/* Add logging right before the conditional check */}
-                            {console.log("[Render Check] Checking parsed shades:", shades)}
-                            {/* --- CHANGE THIS CONDITION --- */}
                             {Array.isArray(shades) && shades.length > 0 ? (
-                            // --- END CHANGE ---
                                 <Box sx={{ my: 3 }}>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
                                         Shade: {selectedShade ? selectedShade.name : 'Select a shade'}
                                     </Typography>
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                        {/* Use the parsed 'shades' variable here */}
                                         {shades.map((shade) => (
                                             <Tooltip title={shade.name} key={shade.name} arrow>
                                                 <motion.div
-                                                    whileHover={{ 
+                                                    whileHover={{
                                                         scale: 1.1,
-                                                        boxShadow: '0px 3px 8px rgba(0,0,0,0.25)' 
+                                                        boxShadow: '0px 3px 8px rgba(0,0,0,0.25)'
                                                     }}
                                                     whileTap={{ scale: 0.95 }}
                                                 >
@@ -550,10 +641,10 @@ function ProductDetail() {
                                                             backgroundColor: shade.color,
                                                             cursor: 'pointer',
                                                             border: selectedShade?.name === shade.name
-                                                                ? `3px solid ${colorValues.primary}` // Highlight selected
+                                                                ? `3px solid ${colorValues.primary}`
                                                                 : `1px solid ${colorValues.textSecondary}`,
                                                             outline: selectedShade?.name === shade.name
-                                                                ? `1px solid ${colorValues.bgPaper}` // Inner outline for contrast
+                                                                ? `1px solid ${colorValues.bgPaper}`
                                                                 : 'none',
                                                             outlineOffset: '-3px',
                                                             transition: 'border 0.2s ease-in-out',
@@ -571,11 +662,9 @@ function ProductDetail() {
                                     </Box>
                                 </Box>
                             ) : (
-                                // Optional: Log when the condition is false
                                 console.log("[Render Check] Condition for shades (Array.isArray) is FALSE.")
                             )}
 
-                            {/* Stock Status */}
                             {product && product.stock !== undefined && (
                                 <Typography
                                     variant="body2"
@@ -589,7 +678,6 @@ function ProductDetail() {
                                 </Typography>
                             )}
 
-                            {/* Quantity Selector - Conditionally render if not out of stock */}
                             {!isOutOfStock && product && (
                                 <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
                                     <Typography variant="body1" sx={{ mr: 2 }}>Quantity:</Typography>
@@ -610,13 +698,13 @@ function ProductDetail() {
                                         aria-label="Product quantity"
                                         inputProps={{
                                             min: 1,
-                                            max: product.stock, // Set max based on stock
-                                            style: { textAlign: 'center', width: '40px', MozAppearance: 'textfield' }, // Basic styling
+                                            max: product.stock,
+                                            style: { textAlign: 'center', width: '40px', MozAppearance: 'textfield' },
                                         }}
                                         sx={{
                                             mx: 0.5,
                                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                                                WebkitAppearance: 'none', // Hide spinners in Chrome/Safari
+                                                WebkitAppearance: 'none',
                                                 margin: 0,
                                             },
                                         }}
@@ -626,7 +714,6 @@ function ProductDetail() {
                                         size="small"
                                         aria-label="Increase quantity"
                                         sx={{ border: `1px solid ${colorValues.textSecondary}`, borderRadius: 1, ml: 1 }}
-                                        // Disable if quantity reaches stock limit
                                         disabled={product.stock !== undefined && quantity >= product.stock}
                                     >
                                         <AddIcon fontSize="small" />
@@ -634,8 +721,7 @@ function ProductDetail() {
                                 </Box>
                             )}
 
-                            <Box sx={{ mt: 'auto', pt: 2, display: 'flex', gap: 2 }}> {/* Use flexbox and gap */}
-                                {/* Add to Cart Button */}
+                            <Box sx={{ mt: 'auto', pt: 2, display: 'flex', gap: 2 }}>
                                 <motion.div
                                     initial="rest"
                                     whileHover={!(isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? "hover" : "rest"}
@@ -646,33 +732,29 @@ function ProductDetail() {
                                     <Button
                                         variant="contained"
                                         size="large"
-                                        fullWidth // Keep fullWidth or adjust based on desired layout
+                                        fullWidth
                                         startIcon={<ShoppingCartIcon />}
                                         onClick={handleAddToCart}
-                                        // Updated disabled logic
                                         disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading}
                                         sx={{
                                             backgroundColor: colorValues.primary,
                                             color: '#ffffff',
                                             py: 1.5,
-                                            // fontSize: '1.1rem', // Consider slightly smaller font if needed
                                             borderRadius: '50px',
                                             '&:hover': {
                                                 backgroundColor: colorValues.primaryDark,
                                             },
                                             opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
-                                            flex: 1, // Allow button to grow
+                                            flex: 1,
                                         }}
                                     >
-                                        {/* Updated text logic */}
                                         {cartContext.loading ? 'Adding...' :
                                             isOutOfStock ? 'Out of Stock' :
-                                                shadeSelectionRequired ? 'Select Shade' : // Check parsed shades requirement
+                                                shadeSelectionRequired ? 'Select Shade' :
                                                     `Add ${quantity} to Cart`}
                                     </Button>
                                 </motion.div>
 
-                                {/* Buy Now Button */}
                                 <motion.div
                                     initial="rest"
                                     whileHover={!(isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? "hover" : "rest"}
@@ -681,37 +763,32 @@ function ProductDetail() {
                                     style={{ flex: 1 }}
                                 >
                                     <Button
-                                        variant="outlined" // Use outlined or another style to differentiate
+                                        variant="outlined"
                                         size="large"
-                                        fullWidth // Keep fullWidth or adjust
-                                        startIcon={<LocalMallIcon />} // Use a different icon
+                                        fullWidth
+                                        startIcon={<LocalMallIcon />}
                                         onClick={handleBuyNow}
-                                        // Updated disabled logic
-                                        disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading} // Same disable conditions
+                                        disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading}
                                         sx={{
-                                            borderColor: colorValues.primary, // Match primary color
+                                            borderColor: colorValues.primary,
                                             color: colorValues.primary,
                                             py: 1.5,
-                                            // fontSize: '1.1rem',
                                             borderRadius: '50px',
                                             '&:hover': {
-                                                backgroundColor: colorValues.buttonHover, // Use theme hover color
+                                                backgroundColor: colorValues.buttonHover,
                                                 borderColor: colorValues.primaryDark,
                                             },
                                             opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
-                                            flex: 1, // Allow button to grow
+                                            flex: 1,
                                         }}
                                     >
-                                        {/* Updated text logic */}
                                         {isOutOfStock ? 'Out of Stock' :
-                                            shadeSelectionRequired ? 'Select Shade' : // Check parsed shades requirement
+                                            shadeSelectionRequired ? 'Select Shade' :
                                                 'Buy Now'}
                                     </Button>
                                 </motion.div>
                             </Box>
 
-                            {/* Share Buttons Section */}
-                            {/* Ensure borderTop uses colorValues.divider */}
                             <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${colorValues.divider}`, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                                 <Typography variant="body2" sx={{ color: colorValues.textSecondary, mr: 1, width: '100%', mb: 1 }}>Share:</Typography>
                                 <Tooltip title="Share on Facebook">
@@ -734,7 +811,6 @@ function ProductDetail() {
                                 </Tooltip>
                                 <Tooltip title="Share on Pinterest">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
-                                        {/* Pinterest requires media URL */}
                                         <PinterestShareButton url={currentUrl} media={shareImage} description={shareTitle}>
                                             <IconButton size="small" aria-label="Share on Pinterest" sx={{ color: '#E60023' }}>
                                                 <PinterestIcon />
@@ -751,7 +827,6 @@ function ProductDetail() {
                                         </WhatsappShareButton>
                                     </motion.div>
                                 </Tooltip>
-                                {/* Add Email Button Back */}
                                 <Tooltip title="Share via Email">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
                                         <EmailShareButton url={currentUrl} subject={shareTitle} body={`Check out this product: ${currentUrl}`}>
@@ -761,7 +836,6 @@ function ProductDetail() {
                                         </EmailShareButton>
                                     </motion.div>
                                 </Tooltip>
-                                {/* Add Copy Link Button Back */}
                                 <Tooltip title="Copy Link">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
                                         <IconButton size="small" onClick={handleCopyLink} aria-label="Copy product link" sx={{ color: colorValues.textSecondary }}>
@@ -774,7 +848,6 @@ function ProductDetail() {
                     </Grid>
                 </Grid>
 
-                {/* Product Tabs with Animated Content Transitions */}
                 <Paper
                     elevation={theme === 'dark' ? 3 : 1}
                     sx={{
@@ -805,7 +878,7 @@ function ProductDetail() {
                         <Tab label="Details" id="product-tab-0" aria-controls="product-tabpanel-0" />
                         <Tab label="Benefits" id="product-tab-1" aria-controls="product-tabpanel-1" />
                         <Tab label="Ingredients" id="product-tab-2" aria-controls="product-tabpanel-2" />
-                        <Tab label="Reviews" id="product-tab-3" aria-controls="product-tabpanel-3" /> {/* Add Reviews Tab */}
+                        <Tab label="Reviews" id="product-tab-3" aria-controls="product-tabpanel-3" />
                     </Tabs>
 
                     <AnimatePresence mode="wait">
@@ -850,7 +923,6 @@ function ProductDetail() {
                                 </Box>
                             </TabPanel>
 
-                            {/* Reviews Tab Panel */}
                             <TabPanel value={tabValue} index={3}>
                                 <ReviewSection productId={product?.id} />
                             </TabPanel>
@@ -858,7 +930,6 @@ function ProductDetail() {
                     </AnimatePresence>
                 </Paper>
 
-                {/* Related Products Section */}
                 {relatedProducts.length > 0 ? (
                     <Box sx={{ mt: 6 }}>
                         <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: colorValues.textPrimary }}>
@@ -868,7 +939,7 @@ function ProductDetail() {
                             {relatedProducts.map((relatedProduct) => (
                                 <Grid item xs={12} sm={6} md={4} lg={3} key={relatedProduct.id}>
                                     <motion.div
-                                        whileHover={{ 
+                                        whileHover={{
                                             y: -10,
                                             boxShadow: theme === 'dark' ? '0 12px 20px rgba(0,0,0,0.4)' : '0 10px 15px rgba(0,0,0,0.15)'
                                         }}
@@ -880,10 +951,8 @@ function ProductDetail() {
                                                 backgroundColor: colorValues.bgPaper,
                                                 borderRadius: 2,
                                                 height: '100%',
-                                                // Remove hover effects from here since they're handled by motion
                                             }}
                                         >
-                                            {/* Use ProductCard for consistency */}
                                             <ProductCard product={relatedProduct} />
                                         </Paper>
                                     </motion.div>
@@ -892,7 +961,6 @@ function ProductDetail() {
                         </Grid>
                     </Box>
                 ) : (
-                    // Optional: Show a message if no related products were found after loading
                     !loading && product && (
                         <Typography sx={{ mt: 4, color: colorValues.textSecondary, textAlign: 'center' }}>
                             No other products found in this category.
