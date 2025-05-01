@@ -107,16 +107,23 @@ function ProductDetail() {
     const [selectedShade, setSelectedShade] = useState(null);
     const { isSignedIn } = useUser();
     const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist();
-    const [imageError, setImageError] = useState({ main: false, secondary: false });
+    const [imageError, setImageError] = useState(false);
     const [currentUrl, setCurrentUrl] = useState('');
     const imageContainerRef = useRef(null);
     const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0, clientX: 0, clientY: 0 });
     const [showMagnifier, setShowMagnifier] = useState(false);
-    const [activeImage, setActiveImage] = useState(null); // Track which image is being hovered
-    const magnifierSize = 120; // Reduced size for closer alignment
+    const mainImgRef = useRef(null); // Ref for main image
+    const magnifierSize = 100; // Size for magnifier
     const zoomLevel = 2.5; // Magnification level
-    const mainImgRef = useRef(null); // Ref for main image (cleanser)
-    const secondaryImgRef = useRef(null); // Ref for secondary image (hands with cleanser)
+    const [selectedImage, setSelectedImage] = useState(null); // Track current main image
+
+    // Static array of product images (replace with product.images if available)
+    const productImages = [
+        { url: product?.image || defaultProductImage, alt: `${product?.name} - Main` },
+        { url: '/assets/images/hands-with-cleanser.jpg', alt: `${product?.name} - Applied on Hands` },
+        { url: '/assets/images/cleanser-side-view.jpg', alt: `${product?.name} - Side View` },
+        // Add more images as needed
+    ];
 
     // Animation variants
     const fadeIn = {
@@ -142,6 +149,12 @@ function ProductDetail() {
         exit: { opacity: 0, y: -10, transition: { duration: 0.2 } }
     };
 
+    const thumbnailHover = {
+        rest: { scale: 1, opacity: 0.8 },
+        hover: { scale: 1.1, opacity: 1, transition: { duration: 0.2 } },
+        tap: { scale: 0.95 }
+    };
+
     useEffect(() => {
         setCurrentUrl(window.location.href);
 
@@ -151,20 +164,25 @@ function ProductDetail() {
             setError(null);
             setProduct(null);
             setRelatedProducts([]);
-            setImageError({ main: false, secondary: false });
+            setImageError(false);
             setSelectedShade(null);
             setIsOutOfStock(false);
 
             try {
                 console.log(`[Effect ${id}] TRY block entered`);
                 const fetchedProduct = await api.getProductById(id);
-                console.log(`[Effect ${id}] Fetched product:`, fetchedProduct ? 'Yes' : 'No');
+                console.log(`[Effect ${id}] Fetched product:`, fetchedProduct);
 
                 if (!fetchedProduct) {
                     throw new Error('Product not found');
                 }
                 setProduct(fetchedProduct);
-                console.log(`[Effect ${id}] setProduct called`);
+                setSelectedImage(fetchedProduct.image || defaultProductImage); // Set initial main image
+                console.log(`[Effect ${id}] setProduct called`, fetchedProduct);
+
+                // Log image data for debugging
+                console.log(`[Effect ${id}] Main Image:`, fetchedProduct.image);
+                console.log(`[Effect ${id}] Product Images:`, fetchedProduct.images);
 
                 if (fetchedProduct.stock !== undefined && fetchedProduct.stock <= 0) {
                     setIsOutOfStock(true);
@@ -203,7 +221,7 @@ function ProductDetail() {
         };
 
         fetchProductData();
-    }, [id]);
+    }, [id, api]);
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
@@ -291,23 +309,34 @@ function ProductDetail() {
             });
     };
 
-    // Handle mouse move for precise magnifying glass effect
-    const handleImageMouseMove = (e, imageRef, imageKey) => {
-        if (!imageRef.current) return;
+    // Handle thumbnail click to update main image
+    const handleThumbnailClick = (imageUrl) => {
+        setSelectedImage(imageUrl);
+        setShowMagnifier(false); // Reset magnifier when switching images
+    };
 
-        const { left, top, width, height } = imageRef.current.getBoundingClientRect();
+    // Handle mouse move for magnifying glass effect
+    const handleImageMouseMove = (e) => {
+        if (!mainImgRef.current || !imageContainerRef.current) return;
 
+        const containerRect = imageContainerRef.current.getBoundingClientRect();
+        const { left, top, width, height } = mainImgRef.current.getBoundingClientRect();
+
+        // Calculate cursor position relative to the image
         const x = e.clientX - left;
         const y = e.clientY - top;
 
+        // Check if cursor is within image boundaries
         if (x < 0 || x > width || y < 0 || y > height) {
             setShowMagnifier(false);
-            setActiveImage(null);
             return;
         }
 
+        // Calculate magnifier position relative to container
+        const containerX = e.clientX - containerRect.left;
+        const containerY = e.clientY - containerRect.top;
+
         setShowMagnifier(true);
-        setActiveImage(imageKey);
 
         const xPercent = (x / width) * 100;
         const yPercent = (y / height) * 100;
@@ -315,8 +344,8 @@ function ProductDetail() {
         setCursorPosition({
             x: xPercent,
             y: yPercent,
-            clientX: x,
-            clientY: y,
+            clientX: containerX,
+            clientY: containerY,
         });
     };
 
@@ -355,6 +384,7 @@ function ProductDetail() {
     console.log("[Render] Product Shades:", product?.shades);
     console.log("[Render] Selected Shade State:", selectedShade);
     console.log("[Render] Is In Wishlist (from context):", isInWishlist(product.id));
+    console.log("[Render] Selected Image:", selectedImage);
 
     const isProductInWishlist = product ? isInWishlist(product.id) : false;
 
@@ -370,10 +400,7 @@ function ProductDetail() {
     const shadeSelectionRequired = Array.isArray(shades) && shades.length > 0 && !selectedShade;
 
     const shareTitle = product ? `${product.name} - Clinique Beauty` : 'Check out this product!';
-    const shareImage = product?.image || defaultProductImage;
-
-    // Assume secondary image URL (replace with actual secondary image URL or prop)
-    const secondaryImage = product?.secondaryImage || defaultProductImage;
+    const shareImage = selectedImage || defaultProductImage;
 
     return (
         <Box sx={{
@@ -411,7 +438,7 @@ function ProductDetail() {
                 </Box>
 
                 <Grid container spacing={4}>
-                    {/* Product Images with Magnifying Glass Zoom */}
+                    {/* Product Images with Thumbnail Gallery */}
                     <Grid item xs={12} md={6}>
                         <Paper
                             elevation={theme === 'dark' ? 3 : 1}
@@ -422,12 +449,12 @@ function ProductDetail() {
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
-                                justifyContent: 'center',
                                 position: 'relative',
                                 overflow: 'hidden',
                                 minHeight: 400,
                                 width: '100%',
                             }}
+                            ref={imageContainerRef}
                         >
                             <Tooltip title="Hover to magnify details" arrow>
                                 <Box
@@ -446,7 +473,7 @@ function ProductDetail() {
                                 </Box>
                             </Tooltip>
 
-                            {/* Main Image (Cleanser) */}
+                            {/* Main Image */}
                             <Box
                                 sx={{
                                     width: '100%',
@@ -456,68 +483,72 @@ function ProductDetail() {
                                     justifyContent: 'center',
                                     position: 'relative',
                                     mb: 2,
-                                    cursor: 'crosshair', // Always show a crosshair cursor for precision
+                                    cursor: showMagnifier ? 'none' : 'zoom-in',
                                 }}
-                                onMouseMove={(e) => handleImageMouseMove(e, mainImgRef, 'main')}
-                                onMouseEnter={() => mainImgRef.current && setActiveImage('main')}
-                                onMouseLeave={() => {
-                                    setShowMagnifier(false);
-                                    setActiveImage(null);
-                                }}
+                                onMouseMove={handleImageMouseMove}
+                                onMouseEnter={() => mainImgRef.current && setShowMagnifier(true)}
+                                onMouseLeave={() => setShowMagnifier(false)}
                             >
                                 <img
                                     ref={mainImgRef}
-                                    src={imageError.main ? defaultProductImage : product.image}
-                                    alt={`${product.name} - Cleanser`}
+                                    src={imageError ? defaultProductImage : selectedImage}
+                                    alt={`${product.name} - Main Image`}
                                     style={{
                                         maxWidth: '100%',
-                                        maxHeight: '300px',
+                                        maxHeight: '350px',
                                         objectFit: 'contain',
                                         borderRadius: '4px',
                                     }}
-                                    onError={() => setImageError(prev => ({ ...prev, main: true }))}
+                                    onError={() => setImageError(true)}
                                 />
                             </Box>
 
-                            {/* Secondary Image (Hands with Cleanser) */}
-                            <Box
-                                sx={{
-                                    width: '100%',
-                                    maxHeight: '350px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    position: 'relative',
-                                    cursor: 'crosshair', // Always show a crosshair cursor for precision
-                                }}
-                                onMouseMove={(e) => handleImageMouseMove(e, secondaryImgRef, 'secondary')}
-                                onMouseEnter={() => secondaryImgRef.current && setActiveImage('secondary')}
-                                onMouseLeave={() => {
-                                    setShowMagnifier(false);
-                                    setActiveImage(null);
-                                }}
-                            >
-                                <img
-                                    ref={secondaryImgRef}
-                                    src={imageError.secondary ? defaultProductImage : secondaryImage}
-                                    alt={`${product.name} - Applied on Hands`}
-                                    style={{
-                                        maxWidth: '100%',
-                                        maxHeight: '300px',
-                                        objectFit: 'contain',
-                                        borderRadius: '4px',
-                                    }}
-                                    onError={() => setImageError(prev => ({ ...prev, secondary: true }))}
-                                />
+                            {/* Thumbnail Gallery */}
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+                                {productImages.map((image, index) => (
+                                    <motion.div
+                                        key={index}
+                                        initial="rest"
+                                        whileHover="hover"
+                                        whileTap="tap"
+                                        variants={thumbnailHover}
+                                    >
+                                        <Box
+                                            sx={{
+                                                width: 60,
+                                                height: 60,
+                                                borderRadius: '4px',
+                                                overflow: 'hidden',
+                                                cursor: 'pointer',
+                                                border: selectedImage === image.url
+                                                    ? `2px solid ${colorValues.primary}`
+                                                    : `1px solid ${colorValues.textSecondary}`,
+                                                transition: 'border 0.2s ease-in-out',
+                                            }}
+                                            onClick={() => handleThumbnailClick(image.url)}
+                                        >
+                                            <img
+                                                src={image.url}
+                                                alt={image.alt}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                }}
+                                                onError={() => setImageError(true)}
+                                            />
+                                        </Box>
+                                    </motion.div>
+                                ))}
                             </Box>
 
                             {/* Magnifying Glass */}
-                            {showMagnifier && activeImage && (
+                            {showMagnifier && (
                                 <Box
                                     sx={{
                                         position: 'absolute',
-                                        left: `calc(${cursorPosition.clientX}px)`,
-                                        top: `calc(${cursorPosition.clientY}px)`,
+                                        left: `${cursorPosition.clientX}px`,
+                                        top: `${cursorPosition.clientY}px`,
                                         width: `${magnifierSize}px`,
                                         height: `${magnifierSize}px`,
                                         border: `2px solid ${colorValues.primary}`,
@@ -535,10 +566,7 @@ function ProductDetail() {
                                         sx={{
                                             width: '100%',
                                             height: '100%',
-                                            backgroundImage: `url(${
-                                                imageError[activeImage] ? defaultProductImage :
-                                                activeImage === 'main' ? product.image : secondaryImage
-                                            })`,
+                                            backgroundImage: `url(${imageError ? defaultProductImage : selectedImage})`,
                                             backgroundPosition: `${cursorPosition.x}% ${cursorPosition.y}%`,
                                             backgroundRepeat: 'no-repeat',
                                             backgroundSize: `${zoomLevel * 100}%`,
