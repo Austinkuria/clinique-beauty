@@ -1,33 +1,31 @@
 # Clinique Beauty - E-commerce Shop
 
-A full-stack e-commerce application built with the PERN stack (PostgreSQL, Express, React, Node.js) for a fictional beauty shop.
+A full-stack e-commerce application built with the PERN stack (PostgreSQL, Express, React, Node.js) for a beauty shop.
 
 ## Features
 
 *   **Product Catalog:** Browse products by category.
 *   **Product Details:** View detailed information, images, and pricing.
-*   **User Authentication:** Secure sign-up, sign-in, and profile management (potentially using a service like Clerk or custom implementation).
+*   **User Authentication:** Secure sign-up, sign-in, and profile management
 *   **Shopping Cart:** Add/remove items, view cart summary.
 *   **Wishlist:** Save favorite items.
-*   **Theming:** Light/Dark mode support.
 *   **Responsive Design:** Adapts to various screen sizes.
-*   **(Planned/Optional):** Search, Reviews, Order History, Checkout Process.
+*   **Others:** Search, Reviews, Order History, Checkout Process.
 
 ## Tech Stack
 
 *   **Frontend:**
-    *   React (likely with Vite)
+    *   React with Vite
     *   React Router
-    *   State Management (e.g., Context API, Redux, Zustand)
-    *   Styling (e.g., Material UI, Tailwind CSS, CSS Modules)
-    *   Authentication Client (e.g., Clerk React)
+    *   State Management (Context API, Redux)
+    *   Styling (Material UI, Tailwind CSS,Custom CSS)
+    *   Authentication Client (Clerk React)
 *   **Backend:**
     *   Node.js
     *   Express
     *   Authentication Middleware (e.g., Clerk Node)
 *   **Database:**
     *   PostgreSQL
-    *   ORM/Query Builder (e.g., Prisma, Sequelize, node-postgres)
 *   **Package Manager:**
     *   pnpm (as indicated by `pnpm-lock.yaml`)
 
@@ -85,27 +83,24 @@ A full-stack e-commerce application built with the PERN stack (PostgreSQL, Expre
     *   Ensure your PostgreSQL server is running.
     *   Connect to your database and create the specified database (`DATABASE_NAME`).
     *   Run database migrations if applicable (e.g., `npx prisma migrate dev` if using Prisma). Add specific instructions based on your ORM setup.
-
-### Running the Application
-
-1.  **Start the Backend Server:**
-    ```bash
-    cd server
-    pnpm run dev # Or your specific start script (e.g., pnpm start)
-    ```
-
-2.  **Start the Frontend Client:**
-    ```bash
-    cd ../client
-    pnpm run dev
-    ```
-
-The client should now be accessible (commonly `http://localhost:5173` for Vite) and the server should be running (e.g., `http://localhost:5000`).
-
+c
 ## Contributing
 
-(Optional: Add guidelines for contributing to the project).
+We welcome contributions to improve Clinique Beauty! Here's how you can help:
+
+1. **Report Bugs**: Found a bug? Please open an issue with detailed information.
+2. **Feature Suggestions**: Have an idea? Let us know by creating a new issue or starting a discussion.
+3. **Code Contributions**: Fork the repository, create a new branch for your feature or fix, and submit a pull request. Ensure your code follows the project's style guidelines.
+
+### Steps to Contribute:
+- Fork this repository.
+- Create a new branch: `git checkout -b feature-name`.
+- Commit your changes: `git commit -m "Add feature/fix bug"`.
+- Push your branch: `git push origin feature-name`.
+- Open a Pull Request for review.
 
 ## License
 
-(Optional: Specify the license for your project, e.g., MIT).
+This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute this software in compliance withthe license terms.
+
+Thank you for your contributions!
