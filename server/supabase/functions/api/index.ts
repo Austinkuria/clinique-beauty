@@ -53,7 +53,7 @@ async function getSupabaseUserIdFromClerkToken(supabaseAnonClient: SupabaseClien
         // --- Look up Supabase User ID in your linking table (e.g., 'profiles') ---
         // IMPORTANT: Use the ANON client for this lookup, as we don't have an authenticated Supabase client yet.
         const { data: profile, error: profileError } = await supabaseAnonClient
-            .from('profiles') // ADJUST TABLE NAME if different
+            .from('user_profiles') // CHANGED FROM 'profiles' to 'user_profiles'
             .select('id') // Select the Supabase UUID column (assuming it's 'id')
             .eq('clerk_id', clerkUserId) // Match using the Clerk ID
             .single();

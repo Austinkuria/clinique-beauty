@@ -20,6 +20,7 @@ import {
     TextField,
     InputAdornment,
     Tooltip,
+    ListItemIcon,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -28,8 +29,10 @@ import {
     DarkMode as DarkModeIcon,
     LightMode as LightModeIcon,
     Search as SearchIcon,
+    AdminPanelSettings as AdminPanelSettingsIcon,
+    Security as SecurityIcon,
 } from '@mui/icons-material';
-import { UserButton, useAuth } from '@clerk/clerk-react';
+import { UserButton, useAuth, useUser } from '@clerk/clerk-react';
 import { useCart } from '../context/CartContext';
 
 function Navbar() {
@@ -38,6 +41,8 @@ function Navbar() {
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const { isSignedIn } = useAuth();
+    const { user } = useUser();
+    const isAdmin = isSignedIn && user?.publicMetadata?.role === 'admin';
     const { itemCount, loading: cartLoading } = useCart(); // Get itemCount and loading state from CartContext
 
     // Navigation items without the cart and without Profile button
@@ -140,6 +145,36 @@ function Navbar() {
                         <ListItemText primary="Cart" />
                     </ListItemButton>
                 </ListItem>
+                {isSignedIn && isAdmin && (
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            component={RouterLink}
+                            to="/admin"
+                            onClick={toggleDrawer(false)}
+                            className={`${colors.navbarTextSecondary} ${colors.textHover}`}
+                        >
+                            <ListItemIcon>
+                                <AdminPanelSettingsIcon className={colors.navbarTextSecondary} />
+                            </ListItemIcon>
+                            <ListItemText primary="Admin Panel" />
+                        </ListItemButton>
+                    </ListItem>
+                )}
+                {isSignedIn && !isAdmin && (
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            component={RouterLink}
+                            to="/admin-setup"
+                            onClick={toggleDrawer(false)}
+                            className={`${colors.navbarTextSecondary} ${colors.textHover}`}
+                        >
+                            <ListItemIcon>
+                                <SecurityIcon className={colors.navbarTextSecondary} />
+                            </ListItemIcon>
+                            <ListItemText primary="Admin Setup" />
+                        </ListItemButton>
+                    </ListItem>
+                )}
                 {!isSignedIn && (
                     <>
                         <ListItem disablePadding>

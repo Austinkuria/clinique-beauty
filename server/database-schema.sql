@@ -66,3 +66,29 @@ CREATE TABLE IF NOT EXISTS cart_items (
 
 -- Create index for faster cart lookups
 CREATE INDEX IF NOT EXISTS idx_cart_user ON cart_items(user_id);
+
+-- Create a system_settings table for configuration values
+CREATE TABLE IF NOT EXISTS system_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Insert the admin setup code
+INSERT INTO system_settings (key, value, description)
+VALUES ('admin_setup_code', 'clinique-admin-2023', 'Code used for setting up admin accounts')
+ON CONFLICT (key) DO NOTHING;
+
+-- Create user_profiles table to match our code
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    clerk_id TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    avatar_url TEXT,
+    role TEXT NOT NULL DEFAULT 'customer',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);

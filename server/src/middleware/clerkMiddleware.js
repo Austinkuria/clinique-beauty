@@ -42,8 +42,8 @@ export const clerkMiddleware = asyncHandler(async (req, res, next) => {
 
         // Look for the user in your database using clerk_id
         const { data: user, error: findError } = await supabase
-            .from('users')
-            .select('*') // Select all columns to attach to req.user
+            .from('user_profiles') // CHANGED FROM 'users' to 'user_profiles'
+            .select('*')
             .eq('clerk_id', clerkUserId)
             .single();
 
@@ -57,7 +57,7 @@ export const clerkMiddleware = asyncHandler(async (req, res, next) => {
             // User doesn't exist yet, create them
             console.log(`User with clerk_id ${clerkUserId} not found. Creating...`);
             const { data: newUser, error: createError } = await supabase
-                .from('users')
+                .from('user_profiles') // CHANGED FROM 'users' to 'user_profiles'
                 .insert({
                     clerk_id: clerkUserId,
                     email: email,

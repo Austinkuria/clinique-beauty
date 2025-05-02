@@ -182,6 +182,17 @@ const removeFromCart = (itemData) => _request('DELETE', '/cart/remove', itemData
 const updateCartItemQuantity = (itemData) => _request('PUT', '/cart/update', itemData, true); // requiresAuth = true
 const clearCart = () => _request('DELETE', '/cart/clear', null, true); // requiresAuth = true
 
+// Add this method to your API client class
+const updateUserRole = async (userId, role, token) => {
+    try {
+        const response = await _request('POST', '/users/update-role', { userId, role }, true);
+        return response.data;
+    } catch (error) {
+        console.error('API Error - updateUserRole:', error);
+        throw error;
+    }
+};
+
 // ... (other methods like getWishlist, addToWishlist, etc. - set requiresAuth accordingly) ...
 
 export const api = {
@@ -193,6 +204,7 @@ export const api = {
     removeFromCart,
     updateCartItemQuantity,
     clearCart,
+    updateUserRole,
 };
 
 // Hook to use the API client instance

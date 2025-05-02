@@ -7,6 +7,7 @@ import productRoutes from './src/routes/productRoutes.js';
 import cartRoutes from './src/routes/cartRoutes.js';
 import orderRoutes from './src/routes/orderRoutes.js';
 import searchRoutes from './src/routes/searchRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
 import { errorMiddleware } from './src/middleware/errorMiddleware.js';
 import { clerkMiddleware } from './src/middleware/clerkMiddleware.js'; // Keep Clerk middleware
 
@@ -25,6 +26,7 @@ app.use('/uploads', express.static('uploads')); // If you have local uploads
 // Routes
 // app.use('/api/auth', authRoutes); // Remove if Clerk handles all auth
 app.use('/api/products', productRoutes); // Public product routes
+app.use('/api/users', clerkMiddleware, userRoutes); // Add user routes with Clerk middleware
 // Protected routes using Clerk authentication
 app.use('/api/cart', clerkMiddleware, cartRoutes);
 app.use('/api/orders', clerkMiddleware, orderRoutes);
