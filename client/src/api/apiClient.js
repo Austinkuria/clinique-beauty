@@ -1,5 +1,5 @@
 import { useAuth } from '@clerk/clerk-react';
-import { useCallback } from 'react';
+// Removed unused useCallback import
 
 // Base URL for your API - Use the Supabase Functions URL + function name
 const SUPABASE_FUNCTIONS_BASE = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
@@ -32,6 +32,41 @@ export const useInitializeApi = () => {
         clerkGetToken = getToken;
         console.log("API Client: Clerk getToken function initialized.");
     }
+};
+
+// Add this function to handle products with missing data fields
+const transformProductData = (product) => {
+    if (!product) return product;
+    
+    try {
+        // Log if paletteTheme is undefined but expected for this product
+        if (product.paletteTheme === undefined) {
+            console.warn(`Product ${product.id || product.name} is missing paletteTheme. This column may not exist in Supabase.`);
+            
+            // Don't add default values - just ensure the property exists
+            // so that code accessing this property doesn't crash
+            product.paletteTheme = null;
+        }
+    } catch (error) {
+        console.warn(`Error handling product data: ${error.message}`, product);
+        // Don't fail if transformation has an error
+    }
+    
+    return product;
+};
+
+// Transform an array of products safely
+const transformProductsData = (products) => {
+    if (!Array.isArray(products)) return products;
+    
+    return products.map(product => {
+        try {
+            return transformProductData(product);
+        } catch (error) {
+            console.warn(`Error transforming a product: ${error.message}`);
+            return product; // Return original product if transformation fails
+        }
+    });
 };
 
 // Helper function to make authenticated requests
@@ -98,7 +133,7 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
             let errorData;
             try {
                 errorData = await response.json();
-            } catch (e) {
+            } catch (_) { // Changed 'e' to '_' to mark as intentionally unused
                 errorData = { message: `HTTP error ${response.status}: ${response.statusText}` };
             }
             console.error(`API Client Error: ${method} ${endpoint} failed with status ${response.status}`, errorData);
@@ -124,15 +159,21 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
     }
 };
 
+// Removed the unused createApiClient function
 
 // --- API Methods ---
 
-// Product methods
-const getProducts = (category = null) => {
+// Product methods with data transformation
+const getProducts = async (category = null) => {
     const endpoint = category ? `/products?category=${encodeURIComponent(category)}` : '/products';
-    return _request('GET', endpoint, null, false); // Assuming public access (requiresAuth = false)
+    const data = await _request('GET', endpoint, null, false);
+    return transformProductsData(data);
 };
-const getProductById = (id) => _request('GET', `/products/${id}`, null, false); // Assuming public access
+
+const getProductById = async (id) => {
+    const data = await _request('GET', `/products/${id}`, null, false);
+    return transformProductData(data);
+};
 
 // Cart methods (likely require auth)
 const getCart = () => _request('GET', '/cart', null, true); // requiresAuth = true
@@ -144,7 +185,7 @@ const clearCart = () => _request('DELETE', '/cart/clear', null, true); // requir
 // ... (other methods like getWishlist, addToWishlist, etc. - set requiresAuth accordingly) ...
 
 export const api = {
-    getProducts, // Add getProducts here
+    getProducts,
     getProductById,
     // ... other methods
     getCart,

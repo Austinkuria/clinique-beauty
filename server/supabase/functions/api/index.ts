@@ -206,11 +206,30 @@ serve(async (req: Request) => {
         }
         // GET /api/products/:id
         if (req.method === 'GET' && route[0] === 'products' && route.length === 2) {
-            // ... existing product/:id fetching logic ...
+            console.log('[Route Handler] Matched GET /api/products/:id');
             const id = route[1];
-            const { data, error } = await supabase.from('products').select('*').eq('id', id).maybeSingle();
-            if (error) throw error;
-            if (!data) return new Response(JSON.stringify({ message: 'Product not found' }), { headers, status: 404 });
+            console.log(`[Route Handler GET /api/products/:id] Fetching product with ID: ${id}`);
+            
+            // Use select with explicit fields to ensure we get 'images' array
+            const { data, error } = await supabase
+                .from('products')
+                .select('id, name, price, image, images, description, category, subcategory, stock, rating, benefits, ingredients, shades, notes, paletteTheme')
+                .eq('id', id)
+                .maybeSingle();
+            
+            if (error) {
+                console.error('[Route Handler GET /api/products/:id] Error fetching product:', error);
+                throw error;
+            }
+            
+            if (!data) {
+                console.log('[Route Handler GET /api/products/:id] Product not found');
+                return new Response(JSON.stringify({ message: 'Product not found' }), { headers, status: 404 });
+            }
+            
+            console.log('[Route Handler GET /api/products/:id] Product found:', { id: data.id, name: data.name });
+            console.log('[Route Handler GET /api/products/:id] Images array:', data.images || []);
+            
             return new Response(JSON.stringify(data), { headers, status: 200 });
         }
 

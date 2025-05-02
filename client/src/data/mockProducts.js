@@ -6,7 +6,11 @@ const mockProducts = [
         id: 1,
         name: 'Hydrating Moisturizer',
         price: 29.99,
-        image: '/images/skincare/moisturizer.jpg',
+        image: '/images/skincare/moisturizer.webp',
+        additionalImages: [
+            '/images/skincare/moisturizer-angle.jpg',
+            '/images/skincare/moisturizer-texture.jpg'
+        ],
         rating: 4.5,
         category: 'Skincare', // Main category
         subcategory: 'Moisturizer', // Specific type
@@ -20,6 +24,10 @@ const mockProducts = [
         name: 'Cleansing Foam',
         price: 19.99,
         image: '/images/skincare/cleanser.jpg',
+        additionalImages: [
+            '/images/skincare/cleanser-angle.jpg',
+            '/images/skincare/cleanser-texture.jpg'
+        ],
         rating: 4.2,
         category: 'Skincare', // Main category
         subcategory: 'Cleanser', // Specific type
@@ -33,6 +41,10 @@ const mockProducts = [
         name: 'SPF 50 Sunscreen',
         price: 24.99,
         image: '/images/skincare/sunscreen.jpg',
+        additionalImages: [
+            '/images/skincare/sunscreen-angle.jpg',
+            '/images/skincare/sunscreen-texture.jpg'
+        ],
         rating: 4.7,
         category: 'Skincare', // Main category
         subcategory: 'Sunscreen', // Specific type
@@ -45,7 +57,11 @@ const mockProducts = [
         id: 4,
         name: 'Anti-Aging Serum',
         price: 49.99,
-        image: '/images/skincare/serum.jpg',
+        image: '/images/skincare/serum.webp',
+        additionalImages: [
+            '/images/skincare/serum-angle.jpg',
+            '/images/skincare/serum-texture.jpg'
+        ],
         rating: 4.8,
         category: 'Skincare', // Main category
         subcategory: 'Serum', // Specific type
@@ -61,6 +77,10 @@ const mockProducts = [
         name: 'Matte Lipstick',
         price: 15.99,
         image: '/images/makeup/lipstick.jpg',
+        additionalImages: [
+            '/images/makeup/lipstick-angle.jpg',
+            '/images/makeup/lipstick-texture.jpg'
+        ],
         rating: 4.3,
         category: 'Makeup', // Main category
         subcategory: 'Lipstick', // Specific type
@@ -81,6 +101,10 @@ const mockProducts = [
         name: 'Liquid Foundation',
         price: 29.99,
         image: '/images/makeup/foundation.jpg',
+        additionalImages: [
+            '/images/makeup/foundation-angle.jpg',
+            '/images/makeup/foundation-texture.jpg'
+        ],
         rating: 4.6,
         category: 'Makeup', // Main category
         subcategory: 'Foundation', // Specific type
@@ -102,6 +126,10 @@ const mockProducts = [
         name: 'Mascara',
         price: 12.99,
         image: '/images/makeup/mascara.jpg',
+        additionalImages: [
+            '/images/makeup/mascara-angle.jpg',
+            '/images/makeup/mascara-texture.jpg'
+        ],
         rating: 4.4,
         category: 'Makeup', // Main category
         subcategory: 'Mascara', // Specific type
@@ -115,6 +143,10 @@ const mockProducts = [
         name: 'Eyeshadow Palette',
         price: 39.99,
         image: '/images/makeup/eyeshadow.jpg',
+        additionalImages: [
+            '/images/makeup/eyeshadow-angle.jpg',
+            '/images/makeup/eyeshadow-texture.jpg'
+        ],
         rating: 4.7,
         category: 'Makeup', // Main category
         subcategory: 'Eyeshadow', // Specific type
@@ -131,6 +163,10 @@ const mockProducts = [
         name: 'Floral Eau de Parfum',
         price: 59.99,
         image: '/images/fragrance/floral.jpg',
+        additionalImages: [
+            '/images/fragrance/floral-angle.jpg',
+            '/images/fragrance/floral-bottle.jpg'
+        ],
         rating: 4.8,
         category: 'Fragrance', // Main category
         subcategory: 'Eau de Parfum', // Specific type
@@ -144,6 +180,10 @@ const mockProducts = [
         name: 'Citrus Mist',
         price: 39.99,
         image: '/images/fragrance/citrus.jpg',
+        additionalImages: [
+            '/images/fragrance/citrus-angle.jpg',
+            '/images/fragrance/citrus-bottle.jpg'
+        ],
         rating: 4.5,
         category: 'Fragrance', // Main category
         subcategory: 'Eau de Toilette', // Specific type
@@ -157,6 +197,10 @@ const mockProducts = [
         name: 'Woody Essence',
         price: 69.99,
         image: '/images/fragrance/woody.jpg',
+        additionalImages: [
+            '/images/fragrance/woody-angle.jpg',
+            '/images/fragrance/woody-bottle.jpg'
+        ],
         rating: 4.9,
         category: 'Fragrance', // Main category
         subcategory: 'Eau de Parfum', // Specific type
@@ -170,6 +214,10 @@ const mockProducts = [
         name: 'Fresh Breeze',
         price: 29.99,
         image: '/images/fragrance/breeze.jpg',
+        additionalImages: [
+            '/images/fragrance/breeze-angle.jpg',
+            '/images/fragrance/breeze-bottle.jpg'
+        ],
         rating: 4.3,
         category: 'Fragrance', // Main category
         subcategory: 'Body Mist', // Specific type
@@ -185,6 +233,10 @@ const mockProducts = [
         name: 'Moisturizing Shampoo',
         price: 18.99,
         image: '/images/hair/shampoo.jpg',
+        additionalImages: [
+            '/images/hair/shampoo-angle.jpg',
+            '/images/hair/shampoo-texture.jpg'
+        ],
         rating: 4.6,
         category: 'Hair', // Main category
         subcategory: 'Shampoo', // Specific type
@@ -198,6 +250,10 @@ const mockProducts = [
         name: 'Repair Conditioner',
         price: 16.99,
         image: '/images/hair/conditioner.jpg',
+        additionalImages: [
+            '/images/hair/conditioner-angle.jpg',
+            '/images/hair/conditioner-texture.jpg'
+        ],
         rating: 4.5,
         category: 'Hair', // Main category
         subcategory: 'Conditioner', // Specific type
@@ -211,6 +267,10 @@ const mockProducts = [
         name: 'Curl Defining Cream',
         price: 22.99,
         image: '/images/hair/styling-cream.jpg',
+        additionalImages: [
+            '/images/hair/styling-cream-angle.jpg',
+            '/images/hair/styling-cream-texture.jpg'
+        ],
         rating: 4.7,
         category: 'Hair', // Main category
         subcategory: 'Styling', // Specific type
@@ -224,6 +284,10 @@ const mockProducts = [
         name: 'Hair Oil Treatment',
         price: 34.99,
         image: '/images/hair/oil.jpg',
+        additionalImages: [
+            '/images/hair/oil-angle.jpg',
+            '/images/hair/oil-texture.jpg'
+        ],
         rating: 4.8,
         category: 'Hair', // Main category
         subcategory: 'Treatment', // Specific type

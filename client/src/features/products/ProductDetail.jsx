@@ -201,7 +201,7 @@ function ProductDetail() {
                     
                     // If we need to have at least a few images for testing, we can keep some placeholders
                     // These should be removed in production if you want to show only actual product images
-                    if (process.env.NODE_ENV === 'development') {
+                    if (import.meta.env.MODE === 'development') {
                         console.log(`[Effect ${id}] Adding placeholder images for development`);
                         imagesArray.push(
                             { url: '/assets/images/hands-with-cleanser.jpg', alt: `${fetchedProduct.name} - Applied on Hands` },
@@ -865,56 +865,121 @@ function ProductDetail() {
 
                             <Box sx={{ mt: 3, pt: 2, borderTop: `1px solid ${colorValues.divider}`, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                                 <Typography variant="body2" sx={{ color: colorValues.textSecondary, mr: 1, width: '100%', mb: 1 }}>Share:</Typography>
+                                
+                                {/* Facebook Share */}
                                 <Tooltip title="Share on Facebook">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
                                         <FacebookShareButton url={currentUrl} quote={shareTitle}>
-                                            <IconButton size="small" aria-label="Share on Facebook" sx={{ color: '#1877F2' }}>
-                                                <FacebookIcon />
-                                            </IconButton>
+                                            <Box sx={{ 
+                                                color: '#1877F2', 
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                p: 1,
+                                                borderRadius: '50%',
+                                                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
+                                            }}>
+                                                <FacebookIcon fontSize="small" />
+                                            </Box>
                                         </FacebookShareButton>
                                     </motion.div>
                                 </Tooltip>
+                                
+                                {/* Twitter Share */}
                                 <Tooltip title="Share on Twitter">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
                                         <TwitterShareButton url={currentUrl} title={shareTitle}>
-                                            <IconButton size="small" aria-label="Share on Twitter" sx={{ color: '#1DA1F2' }}>
-                                                <TwitterIcon />
-                                            </IconButton>
+                                            <Box sx={{ 
+                                                color: '#1DA1F2', 
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                p: 1,
+                                                borderRadius: '50%',
+                                                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
+                                            }}>
+                                                <TwitterIcon fontSize="small" />
+                                            </Box>
                                         </TwitterShareButton>
                                     </motion.div>
                                 </Tooltip>
+                                
+                                {/* Pinterest Share */}
                                 <Tooltip title="Share on Pinterest">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
                                         <PinterestShareButton url={currentUrl} media={shareImage} description={shareTitle}>
-                                            <IconButton size="small" aria-label="Share on Pinterest" sx={{ color: '#E60023' }}>
-                                                <PinterestIcon />
-                                            </IconButton>
+                                            <Box sx={{ 
+                                                color: '#E60023', 
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                p: 1,
+                                                borderRadius: '50%',
+                                                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
+                                            }}>
+                                                <PinterestIcon fontSize="small" />
+                                            </Box>
                                         </PinterestShareButton>
                                     </motion.div>
                                 </Tooltip>
+                                
+                                {/* WhatsApp Share */}
                                 <Tooltip title="Share on WhatsApp">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
                                         <WhatsappShareButton url={currentUrl} title={shareTitle} separator=":: ">
-                                            <IconButton size="small" aria-label="Share on WhatsApp" sx={{ color: '#25D366' }}>
-                                                <WhatsAppIcon />
-                                            </IconButton>
+                                            <Box sx={{ 
+                                                color: '#25D366', 
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                p: 1,
+                                                borderRadius: '50%',
+                                                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
+                                            }}>
+                                                <WhatsAppIcon fontSize="small" />
+                                            </Box>
                                         </WhatsappShareButton>
                                     </motion.div>
                                 </Tooltip>
+                                
+                                {/* Email Share */}
                                 <Tooltip title="Share via Email">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
                                         <EmailShareButton url={currentUrl} subject={shareTitle} body={`Check out this product: ${currentUrl}`}>
-                                            <IconButton size="small" aria-label="Share via Email" sx={{ color: colorValues.primary }}>
-                                                <EmailIcon />
-                                            </IconButton>
+                                            <Box sx={{ 
+                                                color: colorValues.primary, 
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                p: 1,
+                                                borderRadius: '50%',
+                                                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
+                                            }}>
+                                                <EmailIcon fontSize="small" />
+                                            </Box>
                                         </EmailShareButton>
                                     </motion.div>
                                 </Tooltip>
+                                
+                                {/* Copy Link */}
                                 <Tooltip title="Copy Link">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
-                                        <IconButton size="small" onClick={handleCopyLink} aria-label="Copy product link" sx={{ color: colorValues.textSecondary }}>
-                                            <ContentCopyIcon />
-                                        </IconButton>
+                                        <Box 
+                                            onClick={handleCopyLink}
+                                            sx={{ 
+                                                color: colorValues.textSecondary,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                p: 1,
+                                                borderRadius: '50%',
+                                                cursor: 'pointer',
+                                                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
+                                            }}
+                                            aria-label="Copy product link"
+                                        >
+                                            <ContentCopyIcon fontSize="small" />
+                                        </Box>
                                     </motion.div>
                                 </Tooltip>
                             </Box>

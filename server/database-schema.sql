@@ -7,15 +7,17 @@ CREATE TABLE IF NOT EXISTS products (
     name TEXT NOT NULL,
     price NUMERIC NOT NULL,
     image TEXT NOT NULL,
+    images TEXT[], -- Add the images array field to store multiple images
     description TEXT NOT NULL,
     category TEXT NOT NULL,
+    subcategory TEXT,
     stock INTEGER NOT NULL DEFAULT 0,
-    rating NUMERIC DEFAULT 0,          -- Added rating column
-    benefits JSONB,                     -- Added benefits column (use TEXT[] if it's just a list of strings)
-    ingredients JSONB,                  -- Added ingredients column (use TEXT[] if it's just a list of strings)
-    shades JSONB,                       -- Added shades column
-    notes JSONB,                        -- Added notes column (use TEXT[] if it's just a list of strings)
-    paletteTheme TEXT,                  -- Added paletteTheme column
+    rating NUMERIC DEFAULT 0,
+    benefits JSONB,
+    ingredients JSONB,
+    shades JSONB,
+    notes JSONB,
+    paletteTheme TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

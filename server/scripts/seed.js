@@ -89,6 +89,43 @@ async function uploadImage(localImagePath, storagePath) {
     }
 }
 
+// New function to upload multiple images
+async function uploadProductImages(product, productId) {
+    console.log(`\nUploading images for product ${product.name} (ID: ${productId})`);
+    
+    // First, upload the main image
+    const relativeImagePath = product.image.startsWith('/') ? product.image.substring(1) : product.image;
+    const localImagePath = path.join(projectRoot, 'client', 'src', 'assets', relativeImagePath);
+    const storagePath = `products/${productId}/${path.basename(relativeImagePath)}`;
+    
+    console.log(`  Main image: ${localImagePath} -> ${storagePath}`);
+    const mainImageUrl = await uploadImage(localImagePath, storagePath);
+    
+    // Then, handle additional images if available
+    const additionalImages = [];
+    if (Array.isArray(product.additionalImages) && product.additionalImages.length > 0) {
+        for (let i = 0; i < product.additionalImages.length; i++) {
+            const additionalPath = product.additionalImages[i];
+            if (!additionalPath) continue;
+            
+            const relPath = additionalPath.startsWith('/') ? additionalPath.substring(1) : additionalPath;
+            const localPath = path.join(projectRoot, 'client', 'src', 'assets', relPath);
+            const storePath = `products/${productId}/additional_${i}_${path.basename(relPath)}`;
+            
+            console.log(`  Additional image ${i+1}: ${localPath} -> ${storePath}`);
+            const imageUrl = await uploadImage(localPath, storePath);
+            if (imageUrl) {
+                additionalImages.push(imageUrl);
+            }
+        }
+    }
+    
+    return {
+        mainImageUrl: mainImageUrl || placeholderUrl,
+        additionalImages
+    };
+}
+
 // --- Seeding Logic ---
 async function seedDatabase() {
     console.log('Starting database seeding...');
@@ -120,24 +157,19 @@ async function seedDatabase() {
     console.log('\nProcessing and uploading product images...');
     const productsToInsert = [];
 
-    // Use a for...of loop to handle async uploads sequentially or Promise.all for parallel
     for (const product of mockProducts) {
-        // Construct local image path (handle potential leading slash)
-        const relativeImagePath = product.image.startsWith('/') ? product.image.substring(1) : product.image;
-        const localImagePath = path.join(projectRoot, 'client', 'src', 'assets', relativeImagePath);
-
-        // Construct storage path (e.g., skincare/moisturizer.jpg)
-        const storagePath = relativeImagePath.replace(/\\/g, '/'); // Ensure forward slashes for storage path
-
-        console.log(`  Uploading image for ${product.name}: ${localImagePath} -> ${storagePath}`);
-        const imageUrl = await uploadImage(localImagePath, storagePath);
+        // Generate a UUID for this product
+        const productId = crypto.randomUUID();
+        
+        // Upload all images for this product
+        const { mainImageUrl, additionalImages } = await uploadProductImages(product, productId);
 
         productsToInsert.push({
-            // id: product.id, // Let Supabase generate the UUID
+            id: productId, // Use the generated UUID
             name: product.name,
             price: Math.round(product.price * USD_TO_KES_RATE),
-            // Use the uploaded URL, or the placeholder if upload failed
-            image: imageUrl || placeholderUrl,
+            image: mainImageUrl, // Use the uploaded main image URL
+            images: additionalImages, // Store additional images as an array
             description: product.description,
             category: product.category,
             subcategory: product.subcategory,

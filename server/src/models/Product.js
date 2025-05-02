@@ -8,6 +8,7 @@ const ProductTable = {
         name: 'text not null',
         price: 'numeric not null',
         image: 'text not null',
+        images: 'text[]',                      // Added images array field
         description: 'text not null',
         category: 'text not null',
         subcategory: 'text', // Added subcategory
@@ -17,8 +18,8 @@ const ProductTable = {
         ingredients: 'jsonb',                  // Added ingredients
         shades: 'jsonb',                       // Added shades
         notes: 'jsonb',                        // Added notes
-        palettetheme: 'text',                  // Changed to lowercase 'palettetheme'
-        created_at: 'timestamptz default now()',
+        paletteTheme: 'text',                  // Keep camelCase to match database column
+        created_at: 'timestamptz default now()',  // Fixed missing closing quote
         updated_at: 'timestamptz default now()',
     }
 };
