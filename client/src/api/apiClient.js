@@ -16,8 +16,9 @@ const constructApiBaseUrl = () => {
   // Log the base URL for debugging
   console.log("Base URL before processing:", baseUrl);
   
-  // Simple, direct construction to avoid issues
-  return `${baseUrl}/functions/v1/${API_FUNCTION_NAME}`;
+  // Fix: The Supabase URL already includes the base path, just add the function name
+  // This avoids the double "functions/v1" path issue
+  return `${baseUrl}/api`;
 };
 
 // Use the corrected function to set API_BASE_URL

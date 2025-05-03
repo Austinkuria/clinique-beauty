@@ -43,7 +43,8 @@ function Navbar() {
     const { isSignedIn } = useAuth();
     const { user } = useUser();
     const isAdmin = isSignedIn && user?.publicMetadata?.role === 'admin';
-    const { itemCount, loading: cartLoading } = useCart(); // Get itemCount and loading state from CartContext
+    const cartContext = useCart() || {};
+    const { itemCount = 0, loading: cartLoading = false } = cartContext;
 
     // Navigation items without the cart and without Profile button
     const navItems = [

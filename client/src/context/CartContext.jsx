@@ -5,7 +5,22 @@ import { useApi } from '../api/apiClient';
 
 const CartContext = createContext();
 
-export const useCart = () => useContext(CartContext);
+export const useCart = () => {
+    const context = useContext(CartContext);
+    if (context === undefined) {
+        console.error('useCart must be used within a CartProvider');
+        // Return a default object with expected properties to prevent destructuring errors
+        return { 
+            cart: [], 
+            itemCount: 0, 
+            loading: false, 
+            error: null,
+            addToCart: () => console.error('CartProvider not found'),
+            // Add other methods as needed
+        };
+    }
+    return context;
+};
 
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
