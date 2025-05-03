@@ -213,9 +213,9 @@ const updateUserRole = async (userId, role, token) => {
 const syncUser = async (userData) => {
   console.log("Syncing user data to server:", userData);
   try {
-    // Use Express server directly for user sync during development
-    const url = `${useExpressServerDirectly()}/api/users/sync`;
-    console.log("Using direct Express endpoint for user sync:", url);
+    // Try Express server first
+    const expressUrl = `${useExpressServerDirectly()}/api/users/sync`;
+    console.log("Attempting direct Express endpoint for user sync:", expressUrl);
     
     const headers = new Headers({ 'Content-Type': 'application/json' });
     if (clerkGetToken) {
@@ -223,22 +223,42 @@ const syncUser = async (userData) => {
       headers.set('Authorization', `Bearer ${token}`);
     }
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(userData)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+    try {
+      // First try the Express server
+      const response = await fetch(expressUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(userData),
+        // Add a shorter timeout for faster fallback
+        signal: AbortSignal.timeout(3000) // 3 second timeout
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("User sync successful via Express server:", data);
+        return data;
+      }
+    } catch (expressError) {
+      console.warn("Express server not available, falling back to Supabase function:", expressError.message);
+      // Continue to fallback - don't re-throw
     }
     
-    const data = await response.json();
-    console.log("User sync successful:", data);
-    return data;
+    // Fallback to Supabase function
+    console.log("Falling back to Supabase function for user sync");
+    // Use the regular _request method which uses the base API_BASE_URL
+    const supabaseResponse = await _request('POST', '/users/sync', userData, true);
+    console.log("User sync successful via Supabase function:", supabaseResponse);
+    return supabaseResponse;
+    
   } catch (error) {
     console.error("User sync failed:", error);
-    throw error;
+    // Instead of failing completely, return a partial success
+    // This prevents errors from blocking the app during development
+    return { 
+      success: false, 
+      message: "User sync failed, but app will continue to function",
+      error: error.message
+    };
   }
 };
 

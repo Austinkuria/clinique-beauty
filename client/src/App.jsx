@@ -25,8 +25,13 @@ function App() {
       if (isLoaded && isSignedIn && user) {
         try {
           console.log("App: Attempting to sync user to Supabase...");
-          await syncUserToSupabase(user, session.getToken);
-          console.log("App: User sync complete");
+          const result = await syncUserToSupabase(user, session.getToken);
+          
+          if (result && result.success) {
+            console.log("App: User sync complete");
+          } else {
+            console.log("App: User sync completed with warnings - app will continue");
+          }
         } catch (error) {
           console.error('App: Error syncing user to database:', error);
           

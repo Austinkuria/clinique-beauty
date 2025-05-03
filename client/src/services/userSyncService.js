@@ -15,7 +15,7 @@ export async function syncUserToSupabase(user, getToken) {
         
         if (!user) {
             console.error("Cannot sync user: No user provided");
-            return null;
+            return { success: false, message: "No user provided" };
         }
 
         // Map Clerk user data to our user model
@@ -30,10 +30,21 @@ export async function syncUserToSupabase(user, getToken) {
         
         // Call the API to sync with our database
         const response = await api.syncUser(userData);
+        
+        // Even if sync fails, we'll continue with the app
+        if (!response || !response.success) {
+            console.warn("User sync returned an error but app will continue:", response);
+        }
+        
         return response;
     } catch (error) {
         console.error("Error syncing user:", error);
-        throw error;
+        // Return partial success instead of throwing - this prevents app from breaking
+        return { 
+            success: false, 
+            message: "User sync failed, but app will continue to function",
+            error: error.message
+        };
     }
 }
 
