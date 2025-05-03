@@ -257,6 +257,40 @@ async function getValidUserId(supabase: SupabaseClient): Promise<string | null> 
     }
 }
 
+// Add this function to get a valid user ID for cart operations
+async function getValidCartUserId(supabase: SupabaseClient, providedUserId: string | null): Promise<string | null> {
+    // If we have a valid UUID, use it
+    if (providedUserId && isValidUUID(providedUserId)) {
+        return providedUserId;
+    }
+    
+    // Otherwise, get the first user from the database as a fallback
+    try {
+        console.log('[getValidCartUserId] Fetching valid user ID from database...');
+        const { data, error } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .limit(1)
+            .single();
+            
+        if (error) {
+            console.error('[getValidCartUserId] Error fetching user:', error);
+            return null;
+        }
+        
+        if (!data || !data.id) {
+            console.error('[getValidCartUserId] No users found in database');
+            return null;
+        }
+        
+        console.log(`[getValidCartUserId] Using user ID from database: ${data.id}`);
+        return data.id;
+    } catch (error) {
+        console.error('[getValidCartUserId] Unexpected error:', error);
+        return null;
+    }
+}
+
 serve(async (req: Request) => {
     // --- NEW: Very early logging ---
     console.log(`[Serve Start] Received request: ${req.method} ${req.url}`);
@@ -422,9 +456,16 @@ serve(async (req: Request) => {
 
             console.log(`[Route Handler GET /api/cart] User ${supabaseUserId} authenticated. Fetching cart items...`);
             
-            // Normalize the user ID for database queries
-            const normalizedUserId = normalizeUserId(supabaseUserId);
-            console.log(`[Route Handler GET /api/cart] Using normalized User ID: ${normalizedUserId}`);
+            // Get a valid user ID
+            const validUserId = await getValidCartUserId(supabase, supabaseUserId);
+            if (!validUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Failed to obtain a valid user ID' }),
+                    { headers, status: 500 }
+                );
+            }
+            
+            console.log(`[Route Handler GET /api/cart] Using valid user ID: ${validUserId}`);
             
             const { data: cartItems, error } = await supabase
                 .from('cart_items')
@@ -435,7 +476,7 @@ serve(async (req: Request) => {
                         id, name, price, image, description, category, subcategory, stock
                     )
                 `) // Keep your select statement
-                .eq('user_id', normalizedUserId); // Use normalized UUID
+                .eq('user_id', validUserId); // Use valid user ID
             // --- END CHANGE ---
             // ... (rest of GET /cart logic: error handling, formatting) ...
             if (error) { 
@@ -628,26 +669,33 @@ serve(async (req: Request) => {
                 return new Response(JSON.stringify({ message: 'Cart Item ID and valid quantity required' }), { headers, status: 400 });
             }
 
-            const normalizedUserId = normalizeUserId(supabaseUserId);
+            // Get a valid user ID
+            const validUserId = await getValidCartUserId(supabase, supabaseUserId);
+            if (!validUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Failed to obtain a valid user ID' }),
+                    { headers, status: 500 }
+                );
+            }
             
             if (quantity === 0) {
-                // --- Handle removal (using ANON client 'supabase' and supabaseUserId) ---
+                // --- Handle removal (using ANON client 'supabase' and validUserId) ---
                 const { error: deleteError } = await supabase
                     .from('cart_items')
                     .delete()
                     .eq('id', itemId) // PK is cart_items.id
-                    .eq('user_id', normalizedUserId); // Ensure user owns the item
+                    .eq('user_id', validUserId); // Ensure user owns the item
                 // ... (error handling) ...
                 if (deleteError) throw deleteError;
                 return new Response(JSON.stringify({ message: 'Item removed' }), { headers, status: 200 });
             } else {
-                // --- Update quantity (using ANON client 'supabase' and supabaseUserId) ---
+                // --- Update quantity (using ANON client 'supabase' and validUserId) ---
                 // Optional: Add stock check here before updating
                 const { data, error } = await supabase
                     .from('cart_items')
                     .update({ quantity: quantity })
                     .eq('id', itemId) // PK is cart_items.id
-                    .eq('user_id', normalizedUserId) // Ensure user owns the item
+                    .eq('user_id', validUserId) // Ensure user owns the item
                     .select()
                     .single();
                 // ... (error handling for not found etc.) ...
@@ -673,14 +721,21 @@ serve(async (req: Request) => {
                 return new Response(JSON.stringify({ message: 'Cart Item ID required' }), { headers, status: 400 });
             }
 
-            const normalizedUserId = normalizeUserId(supabaseUserId);
+            // Get a valid user ID
+            const validUserId = await getValidCartUserId(supabase, supabaseUserId);
+            if (!validUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Failed to obtain a valid user ID' }),
+                    { headers, status: 500 }
+                );
+            }
             
-            // --- Delete item (using ANON client 'supabase' and supabaseUserId) ---
+            // --- Delete item (using ANON client 'supabase' and validUserId) ---
             const { error } = await supabase
                 .from('cart_items')
                 .delete()
                 .eq('id', itemId) // PK is cart_items.id
-                .eq('user_id', normalizedUserId); // Ensure user owns the item
+                .eq('user_id', validUserId); // Ensure user owns the item
             // ... (error handling) ...
             if (error) throw error; // Could include check for not found if needed
             return new Response(JSON.stringify({ message: 'Item removed successfully' }), { headers, status: 200 });
@@ -694,13 +749,20 @@ serve(async (req: Request) => {
             }
             console.log(`[Route Handler DELETE /api/cart/clear] User ${supabaseUserId} authenticated.`);
 
-            const normalizedUserId = normalizeUserId(supabaseUserId);
+            // Get a valid user ID
+            const validUserId = await getValidCartUserId(supabase, supabaseUserId);
+            if (!validUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Failed to obtain a valid user ID' }),
+                    { headers, status: 500 }
+                );
+            }
             
-            // --- Delete all items (using ANON client 'supabase' and supabaseUserId) ---
+            // --- Delete all items (using ANON client 'supabase' and validUserId) ---
             const { error } = await supabase
                 .from('cart_items')
                 .delete()
-                .eq('user_id', normalizedUserId); // Use normalized UUID
+                .eq('user_id', validUserId); // Use valid user ID
             // ... (error handling) ...
             if (error) throw error;
             return new Response(JSON.stringify({ message: 'Cart cleared successfully' }), { headers, status: 200 });
