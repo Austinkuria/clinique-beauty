@@ -113,24 +113,31 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
             throw new Error("API client not ready. Authentication function missing.");
         }
         try {
-            // --- CHANGE: Request default Clerk session token ---
-            console.log("API Client: Requesting default Clerk session token...");
-            token = await clerkGetToken();
+            // --- CHANGE: Request session token with custom scope ---
+            console.log("API Client: Requesting Clerk session token...");
+            // Try with a specific resource if the default token doesn't work
+            token = await clerkGetToken({ template: "supabase" });
+            
+            if (!token) {
+                // Fall back to default token if template-specific token fails
+                console.log("API Client: Specific token template failed, trying default token");
+                token = await clerkGetToken();
+            }
             // --- END CHANGE ---
 
             if (!token) {
-                console.error(`API Client Error: Failed to retrieve default authentication token.`);
+                console.error(`API Client Error: Failed to retrieve authentication token.`);
                 throw new Error("Authentication token could not be retrieved.");
             }
             headers.set('Authorization', `Bearer ${token}`);
 
             // --- ADD TOKEN LOGGING ---
             const tokenSnippet = token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'null/undefined';
-            console.log(`API Client: ${method} ${endpoint} - Using default token. Snippet: ${tokenSnippet}`);
+            console.log(`API Client: ${method} ${endpoint} - Using token. Snippet: ${tokenSnippet}`);
             // --- END TOKEN LOGGING ---
 
         } catch (error) {
-            console.error(`API Client Error: Error retrieving default authentication token.`, error);
+            console.error(`API Client Error: Error retrieving authentication token.`, error);
             throw new Error(`Authentication token retrieval failed: ${error.message}`);
         }
     } else {
@@ -195,7 +202,54 @@ const getProductById = async (id) => {
 };
 
 // Cart methods (likely require auth)
-const getCart = () => _request('GET', '/cart', null, true); // requiresAuth = true
+// Use a retry mechanism for cart methods that might fail on the first attempt
+const getCart = async () => {
+  try {
+    return await _request('GET', '/cart', null, true);
+  } catch (error) {
+    console.warn("First attempt to get cart failed, retrying...", error);
+    
+    // Short delay before retry
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Try one more time
+    try {
+      // Try with a refreshed token on the second attempt
+      if (clerkGetToken) {
+        // Force token refresh
+        const refreshedToken = await clerkGetToken({ skipCache: true });
+        console.log("Retrying with refreshed token...");
+        
+        // Make direct fetch with refreshed token
+        const response = await fetch(`${API_BASE_URL}/cart`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${refreshedToken}`
+          }
+        });
+        
+        if (response.ok) {
+          return await response.json();
+        }
+      }
+      
+      // Fall back to standard request if direct fetch fails
+      return await _request('GET', '/cart', null, true);
+    } catch (retryError) {
+      console.error("Cart retry also failed:", retryError);
+      
+      // In development, return empty cart to keep app working
+      if (import.meta.env.DEV) {
+        console.log("DEV MODE: Returning empty cart");
+        return { items: [], total: 0 };
+      }
+      
+      throw retryError;
+    }
+  }
+};
+
 const addToCart = (itemData) => _request('POST', '/cart/add', itemData, true); // requiresAuth = true
 const removeFromCart = (itemData) => _request('DELETE', '/cart/remove', itemData, true); // requiresAuth = true
 const updateCartItemQuantity = (itemData) => _request('PUT', '/cart/update', itemData, true); // requiresAuth = true
@@ -255,28 +309,65 @@ const syncUser = async (userData) => {
       
       // Use the _request method which uses API_BASE_URL
       try {
-        const supabaseResponse = await _request('POST', '/users/sync', userData, true);
-        console.log("User sync successful via Supabase function:", supabaseResponse);
-        return supabaseResponse;
-      } catch (supabaseError) {
-        console.error("Supabase function user sync failed:", supabaseError);
+        // Delay a bit to ensure Clerk token is ready
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Simulated success response for development only
-        if (import.meta.env.DEV) {
-          console.log("DEV MODE: Returning simulated success response");
-          return {
-            success: true,
-            data: {
-              id: "simulated-id",
-              clerk_id: userData.clerkId,
-              email: userData.email,
-              name: userData.name,
-              simulated: true
-            }
-          };
+        // Try the request with explicit token
+        const token = await clerkGetToken();
+        const supabaseApiUrl = `${API_BASE_URL}/users/sync`;
+        console.log(`Making direct fetch to ${supabaseApiUrl} with token`);
+        
+        const response = await fetch(supabaseApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(userData)
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("User sync successful with direct fetch:", data);
+          return data;
+        } else {
+          console.error(`User sync failed with status ${response.status}`);
+          try {
+            const errorData = await response.json();
+            console.error("Error response:", errorData);
+          } catch (e) {
+            console.error("Could not parse error response");
+          }
+          throw new Error(`User sync failed with status ${response.status}`);
         }
+      } catch (directFetchError) {
+        console.error("Direct fetch for user sync failed:", directFetchError);
         
-        throw supabaseError;
+        try {
+          console.log("Attempting standard _request method as fallback");
+          const supabaseResponse = await _request('POST', '/users/sync', userData, true);
+          console.log("User sync successful via standard _request:", supabaseResponse);
+          return supabaseResponse;
+        } catch (supabaseError) {
+          console.error("Supabase function user sync failed:", supabaseError);
+          
+          // Simulated success response for development only
+          if (import.meta.env.DEV) {
+            console.log("DEV MODE: Returning simulated success response");
+            return {
+              success: true,
+              data: {
+                id: "simulated-id",
+                clerk_id: userData.clerkId,
+                email: userData.email,
+                name: userData.name,
+                simulated: true
+              }
+            };
+          }
+          
+          throw supabaseError;
+        }
       }
     }
   } catch (error) {

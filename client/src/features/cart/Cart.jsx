@@ -15,7 +15,8 @@ function Cart() {
   // Add null check and default values to prevent "Cannot read properties of undefined" error
   const { 
       cartItems = [], 
-      cartTotal = 0, 
+      cartTotal = 0,
+      itemCount = 0,  // Make sure to include itemCount in destructuring
       loading = false, 
       error = null,
       removeFromCart = () => {},
@@ -91,7 +92,12 @@ function Cart() {
         {!loading && !error && isEmpty && (
           <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: colorValues.bgPaper }}>
             <Typography variant="h6" sx={{ mb: 2 }}>Your cart is empty.</Typography>
-            <Button variant="contained" component={RouterLink} to="/products" sx={{ backgroundColor: colorValues.primary, '&:hover': { backgroundColor: colorValues.primaryDark } }}>
+            <Button 
+              variant="contained" 
+              component={RouterLink} 
+              to="/"
+              sx={{ backgroundColor: colorValues.primary, '&:hover': { backgroundColor: colorValues.primaryDark } }}
+            >
               Continue Shopping
             </Button>
           </Paper>
