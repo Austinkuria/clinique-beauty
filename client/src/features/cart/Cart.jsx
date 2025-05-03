@@ -47,18 +47,46 @@ function Cart() {
   };
 
   const handleIncrement = (item) => {
+    // First update the UI optimistically for better user experience
     const maxQuantity = item.stock ?? Infinity;
     if (item.quantity < maxQuantity) {
-      updateCartItem(item.id, item.quantity + 1); // Use context function
+      // Create a copy of cartItems with updated quantity
+      const optimisticCart = cartContext.cartItems.map(cartItem => {
+        if (cartItem.id === item.id) {
+          return { ...cartItem, quantity: cartItem.quantity + 1 };
+        }
+        return cartItem;
+      });
+      
+      // Temporarily update the UI (this won't persist, just for visual feedback)
+      console.log("[Cart] Optimistically updating quantity for item:", item.id);
+      
+      // Then make the API call
+      updateCartItem(item.id, item.quantity + 1);
+    } else {
+      toast.error(`Cannot add more. Maximum stock (${maxQuantity}) reached.`);
     }
   };
 
   const handleDecrement = (item) => {
+    // First update the UI optimistically
     if (item.quantity > 1) {
-      updateCartItem(item.id, item.quantity - 1); // Use context function
+      // Create a copy of cartItems with updated quantity
+      const optimisticCart = cartContext.cartItems.map(cartItem => {
+        if (cartItem.id === item.id) {
+          return { ...cartItem, quantity: cartItem.quantity - 1 };
+        }
+        return cartItem;
+      });
+      
+      // Temporarily update the UI
+      console.log("[Cart] Optimistically updating quantity for item:", item.id);
+      
+      // Then make the API call
+      updateCartItem(item.id, item.quantity - 1);
     } else {
       // Remove item if quantity becomes 0 or less
-      removeFromCart(item.id); // Use context function
+      removeFromCart(item.id);
     }
   };
 

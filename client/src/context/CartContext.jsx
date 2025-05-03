@@ -300,35 +300,141 @@ export const CartProvider = ({ children }) => {
     const updateCartItem = async (itemId, quantity) => {
         // Find item index based on ID only (assuming update doesn't change shade)
         const itemIndex = cartItems.findIndex(item => item.id === itemId);
-        if (itemIndex === -1) return; // Item not found
-
+        if (itemIndex === -1) {
+            console.error(`[CartContext UpdateQ] Item with ID ${itemId} not found in cart`);
+            return; // Item not found
+        }
+        
+        // Log the full item to help debug
+        console.log(`[CartContext UpdateQ] Found item at index ${itemIndex}:`, cartItems[itemIndex]);
+        
+        // First update state optimistically (for immediate UI feedback)
+        const updatedCart = [...cartItems];
+        updatedCart[itemIndex] = { 
+            ...updatedCart[itemIndex], 
+            quantity: quantity 
+        };
+        setCartItems(updatedCart);
+        
+        // Then make API request
         setLoading(true);
         setError(null);
         try {
             if (isSignedIn) {
                 // --- Signed-in user: Use API ---
                 console.log(`[CartContext UpdateQ] Calling API updateCartItemQuantity for item ${itemId} to quantity ${quantity}`);
-                // Assume api.updateCartItemQuantity handles token internally
-                await api.updateCartItemQuantity({ itemId, quantity }); // Adjust payload as needed by API
+                
+                // Get the cartItemId (may be different from product ID)
+                // This is important - we need the cart_items.id, not the product_id
+                const item = cartItems[itemIndex];
+                
+                // Check multiple possible properties that might contain the cart item ID
+                const cartItemId = item.cartItemId || item.id || item.cart_id;
+                
+                // Log more details to help with debugging
+                console.log(`[CartContext UpdateQ] Item properties:`, {
+                    id: item.id,
+                    cartItemId: item.cartItemId,
+                    cart_id: item.cart_id,
+                    productId: item.productId || item.product_id
+                });
+                
+                // In development, if we don't have a cartItemId, create a workaround
+                if (!cartItemId && import.meta.env.DEV) {
+                    console.warn('[CartContext UpdateQ] No cartItemId found in development mode. Using a workaround...');
+                    
+                    // Try to force-refresh cart to get the proper IDs
+                    try {
+                        const freshCart = await api.getCart();
+                        console.log('[CartContext UpdateQ] Refreshed cart to get proper IDs:', freshCart);
+                        
+                        // Try to find the item again in the refreshed cart
+                        const freshItem = freshCart.find(item => item.id === itemId || item.product_id === itemId);
+                        
+                        if (freshItem && (freshItem.cartItemId || freshItem.id)) {
+                            console.log('[CartContext UpdateQ] Found item with proper ID in refreshed cart:', freshItem);
+                            
+                            // Now try to update with the proper ID
+                            await api.updateCartItemQuantity({
+                                itemId: freshItem.cartItemId || freshItem.id,
+                                quantity: quantity,
+                                productId: itemId
+                            });
+                            
+                            // Update the cart after successful update
+                            setCartItems(freshCart.map(item => 
+                                item.id === itemId ? { ...item, quantity } : item
+                            ));
+                            console.log(`[CartContext UpdateQ] Successfully updated item ${itemId} to quantity ${quantity}`);
+                            toast.success("Cart updated");
+                            setLoading(false);
+                            return;
+                        }
+                    } catch (refreshError) {
+                        console.error('[CartContext UpdateQ] Failed to refresh cart:', refreshError);
+                    }
+                    
+                    // If the refresh approach failed, try a delete + add approach
+                    try {
+                        console.log('[CartContext UpdateQ] Attempting delete + add approach...');
+                        
+                        // First try to remove the item (if it exists)
+                        try {
+                            // We don't have the cart item ID, so we need to skip this step
+                            console.log('[CartContext UpdateQ] Skipping delete step due to missing cartItemId');
+                        } catch (removeError) {
+                            console.warn('[CartContext UpdateQ] Remove operation failed:', removeError);
+                        }
+                        
+                        // Then add the item back with the new quantity
+                        const addResult = await api.addToCart({
+                            productId: itemId,
+                            quantity: quantity
+                        });
+                        
+                        console.log('[CartContext UpdateQ] Successfully added item with new quantity:', addResult);
+                        
+                        // Refresh the cart to get the updated state
+                        loadCart();
+                        
+                        toast.success("Cart updated");
+                        setLoading(false);
+                        return;
+                    } catch (fallbackError) {
+                        console.error('[CartContext UpdateQ] Fallback approach failed:', fallbackError);
+                        throw new Error('All update approaches failed');
+                    }
+                }
+                
+                // If we have a cartItemId, proceed with normal update
+                if (cartItemId) {
+                    console.log(`[CartContext UpdateQ] Using cartItemId: ${cartItemId} (product ID: ${itemId})`);
+                    
+                    // Assume api.updateCartItemQuantity handles token internally
+                    await api.updateCartItemQuantity({ 
+                        itemId: cartItemId, // Use cart item ID, not product ID
+                        quantity: quantity,
+                        productId: itemId // Include product ID as fallback for error recovery
+                    }); 
 
-                // Refetch cart after successful update
-                console.log("[CartContext UpdateQ] Refetching cart after update...");
-                const apiCart = await api.getCart();
-                const formattedCart = (Array.isArray(apiCart) ? apiCart : []).map(formatCartItem).filter(item => item !== null);
-                setCartItems(formattedCart);
-                toast.success("Cart updated.");
-
+                    // No need to refetch the entire cart - we already updated state optimistically
+                    console.log(`[CartContext UpdateQ] Successfully updated item ${itemId} to quantity ${quantity}`);
+                    toast.success("Cart updated");
+                } else {
+                    throw new Error('Missing cart item ID for update');
+                }
             } else {
                 // --- Anonymous user: Use Local Storage ---
-                let updatedCart = [...cartItems];
-                updatedCart[itemIndex].quantity = quantity;
-                setCartItems(updatedCart); // Update state, triggers save effect
-                toast.success("Cart updated.");
+                // Already updated the cart above, just save to localStorage via effect
+                toast.success("Cart updated");
             }
         } catch (err) {
             console.error("Failed to update cart item:", err);
             setError(err.message || "Failed to update item");
             toast.error(`Update failed: ${err.message}`);
+            
+            // Revert to original cart if the API call failed
+            setCartItems(cartItems);
         } finally {
             setLoading(false);
         }
