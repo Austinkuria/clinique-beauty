@@ -1,52 +1,41 @@
 import { toast } from 'react-hot-toast';
-import { useApi } from '../api/apiClient';
+import { api } from '../api/apiClient';
 
 /**
- * Syncs a Clerk user to Supabase database
+ * Synchronizes a user's Clerk profile data with our backend database
+ * 
+ * @param {Object} user - The Clerk user object
+ * @param {Function} getToken - Function to get the Clerk session token
+ * @returns {Promise<Object>} - Server response with user data
  */
-export const syncUserToSupabase = async (user, getToken) => {
-  if (!user) return null;
-  
-  try {
-    console.log("Syncing user to Supabase:", user.id);
-    
-    // Get token for API request
-    const token = await getToken();
-    
-    if (!token) {
-      console.error("Failed to get authentication token for user sync");
-      throw new Error("Authentication token not available");
+export async function syncUserToSupabase(user, getToken) {
+    try {
+        // Wait for the token to be available
+        await getToken();
+        
+        if (!user) {
+            console.error("Cannot sync user: No user provided");
+            return null;
+        }
+
+        // Map Clerk user data to our user model
+        const userData = {
+            clerkId: user.id,
+            email: user.primaryEmailAddress?.emailAddress,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            avatarUrl: user.imageUrl
+        };
+
+        console.log("Syncing user data:", userData);
+        
+        // Call the API to sync with our database
+        const response = await api.syncUser(userData);
+        return response;
+    } catch (error) {
+        console.error("Error syncing user:", error);
+        throw error;
     }
-    
-    // Call the API endpoint that will handle the sync
-    const response = await fetch('/api/users/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        clerkId: user.id,
-        email: user.primaryEmailAddress?.emailAddress,
-        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User',
-        avatarUrl: user.imageUrl
-      })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Error syncing user: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log("User successfully synced to Supabase:", data);
-    return data;
-    
-  } catch (error) {
-    console.error("Error in syncUserToSupabase:", error);
-    throw error; // Re-throw to allow the caller to handle it
-  }
-};
+}
 
 /**
  * Updates a user's role to admin in both Clerk and Supabase

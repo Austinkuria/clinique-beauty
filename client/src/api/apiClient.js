@@ -1,14 +1,29 @@
 import { useAuth } from '@clerk/clerk-react';
-// Removed unused useCallback import
 
 // Base URL for your API - Use the Supabase Functions URL + function name
 const SUPABASE_FUNCTIONS_BASE = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
 const API_FUNCTION_NAME = 'api'; // The name of your edge function
 
-// Construct the final base URL, ensuring no double slashes if VITE_SUPABASE_FUNCTIONS_URL ends with one
-const API_BASE_URL = SUPABASE_FUNCTIONS_BASE
-    ? `${SUPABASE_FUNCTIONS_BASE.replace(/\/$/, '')}/${API_FUNCTION_NAME}`
-    : `http://localhost:3001/${API_FUNCTION_NAME}`; // Fallback for local testing if needed, adjust port
+// FIXED: Clean implementation to avoid URL construction issues
+const constructApiBaseUrl = () => {
+  if (!SUPABASE_FUNCTIONS_BASE) {
+    return `http://localhost:5000/api`; // Fallback to Express server
+  }
+  
+  // Remove trailing slash if present
+  const baseUrl = SUPABASE_FUNCTIONS_BASE.replace(/\/$/, '');
+  
+  // Log the base URL for debugging
+  console.log("Base URL before processing:", baseUrl);
+  
+  // Simple, direct construction to avoid issues
+  return `${baseUrl}/functions/v1/${API_FUNCTION_NAME}`;
+};
+
+// Use the corrected function to set API_BASE_URL
+const API_BASE_URL = constructApiBaseUrl();
+
+console.log("API Base URL set to:", API_BASE_URL);
 
 if (!SUPABASE_FUNCTIONS_BASE) {
     console.warn("VITE_SUPABASE_FUNCTIONS_URL is not defined in .env. Falling back to local URL:", API_BASE_URL);
@@ -34,6 +49,13 @@ export const useInitializeApi = () => {
     }
 };
 
+// For fallback mode, use Express server directly for user sync
+const useExpressServerDirectly = () => {
+  const endpoint = 'http://localhost:5000';
+  console.log("Using Express server directly:", endpoint);
+  return endpoint;
+};
+
 // Add this function to handle products with missing data fields
 const transformProductData = (product) => {
     if (!product) return product;
@@ -51,7 +73,6 @@ const transformProductData = (product) => {
         console.warn(`Error handling product data: ${error.message}`, product);
         // Don't fail if transformation has an error
     }
-    
     return product;
 };
 
@@ -90,7 +111,7 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
         try {
             // --- CHANGE: Request default Clerk session token ---
             console.log("API Client: Requesting default Clerk session token...");
-            token = await clerkGetToken(); // Remove { template: 'supabase' }
+            token = await clerkGetToken();
             // --- END CHANGE ---
 
             if (!token) {
@@ -112,17 +133,15 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
         console.log(`API Client: ${method} ${endpoint} - No authentication required.`);
     }
 
-
-    const config = {
-        method: method,
-        headers: headers, // Pass the Headers object
-    };
-
-    if (body) {
-        config.body = JSON.stringify(body);
-    }
-
     try {
+        const config = {
+            method: method,
+            headers: headers, // Pass the Headers object
+        };
+        if (body) {
+            config.body = JSON.stringify(body);
+        }
+
         // --- ADJUST LOGGING BEFORE FETCH ---
         // Log headers by iterating if needed, or just log the config object
         console.log(`[API Client _request] Sending fetch for ${method} ${endpoint}. Config:`, { method: config.method, headers: Object.fromEntries(config.headers.entries()), hasBody: !!config.body });
@@ -159,10 +178,6 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
     }
 };
 
-// Removed the unused createApiClient function
-
-// --- API Methods ---
-
 // Product methods with data transformation
 const getProducts = async (category = null) => {
     const endpoint = category ? `/products?category=${encodeURIComponent(category)}` : '/products';
@@ -193,6 +208,39 @@ const updateUserRole = async (userId, role, token) => {
     }
 };
 
+// Add a syncUser method to the API client
+const syncUser = async (userData) => {
+  console.log("Syncing user data to server:", userData);
+  try {
+    // Use Express server directly for user sync during development
+    const url = `${useExpressServerDirectly()}/api/users/sync`;
+    console.log("Using direct Express endpoint for user sync:", url);
+    
+    const headers = new Headers({ 'Content-Type': 'application/json' });
+    if (clerkGetToken) {
+      const token = await clerkGetToken();
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(userData)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log("User sync successful:", data);
+    return data;
+  } catch (error) {
+    console.error("User sync failed:", error);
+    throw error;
+  }
+};
+
 // ... (other methods like getWishlist, addToWishlist, etc. - set requiresAuth accordingly) ...
 
 export const api = {
@@ -205,6 +253,7 @@ export const api = {
     updateCartItemQuantity,
     clearCart,
     updateUserRole,
+    syncUser, // Add the new syncUser method to the exported API
 };
 
 // Hook to use the API client instance
