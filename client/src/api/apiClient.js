@@ -300,6 +300,7 @@ const addToCart = async (itemData) => {
   }
 };
 
+// Enhance the updateCartItemQuantity method to better handle cart items
 const updateCartItemQuantity = async (itemData) => {
   try {
     // Enhanced logging to debug update issues
@@ -308,6 +309,17 @@ const updateCartItemQuantity = async (itemData) => {
     // Check if we have a proper itemId
     if (!itemData.itemId) {
       console.error("[API Client] Missing itemId in updateCartItemQuantity call", itemData);
+      
+      // If we have a productId, try to use the add endpoint with replace flag
+      if (itemData.productId) {
+        console.log("[API Client] Attempting to use add endpoint to update item");
+        return await addToCart({
+          productId: itemData.productId,
+          quantity: itemData.quantity,
+          replace: true // Signal the server this is an update
+        });
+      }
+      
       throw new Error("Missing itemId for cart update");
     }
     

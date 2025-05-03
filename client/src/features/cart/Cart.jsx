@@ -162,7 +162,12 @@ function Cart() {
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 150, justifyContent: 'space-between' }}>
                     {/* Quantity Controls */}
-                    <IconButton onClick={() => handleDecrement(item)} size="small" aria-label="Decrease quantity" disabled={loading}>
+                    <IconButton 
+                      onClick={() => handleDecrement(item)} 
+                      size="small" 
+                      aria-label="Decrease quantity" 
+                      disabled={loading || item.isUpdating} // Use item-specific loading flag
+                    >
                       <RemoveIcon fontSize="small" />
                     </IconButton>
                     <TextField
@@ -172,7 +177,7 @@ function Cart() {
                       size="small"
                       // Access name directly from item
                       aria-label={`Quantity for ${item.name}`}
-                      disabled={loading}
+                      disabled={loading || item.isUpdating} // Use item-specific loading flag
                       inputProps={{
                         min: 1,
                         // Access stock directly from item
@@ -186,13 +191,33 @@ function Cart() {
                       size="small"
                       aria-label="Increase quantity"
                       // Access stock directly from item
-                      disabled={loading || (item.stock !== undefined && item.quantity >= item.stock)}
+                      disabled={loading || item.isUpdating || (item.stock !== undefined && item.quantity >= item.stock)} // Use item-specific loading flag
                     >
                       <AddIcon fontSize="small" />
                     </IconButton>
+                    {/* Show a small indicator for the specific item being updated */}
+                    {item.isUpdating && (
+                      <Box 
+                        component="span" 
+                        sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          backgroundColor: colorValues.primary,
+                          animation: 'pulse 1.5s infinite',
+                          ml: 0.5
+                        }}
+                      />
+                    )}
                     {/* Remove Button */}
                     {/* Use context function */}
-                    <IconButton onClick={() => removeFromCart(item.id)} color="error" aria-label={`Remove ${item.name} from cart`} sx={{ ml: 1 }} disabled={loading}>
+                    <IconButton 
+                      onClick={() => removeFromCart(item.id)} 
+                      color="error" 
+                      aria-label={`Remove ${item.name} from cart`} 
+                      sx={{ ml: 1 }} 
+                      disabled={loading || item.isUpdating} // Use item-specific loading flag
+                    >
                       <DeleteIcon />
                     </IconButton>
                   </Box>
