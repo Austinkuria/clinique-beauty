@@ -8,15 +8,21 @@ const CartContext = createContext();
 export const useCart = () => {
     const context = useContext(CartContext);
     if (context === undefined) {
-        console.error('useCart must be used within a CartProvider');
+        console.error('useCart must be used within a CartProvider', 
+            new Error().stack // Add stack trace for easier debugging
+        );
+        
         // Return a default object with expected properties to prevent destructuring errors
         return { 
-            cart: [], 
+            cartItems: [], 
             itemCount: 0, 
+            cartTotal: 0,
             loading: false, 
             error: null,
-            addToCart: () => console.error('CartProvider not found'),
-            // Add other methods as needed
+            addToCart: () => console.error('CartProvider not found - addToCart unavailable'),
+            updateCartItem: () => console.error('CartProvider not found - updateCartItem unavailable'),
+            removeFromCart: () => console.error('CartProvider not found - removeFromCart unavailable'),
+            clearCart: () => console.error('CartProvider not found - clearCart unavailable'),
         };
     }
     return context;

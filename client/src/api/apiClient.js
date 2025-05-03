@@ -16,9 +16,12 @@ const constructApiBaseUrl = () => {
   // Log the base URL for debugging
   console.log("Base URL before processing:", baseUrl);
   
-  // Fix: The Supabase URL already includes the base path, just add the function name
-  // This avoids the double "functions/v1" path issue
-  return `${baseUrl}/api`;
+  // Check if the URL already contains "functions/v1"
+  if (baseUrl.includes('/functions/v1')) {
+    return `${baseUrl}/api`; // Already has the path
+  } else {
+    return `${baseUrl}/functions/v1/api`; // Add the full path
+  }
 };
 
 // Use the corrected function to set API_BASE_URL
@@ -213,47 +216,88 @@ const updateUserRole = async (userId, role, token) => {
 const syncUser = async (userData) => {
   console.log("Syncing user data to server:", userData);
   try {
-    // Try Express server first
-    const expressUrl = `${useExpressServerDirectly()}/api/users/sync`;
-    console.log("Attempting direct Express endpoint for user sync:", expressUrl);
+    // First, check if we're in development with a running Express server
+    let expressSuccess = false;
     
-    const headers = new Headers({ 'Content-Type': 'application/json' });
-    if (clerkGetToken) {
-      const token = await clerkGetToken();
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-    
-    try {
-      // First try the Express server
-      const response = await fetch(expressUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(userData),
-        // Add a shorter timeout for faster fallback
-        signal: AbortSignal.timeout(3000) // 3 second timeout
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log("User sync successful via Express server:", data);
-        return data;
+    if (import.meta.env.DEV) {
+      try {
+        const expressUrl = `${useExpressServerDirectly()}/api/users/sync`;
+        console.log("Attempting direct Express endpoint for user sync:", expressUrl);
+        
+        const headers = new Headers({ 'Content-Type': 'application/json' });
+        if (clerkGetToken) {
+          const token = await clerkGetToken();
+          headers.set('Authorization', `Bearer ${token}`);
+        }
+        
+        // First try the Express server with a short timeout
+        const response = await fetch(expressUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(userData),
+          signal: AbortSignal.timeout(3000) // 3 second timeout
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("User sync successful via Express server:", data);
+          expressSuccess = true;
+          return data;
+        }
+      } catch (expressError) {
+        console.warn("Express server not available, falling back to Supabase function:", expressError.message);
       }
-    } catch (expressError) {
-      console.warn("Express server not available, falling back to Supabase function:", expressError.message);
-      // Continue to fallback - don't re-throw
     }
     
-    // Fallback to Supabase function
-    console.log("Falling back to Supabase function for user sync");
-    // Use the regular _request method which uses the base API_BASE_URL
-    const supabaseResponse = await _request('POST', '/users/sync', userData, true);
-    console.log("User sync successful via Supabase function:", supabaseResponse);
-    return supabaseResponse;
-    
+    if (!expressSuccess) {
+      // Fallback to Supabase function
+      console.log("Using Supabase function for user sync");
+      
+      // Use the _request method which uses API_BASE_URL
+      try {
+        const supabaseResponse = await _request('POST', '/users/sync', userData, true);
+        console.log("User sync successful via Supabase function:", supabaseResponse);
+        return supabaseResponse;
+      } catch (supabaseError) {
+        console.error("Supabase function user sync failed:", supabaseError);
+        
+        // Simulated success response for development only
+        if (import.meta.env.DEV) {
+          console.log("DEV MODE: Returning simulated success response");
+          return {
+            success: true,
+            data: {
+              id: "simulated-id",
+              clerk_id: userData.clerkId,
+              email: userData.email,
+              name: userData.name,
+              simulated: true
+            }
+          };
+        }
+        
+        throw supabaseError;
+      }
+    }
   } catch (error) {
     console.error("User sync failed:", error);
-    // Instead of failing completely, return a partial success
-    // This prevents errors from blocking the app during development
+    
+    // In development, return a simulated success response
+    if (import.meta.env.DEV) {
+      console.log("DEV MODE: Returning simulated success response after error");
+      return {
+        success: true,
+        data: {
+          id: "simulated-id",
+          clerk_id: userData.clerkId,
+          email: userData.email,
+          name: userData.name,
+          simulated: true
+        }
+      };
+    }
+    
+    // For production, return a partial success
     return { 
       success: false, 
       message: "User sync failed, but app will continue to function",

@@ -31,15 +31,30 @@ export async function syncUserToSupabase(user, getToken) {
         // Call the API to sync with our database
         const response = await api.syncUser(userData);
         
-        // Even if sync fails, we'll continue with the app
-        if (!response || !response.success) {
+        // Log sync result
+        if (response.success) {
+            console.log("User sync successful:", response.data?.id || "unknown");
+        } else {
             console.warn("User sync returned an error but app will continue:", response);
         }
         
         return response;
     } catch (error) {
         console.error("Error syncing user:", error);
-        // Return partial success instead of throwing - this prevents app from breaking
+        
+        // In development, always return a success response to prevent blocking the app
+        if (import.meta.env.DEV) {
+            return { 
+                success: true, 
+                data: {
+                    id: "simulated-id", 
+                    name: user?.firstName || "User",
+                    simulated: true
+                }
+            };
+        }
+        
+        // Return partial success instead of throwing
         return { 
             success: false, 
             message: "User sync failed, but app will continue to function",

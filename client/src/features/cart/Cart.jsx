@@ -9,17 +9,22 @@ import { ThemeContext } from '../../context/ThemeContext';
 import defaultProductImage from '../../assets/images/placeholder.webp'; // Fallback image
 
 function Cart() {
-  // Use the cart context
-  const {
-      cartItems,
-      total, // Use total calculated by context if available, otherwise calculate here
-      loading,
-      error,
-      updateCartItem, // Use context function
-      removeFromCart, // Use context function
-      itemCount,
-      cartTotal // Use cartTotal from context for summary
-  } = useCart();
+  // Get cart data with safe destructuring
+  const cartContext = useCart();
+  
+  // Add null check and default values to prevent "Cannot read properties of undefined" error
+  const { 
+      cartItems = [], 
+      cartTotal = 0, 
+      loading = false, 
+      error = null,
+      removeFromCart = () => {},
+      updateCartItem = () => {},
+      clearCart = () => {}
+  } = cartContext || {};
+  
+  // Now use the destructured variables safely throughout the component
+  
   const { theme, colorValues } = useContext(ThemeContext); // Get theme context
   const navigate = useNavigate(); // Get navigate function
 
@@ -60,6 +65,8 @@ function Cart() {
       navigate('/checkout'); // Navigate to checkout page
   };
 
+  // Replace any direct access to cartItems.length with a safe check
+  const isEmpty = !cartItems || cartItems.length === 0;
 
   return (
     <Box sx={{ backgroundColor: colorValues.bgDefault, color: colorValues.textPrimary, py: 4, minHeight: '80vh' }}>
@@ -81,7 +88,7 @@ function Cart() {
           </Alert>
         )}
 
-        {!loading && !error && cartItems.length === 0 && (
+        {!loading && !error && isEmpty && (
           <Paper sx={{ p: 3, textAlign: 'center', backgroundColor: colorValues.bgPaper }}>
             <Typography variant="h6" sx={{ mb: 2 }}>Your cart is empty.</Typography>
             <Button variant="contained" component={RouterLink} to="/products" sx={{ backgroundColor: colorValues.primary, '&:hover': { backgroundColor: colorValues.primaryDark } }}>
@@ -90,7 +97,7 @@ function Cart() {
           </Paper>
         )}
 
-        {!loading && !error && cartItems.length > 0 && (
+        {!loading && !error && !isEmpty && (
           <Grid container spacing={4}>
             {/* Cart Items List */}
             <Grid item xs={12} md={8}>

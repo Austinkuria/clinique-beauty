@@ -470,6 +470,100 @@ serve(async (req: Request) => {
              return new Response(JSON.stringify({ message: 'Cart cleared successfully' }), { headers, status: 200 });
         }
 
+        // --- USER ROUTES ---
+        // POST /api/users/sync - Add user sync endpoint
+        if (req.method === 'POST' && route[0] === 'users' && route[1] === 'sync') {
+            console.log('[Route Handler] Matched POST /api/users/sync');
+            
+            // Verify authentication
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId && authHeader) {
+                console.warn('[Route Handler POST /api/users/sync] Auth token provided but invalid');
+                return new Response(JSON.stringify({ message: 'Invalid authentication token' }), { headers, status: 401 });
+            }
+            
+            try {
+                const { clerkId, email, name, avatarUrl } = await req.json();
+                
+                if (!clerkId || !email || !name) {
+                    return new Response(JSON.stringify({ message: 'Missing required user data' }), { headers, status: 400 });
+                }
+                
+                console.log(`[Route Handler POST /api/users/sync] Syncing data for Clerk ID: ${clerkId}`);
+                
+                // Check if user already exists
+                const { data: existingUser, error: findError } = await supabase
+                    .from('user_profiles')
+                    .select('id, clerk_id')
+                    .eq('clerk_id', clerkId)
+                    .maybeSingle();
+                
+                if (findError) {
+                    console.error('[Route Handler POST /api/users/sync] Error checking existing user:', findError);
+                    throw findError;
+                }
+                
+                let result;
+                
+                if (existingUser) {
+                    // Update existing user
+                    const { data, error: updateError } = await supabase
+                        .from('user_profiles')
+                        .update({
+                            email,
+                            name,
+                            avatar_url: avatarUrl,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('clerk_id', clerkId)
+                        .select()
+                        .single();
+                    
+                    if (updateError) {
+                        console.error('[Route Handler POST /api/users/sync] Error updating user:', updateError);
+                        throw updateError;
+                    }
+                    
+                    result = { ...data, updated: true };
+                    console.log(`[Route Handler POST /api/users/sync] Updated user with ID: ${result.id}`);
+                } else {
+                    // Create new user
+                    const { data, error: insertError } = await supabase
+                        .from('user_profiles')
+                        .insert({
+                            clerk_id: clerkId,
+                            email,
+                            name,
+                            avatar_url: avatarUrl,
+                            role: 'customer' // Default role
+                        })
+                        .select()
+                        .single();
+                    
+                    if (insertError) {
+                        console.error('[Route Handler POST /api/users/sync] Error creating user:', insertError);
+                        throw insertError;
+                    }
+                    
+                    result = { ...data, created: true };
+                    console.log(`[Route Handler POST /api/users/sync] Created user with ID: ${result.id}`);
+                }
+                
+                return new Response(JSON.stringify({
+                    success: true,
+                    data: result
+                }), { headers, status: 200 });
+                
+            } catch (error) {
+                console.error('[Route Handler POST /api/users/sync] Error processing sync request:', error);
+                return new Response(JSON.stringify({
+                    success: false,
+                    message: 'Failed to sync user data',
+                    error: error.message
+                }), { headers, status: 500 });
+            }
+        }
+
         // --- Fallback for unhandled routes ---
         console.warn(`[Route Handler] Route not found: ${req.method} ${url.pathname}`);
         return new Response(JSON.stringify({ message: 'Route not found' }), { headers, status: 404 });
