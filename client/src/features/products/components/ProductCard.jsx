@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Card, CardMedia, CardContent, CardActions, Rating } from '@mui/material';
+import { Box, Typography, Button, Card, CardMedia, CardContent, CardActions, Rating, CircularProgress } from '@mui/material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useCart } from '../../../context/CartContext'; // Import useCart
@@ -10,18 +10,26 @@ import defaultProductImage from '../../../assets/images/placeholder.webp';
 function ProductCard({ product }) {
     const { theme, colorValues } = useContext(ThemeContext);
     // Get addToCart and loading state from CartContext
-    const { addToCart: contextAddToCart, loading: cartLoading } = useCart();
+    const { addToCart } = useCart();
     const [imageError, setImageError] = useState(false);
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
     const navigate = useNavigate();
-
-    // Remove the local addToCart function
 
     const handleAddToCartClick = (e) => {
         // Stop event propagation to prevent navigation when clicking the button
         e.stopPropagation();
+        
+        // Set local loading state for this specific button
+        setIsAddingToCart(true);
+        
         // Call the context's addToCart function, passing the product and quantity 1
-        // Assuming product object has all necessary details (id, name, price, image, etc.)
-        contextAddToCart(product, 1);
+        addToCart(product, 1)
+            .finally(() => {
+                // Reset loading state after operation completes (success or error)
+                setTimeout(() => {
+                    setIsAddingToCart(false);
+                }, 500); // Small delay to prevent UI flicker
+            });
     };
 
     const handleImageError = (e) => {
@@ -104,11 +112,11 @@ function ProductCard({ product }) {
                     <Button
                         variant="contained"
                         fullWidth
-                        startIcon={<ShoppingCartIcon />}
+                        startIcon={!isAddingToCart && <ShoppingCartIcon />}
                         // Use the new handler
                         onClick={handleAddToCartClick}
-                        // Disable button if cart is loading
-                        disabled={cartLoading}
+                        // Disable button only when THIS item is being added
+                        disabled={isAddingToCart}
                         sx={{
                             backgroundColor: colorValues.primary,
                             color: '#ffffff',
@@ -124,8 +132,14 @@ function ProductCard({ product }) {
                             zIndex: 2, // Ensure button is above card for clicks
                         }}
                     >
-                        {/* Show loading state */}
-                        {cartLoading ? 'Adding...' : 'Add to Cart'}
+                        {isAddingToCart ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <CircularProgress size={20} sx={{ color: 'white', mr: 1 }} />
+                                Adding...
+                            </Box>
+                        ) : (
+                            'Add to Cart'
+                        )}
                     </Button>
                 </CardActions>
             </Card>

@@ -17,11 +17,12 @@ import { useApi } from '../../../api/apiClient'; // Import useApi
 import defaultProductImage from '../../../assets/images/placeholder.webp'; // Import a fallback image
 
 function FeaturedProducts() {
-    const { addToCart, loading: cartLoading } = useCart(); // Use addToCart from context, get loading state
+    const { addToCart } = useCart(); // Use addToCart from context
     const api = useApi(); // Get API methods
     const [featuredProducts, setFeaturedProducts] = useState([]); // State for products
     const [loading, setLoading] = useState(true); // State for loading
     const [error, setError] = useState(null); // State for errors
+    const [addingItems, setAddingItems] = useState({}); // Track which items are being added
 
     useEffect(() => {
         const fetchFeatured = async () => {
@@ -49,6 +50,26 @@ function FeaturedProducts() {
     const handleImageError = (e) => {
         e.target.onerror = null; // Prevent infinite loop
         e.target.src = defaultProductImage;
+    };
+
+    const handleAddToCart = (product) => {
+        // Set this specific product as being added
+        setAddingItems(prev => ({
+            ...prev,
+            [product.id]: true
+        }));
+        
+        // Call the context's addToCart function
+        addToCart(product, 1)
+            .finally(() => {
+                // Reset loading state after operation completes
+                setTimeout(() => {
+                    setAddingItems(prev => ({
+                        ...prev,
+                        [product.id]: false
+                    }));
+                }, 500); // Small delay to prevent UI flicker
+            });
     };
 
     return (
@@ -149,11 +170,17 @@ function FeaturedProducts() {
                                             color="primary"
                                             variant="contained"
                                             fullWidth
-                                            // Call context's addToCart, pass the full product and quantity 1
-                                            onClick={() => addToCart(product, 1)}
-                                            disabled={cartLoading} // Disable button while cart is processing
+                                            onClick={() => handleAddToCart(product)}
+                                            disabled={addingItems[product.id]} // Disable only if THIS product is being added
                                         >
-                                            {cartLoading ? 'Adding...' : 'Add to Cart'}
+                                            {addingItems[product.id] ? (
+                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <CircularProgress size={20} sx={{ color: 'white', mr: 1 }} />
+                                                    Adding...
+                                                </Box>
+                                            ) : (
+                                                'Add to Cart'
+                                            )}
                                         </Button>
                                     </CardActions>
                                 </Card>

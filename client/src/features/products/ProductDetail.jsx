@@ -15,7 +15,8 @@ import {
     TextField,
     Breadcrumbs,
     Link,
-    Tooltip
+    Tooltip,
+    CircularProgress
 } from "@mui/material";
 import toast from 'react-hot-toast';
 import { ThemeContext } from "../../context/ThemeContext.jsx";
@@ -116,6 +117,7 @@ function ProductDetail() {
     const magnifierSize = 100; // Size for magnifier
     const zoomLevel = 2.5; // Magnification level
     const [selectedImage, setSelectedImage] = useState(null); // Track current main image
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
     
     // Change static array to state
     const [productImages, setProductImages] = useState([]);
@@ -298,12 +300,20 @@ function ProductDetail() {
     const handleAddToCart = () => {
         if (!product || quantity < 1 || isOutOfStock) return;
 
+        setIsAddingToCart(true); // Set local loading state
+        
         const productToAdd = {
             ...product,
             ...(selectedShade && { selectedShade: selectedShade })
         };
 
-        cartContext.addToCart(productToAdd, quantity);
+        cartContext.addToCart(productToAdd, quantity)
+            .finally(() => {
+                // Reset loading state regardless of success/failure
+                setTimeout(() => {
+                    setIsAddingToCart(false);
+                }, 500);
+            });
 
         if (!isOutOfStock) {
             setQuantity(1);
@@ -313,13 +323,19 @@ function ProductDetail() {
     const handleBuyNow = () => {
         if (!product || quantity < 1 || isOutOfStock) return;
 
+        setIsAddingToCart(true); // Set local loading state
+        
         const productToAdd = {
             ...product,
             ...(selectedShade && { selectedShade: selectedShade })
         };
 
-        cartContext.addToCart(productToAdd, quantity);
-        navigate('/checkout');
+        cartContext.addToCart(productToAdd, quantity)
+            .finally(() => {
+                // Reset and navigate
+                setIsAddingToCart(false);
+                navigate('/checkout');
+            });
     };
 
     const handleWishlistClick = () => {
@@ -807,9 +823,9 @@ function ProductDetail() {
                                         variant="contained"
                                         size="large"
                                         fullWidth
-                                        startIcon={<ShoppingCartIcon />}
+                                        startIcon={!isAddingToCart && <ShoppingCartIcon />}
                                         onClick={handleAddToCart}
-                                        disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading}
+                                        disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || isAddingToCart}
                                         sx={{
                                             backgroundColor: colorValues.primary,
                                             color: '#ffffff',
@@ -818,14 +834,18 @@ function ProductDetail() {
                                             '&:hover': {
                                                 backgroundColor: colorValues.primaryDark,
                                             },
-                                            opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
+                                            opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || isAddingToCart) ? 0.6 : 1,
                                             flex: 1,
                                         }}
                                     >
-                                        {cartContext.loading ? 'Adding...' :
-                                            isOutOfStock ? 'Out of Stock' :
-                                                shadeSelectionRequired ? 'Select Shade' :
-                                                    `Add ${quantity} to Cart`}
+                                        {isAddingToCart ? (
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <CircularProgress size={20} sx={{ color: 'white', mr: 1 }} />
+                                                Adding...
+                                            </Box>
+                                        ) : (
+                                            'Add to Cart'
+                                        )}
                                     </Button>
                                 </motion.div>
 
@@ -842,7 +862,7 @@ function ProductDetail() {
                                         fullWidth
                                         startIcon={<LocalMallIcon />}
                                         onClick={handleBuyNow}
-                                        disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading}
+                                        disabled={isOutOfStock || quantity < 1 || shadeSelectionRequired || isAddingToCart}
                                         sx={{
                                             borderColor: colorValues.primary,
                                             color: colorValues.primary,
@@ -852,13 +872,11 @@ function ProductDetail() {
                                                 backgroundColor: colorValues.buttonHover,
                                                 borderColor: colorValues.primaryDark,
                                             },
-                                            opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || cartContext.loading) ? 0.6 : 1,
+                                            opacity: (isOutOfStock || quantity < 1 || shadeSelectionRequired || isAddingToCart) ? 0.6 : 1,
                                             flex: 1,
                                         }}
                                     >
-                                        {isOutOfStock ? 'Out of Stock' :
-                                            shadeSelectionRequired ? 'Select Shade' :
-                                                'Buy Now'}
+                                        Buy Now
                                     </Button>
                                 </motion.div>
                             </Box>
