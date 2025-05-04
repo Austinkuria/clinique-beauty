@@ -14,6 +14,8 @@ import Makeup from './features/products/pages/Makeup';
 import Fragrance from './features/products/pages/Fragrance';
 import HairProducts from './features/products/pages/HairProducts';
 import ProductDetail from './features/products/ProductDetail';
+import CheckoutPage from './features/checkout/Checkout.jsx'; // Import the Checkout component
+import CheckoutConfirmation from './features/checkout/CheckoutConfirmation.jsx'; // Import the confirmation component
 import AdminLayout from './features/admin/layout/AdminLayout';
 import AdminDashboard from './features/admin/pages/Dashboard';
 import AdminProducts from './features/admin/pages/Products';
@@ -72,11 +74,11 @@ export const router = createBrowserRouter([
             // Auth routes might live here, outside MainLayout
             {
                 path: '/auth/login',
-                element: <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
+                element: <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>,
             },
             {
                 path: '/auth/login/factor-one',
-                element: <ClerkVerification type="factorOne" />
+                element: <ClerkVerification type="factorOne" />,
             },
             {
                 path: '/auth/login/factor-two',
@@ -85,7 +87,7 @@ export const router = createBrowserRouter([
             // Add the missing SSO callback route for login
             {
                 path: '/auth/login/sso-callback',
-                element: <ClerkVerification type="ssoCallback" />
+                element: <ClerkVerification type="ssoCallback" />,
             },
             {
                 path: '/auth/register/*',
@@ -111,14 +113,10 @@ export const router = createBrowserRouter([
                     { path: '/products/hair', element: <HairProducts /> },
                     // Correct path for product detail
                     { path: '/product/:id', element: <ProductDetail /> },
-                    // Remove the duplicate /products/:id route
-                    // { path: '/products/:id', element: <ProductDetail /> },
+                    // Checkout routes
+                    { path: '/checkout', element: <RequireAuth><CheckoutPage /></RequireAuth> },
+                    { path: '/checkout/confirmation', element: <RequireAuth><CheckoutConfirmation /></RequireAuth> },
                     // ... other routes needing MainLayout ...
-                    // { path: '/checkout', element: <RequireAuth><Checkout /></RequireAuth> },
-                    // { path: '/profile', element: <RequireAuth><Profile /></RequireAuth> },
-                    // { path: '/search', element: <Search /> },
-                    // Consider adding a NotFound route here
-                    // { path: '*', element: <NotFound /> },
                 ]
             },
             // Admin Setup Route (protected but doesn't require admin role)
