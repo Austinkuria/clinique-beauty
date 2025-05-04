@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useRef, useEffect } from 'react';
 import { Container, Typography, Box, Grid, Paper, Button, IconButton, TextField, CircularProgress, Alert } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom'; // Import useNavigate
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -7,6 +7,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import { useCart } from '../../context/CartContext'; // Import useCart hook
 import { ThemeContext } from '../../context/ThemeContext';
 import defaultProductImage from '../../assets/images/placeholder.webp'; // Fallback image
+import toast from 'react-hot-toast'; // Add toast import
 
 function Cart() {
   // Get cart data with safe destructuring
@@ -29,61 +30,162 @@ function Cart() {
   const { theme, colorValues } = useContext(ThemeContext); // Get theme context
   const navigate = useNavigate(); // Get navigate function
 
-  const handleQuantityChange = (item, newQuantity) => {
-    const quantityNum = parseInt(newQuantity, 10);
-    if (!isNaN(quantityNum) && quantityNum >= 1) {
-      // Check against stock if available on the item object directly
-      const maxQuantity = item.stock ?? Infinity;
-      if (quantityNum <= maxQuantity) {
-        updateCartItem(item.id, quantityNum); // Use context function
-      } else {
-        console.warn(`Quantity limited to ${maxQuantity} due to stock.`);
-        updateCartItem(item.id, maxQuantity); // Update to max stock
-      }
-    } else if (!isNaN(quantityNum) && quantityNum < 1) {
-      // If user tries to set quantity below 1, remove item
-      removeFromCart(item.id); // Use context function
+  // Add state to track local quantity input values
+  const [localQuantities, setLocalQuantities] = useState({});
+  // Add state to track which items are being edited
+  const [editingItems, setEditingItems] = useState({});
+  // Add ref for debounce timers
+  const timerRefs = useRef({});
+  
+  // Initialize local quantities from cart items
+  useEffect(() => {
+    const quantities = {};
+    cartItems.forEach(item => {
+      quantities[item.id] = item.quantity;
+    });
+    setLocalQuantities(quantities);
+  }, [cartItems]);
+
+  const handleQuantityInputChange = (item, value) => {
+    // Update local quantity state immediately without validation
+    setLocalQuantities(prev => ({
+      ...prev,
+      [item.id]: value
+    }));
+    
+    // Mark this item as being edited
+    setEditingItems(prev => ({
+      ...prev,
+      [item.id]: true
+    }));
+    
+    // Clear any existing timer for this item
+    if (timerRefs.current[item.id]) {
+      clearTimeout(timerRefs.current[item.id]);
     }
+    
+    // Set a new timer to update the cart after user stops typing
+    timerRefs.current[item.id] = setTimeout(() => {
+      validateAndUpdateQuantity(item, value);
+    }, 800); // 800ms delay to wait for user to finish typing
+  };
+
+  const validateAndUpdateQuantity = (item, inputValue) => {
+    // Parse the input value
+    const quantityNum = parseInt(inputValue, 10);
+    
+    // Handle invalid input
+    if (isNaN(quantityNum) || quantityNum < 1) {
+      // Reset to current quantity
+      setLocalQuantities(prev => ({
+        ...prev,
+        [item.id]: item.quantity
+      }));
+      setEditingItems(prev => ({
+        ...prev,
+        [item.id]: false
+      }));
+      return;
+    }
+    
+    // Check against stock limits
+    const maxStock = item.stock !== undefined ? item.stock : Infinity;
+    
+    if (quantityNum > maxStock) {
+      // Cap at max stock and show toast
+      console.log(`[Cart] Limiting quantity to max stock: ${maxStock} for item ${item.id}`);
+      setLocalQuantities(prev => ({
+        ...prev,
+        [item.id]: maxStock
+      }));
+      
+      // Show toast message
+      toast.error(`Limited to ${maxStock} units (maximum available stock).`);
+      
+      // Update cart with max stock
+      updateCartItem(item.id, maxStock);
+    } else if (quantityNum !== item.quantity) {
+      // Valid quantity that's different from current, update cart
+      updateCartItem(item.id, quantityNum);
+    }
+    
+    // Mark as no longer editing
+    setEditingItems(prev => ({
+      ...prev,
+      [item.id]: false
+    }));
+  };
+
+  const handleQuantityBlur = (item) => {
+    // Validate and update immediately on blur
+    const value = localQuantities[item.id];
+    const quantityNum = parseInt(value, 10);
+    
+    if (!isNaN(quantityNum) && quantityNum >= 1) {
+      const maxQuantity = item.stock ?? Infinity;
+      const finalQuantity = Math.min(quantityNum, maxQuantity);
+      
+      // Update local state
+      setLocalQuantities(prev => ({
+        ...prev,
+        [item.id]: finalQuantity
+      }));
+      
+      // Update cart if different
+      if (finalQuantity !== item.quantity) {
+        updateCartItem(item.id, finalQuantity);
+      }
+    } else {
+      // Invalid input, reset to current quantity
+      setLocalQuantities(prev => ({
+        ...prev,
+        [item.id]: item.quantity
+      }));
+    }
+    
+    // Mark this item as no longer being edited
+    setEditingItems(prev => ({
+      ...prev,
+      [item.id]: false
+    }));
+  };
+
+  const handleQuantityChange = (item, newQuantity) => {
+    // Use our new input handler
+    handleQuantityInputChange(item, newQuantity);
   };
 
   const handleIncrement = (item) => {
-    // First update the UI optimistically for better user experience
     const maxQuantity = item.stock ?? Infinity;
-    if (item.quantity < maxQuantity) {
-      // Create a copy of cartItems with updated quantity
-      const optimisticCart = cartContext.cartItems.map(cartItem => {
-        if (cartItem.id === item.id) {
-          return { ...cartItem, quantity: cartItem.quantity + 1 };
-        }
-        return cartItem;
-      });
+    const newQuantity = item.quantity + 1;
+    
+    if (newQuantity <= maxQuantity) {
+      // Update both local state for immediate feedback
+      setLocalQuantities(prev => ({
+        ...prev,
+        [item.id]: newQuantity
+      }));
       
-      // Temporarily update the UI (this won't persist, just for visual feedback)
-      console.log("[Cart] Optimistically updating quantity for item:", item.id);
-      
-      // Then make the API call
-      updateCartItem(item.id, item.quantity + 1);
+      // And call the API
+      updateCartItem(item.id, newQuantity);
     } else {
+      // Show toast when trying to exceed max stock
       toast.error(`Cannot add more. Maximum stock (${maxQuantity}) reached.`);
     }
   };
 
   const handleDecrement = (item) => {
-    // First update the UI optimistically
     if (item.quantity > 1) {
-      // Create a copy of cartItems with updated quantity
-      const optimisticCart = cartContext.cartItems.map(cartItem => {
-        if (cartItem.id === item.id) {
-          return { ...cartItem, quantity: cartItem.quantity - 1 };
-        }
-        return cartItem;
-      });
+      const newQuantity = item.quantity - 1;
       
-      // Temporarily update the UI
-      console.log("[Cart] Optimistically updating quantity for item:", item.id);
+      // Update local state for immediate feedback
+      setLocalQuantities(prev => ({
+        ...prev,
+        [item.id]: newQuantity
+      }));
       
-      // Then make the API call
-      updateCartItem(item.id, item.quantity - 1);
+      // And call the API
+      updateCartItem(item.id, newQuantity);
     } else {
       // Remove item if quantity becomes 0 or less
       removeFromCart(item.id);
@@ -171,8 +273,9 @@ function Cart() {
                       <RemoveIcon fontSize="small" />
                     </IconButton>
                     <TextField
-                      value={item.quantity}
-                      onChange={(e) => handleQuantityChange(item, e.target.value)}
+                      value={localQuantities[item.id] !== undefined ? localQuantities[item.id] : item.quantity}
+                      onChange={(e) => handleQuantityInputChange(item, e.target.value)}
+                      onBlur={() => handleQuantityBlur(item)}
                       type="number"
                       size="small"
                       // Access name directly from item
@@ -196,7 +299,20 @@ function Cart() {
                       <AddIcon fontSize="small" />
                     </IconButton>
                     {/* Show a small indicator for the specific item being updated */}
-                    {item.isUpdating && (
+                    {editingItems[item.id] && (
+                      <Box 
+                        component="span" 
+                        sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          backgroundColor: 'orange',
+                          animation: 'pulse 1.5s infinite',
+                          ml: 0.5
+                        }}
+                      />
+                    )}
+                    {item.isUpdating && !editingItems[item.id] && (
                       <Box 
                         component="span" 
                         sx={{ 
