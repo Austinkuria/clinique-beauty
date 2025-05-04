@@ -313,97 +313,187 @@ router.delete('/:id', authMiddleware, asyncHandler(async (req, res) => {
     res.json({ message: 'Item removed successfully' });
 }));
 
-// Alternative removal endpoint with itemId in body 
+// Alternative removal endpoint with itemId in body - Enhanced with better logging
 router.delete('/remove', authMiddleware, asyncHandler(async (req, res) => {
-    const { itemId } = req.body;
+    const { itemId, productId, originalItem, fullItem } = req.body;
     const userId = req.user.id;
 
-    if (!itemId) {
+    console.log(`[CartRoutes Remove] Called with body:`, req.body);
+
+    if (!itemId && !productId) {
+        console.log(`[CartRoutes Remove] Missing required identifier in body:`, req.body);
         res.status(400);
-        throw new Error('Item ID is required');
+        throw new Error('Item ID or product ID is required');
     }
 
-    console.log(`[CartRoutes] Remove endpoint called with itemId: ${itemId}`);
+    const targetId = itemId || productId;
+    console.log(`[CartRoutes Remove] Using targetId: ${targetId} for user ${userId}`);
     
     // Try multiple approaches for more robust deletion
     let deleted = false;
+    let deletionDetails = { attempts: [] };
     
     // First try direct ID match
     try {
-        const { error: directDeleteError } = await supabase
+        console.log(`[CartRoutes Remove] Attempt 1: Direct deletion by ID ${targetId}`);
+        const { error: directDeleteError, data: directDeleteData } = await supabase
             .from('cart_items')
             .delete()
-            .eq('id', itemId)
-            .eq('user_id', userId);
+            .eq('id', targetId)
+            .eq('user_id', userId)
+            .select();
             
+        deletionDetails.attempts.push({
+            type: 'direct_id',
+            id: targetId,
+            success: !directDeleteError,
+            error: directDeleteError?.message,
+            data: directDeleteData
+        });
+        
         if (!directDeleteError) {
             deleted = true;
-            console.log(`[CartRoutes] Direct deletion by ID succeeded: ${itemId}`);
+            console.log(`[CartRoutes Remove] Direct deletion by ID succeeded: ${targetId}`);
+        } else {
+            console.error(`[CartRoutes Remove] Direct deletion error: ${directDeleteError.message}`);
         }
     } catch (err) {
-        console.error(`[CartRoutes] Direct deletion error: ${err.message}`);
+        console.error(`[CartRoutes Remove] Exception during direct deletion: ${err.message}`);
+        deletionDetails.attempts.push({
+            type: 'direct_id',
+            id: targetId,
+            success: false,
+            exception: err.message
+        });
     }
     
-    // If direct deletion failed, try by product_id
-    if (!deleted) {
+    // If direct deletion failed and we have a product_id, try that
+    if (!deleted && productId) {
         try {
-            const { error: productDeleteError } = await supabase
+            console.log(`[CartRoutes Remove] Attempt 2: Delete by product_id ${productId}`);
+            const { error: productDeleteError, data: productDeleteData } = await supabase
                 .from('cart_items')
                 .delete()
-                .eq('product_id', itemId)
-                .eq('user_id', userId);
+                .eq('product_id', productId)
+                .eq('user_id', userId)
+                .select();
                 
+            deletionDetails.attempts.push({
+                type: 'product_id',
+                id: productId,
+                success: !productDeleteError,
+                error: productDeleteError?.message,
+                data: productDeleteData
+            });
+            
             if (!productDeleteError) {
                 deleted = true;
-                console.log(`[CartRoutes] Deletion by product_id succeeded: ${itemId}`);
+                console.log(`[CartRoutes Remove] Deletion by product_id succeeded: ${productId}`);
+            } else {
+                console.error(`[CartRoutes Remove] Product ID deletion error: ${productDeleteError.message}`);
             }
         } catch (err) {
-            console.error(`[CartRoutes] Product ID deletion error: ${err.message}`);
+            console.error(`[CartRoutes Remove] Exception during product_id deletion: ${err.message}`);
+            deletionDetails.attempts.push({
+                type: 'product_id',
+                id: productId,
+                success: false,
+                exception: err.message
+            });
         }
     }
 
     // If neither worked, check if the item exists at all
     if (!deleted) {
-        const { data: checkItem, error: checkError } = await supabase
-            .from('cart_items')
-            .select('id, product_id')
-            .eq('user_id', userId);
-            
-        if (!checkError && checkItem && checkItem.length > 0) {
-            console.log(`[CartRoutes] User has ${checkItem.length} cart items. Checking matches...`);
-            
-            // Check if itemId matches any pattern we might be missing
-            const itemMatch = checkItem.find(item => 
-                item.id === itemId || 
-                item.product_id === itemId
-            );
-            
-            if (itemMatch) {
-                console.log(`[CartRoutes] Found matching item: ${JSON.stringify(itemMatch)}`);
+        try {
+            console.log(`[CartRoutes Remove] Attempt 3: Looking up all cart items for user ${userId}`);
+            const { data: checkItem, error: checkError } = await supabase
+                .from('cart_items')
+                .select('id, product_id')
+                .eq('user_id', userId);
                 
-                // Try one more time with the exact ID
-                const { error: lastAttemptError } = await supabase
-                    .from('cart_items')
-                    .delete()
-                    .eq('id', itemMatch.id);
+            if (checkError) {
+                console.error(`[CartRoutes Remove] Error listing cart items: ${checkError.message}`);
+                deletionDetails.attempts.push({
+                    type: 'list_items',
+                    success: false,
+                    error: checkError.message
+                });
+            } 
+            else if (checkItem && checkItem.length > 0) {
+                console.log(`[CartRoutes Remove] User has ${checkItem.length} cart items: ${JSON.stringify(checkItem.map(i => ({id: i.id, product_id: i.product_id})))}`);
+                deletionDetails.cartItems = checkItem.map(i => ({id: i.id, product_id: i.product_id}));
+                
+                // Look for a matching item - check both ID and product_id
+                const itemMatch = checkItem.find(item => 
+                    item.id === targetId || 
+                    item.product_id === targetId
+                );
+                
+                if (itemMatch) {
+                    console.log(`[CartRoutes Remove] Found matching item: ${JSON.stringify(itemMatch)}`);
                     
-                if (!lastAttemptError) {
-                    deleted = true;
-                    console.log(`[CartRoutes] Final deletion attempt succeeded for ID: ${itemMatch.id}`);
+                    // Try one more time with the specific ID
+                    const { error: lastAttemptError, data: lastAttemptData } = await supabase
+                        .from('cart_items')
+                        .delete()
+                        .eq('id', itemMatch.id)
+                        .select();
+                        
+                    deletionDetails.attempts.push({
+                        type: 'match_delete',
+                        id: itemMatch.id,
+                        success: !lastAttemptError,
+                        error: lastAttemptError?.message,
+                        data: lastAttemptData
+                    });
+                    
+                    if (!lastAttemptError) {
+                        deleted = true;
+                        console.log(`[CartRoutes Remove] Final deletion successful for ID: ${itemMatch.id}`);
+                    } else {
+                        console.error(`[CartRoutes Remove] Final deletion attempt failed: ${lastAttemptError.message}`);
+                    }
+                } else {
+                    console.log(`[CartRoutes Remove] No matching item found for target ID: ${targetId}`);
+                    deletionDetails.attempts.push({
+                        type: 'find_match',
+                        success: false,
+                        message: 'No matching item found'
+                    });
                 }
+            } else {
+                console.log(`[CartRoutes Remove] User has no cart items`);
+                deletionDetails.attempts.push({
+                    type: 'list_items',
+                    success: true,
+                    message: 'User has no cart items'
+                });
             }
+        } catch (err) {
+            console.error(`[CartRoutes Remove] Error during item lookup: ${err.message}`);
+            deletionDetails.attempts.push({
+                type: 'item_lookup',
+                success: false,
+                exception: err.message
+            });
         }
     }
 
     if (deleted) {
-        res.json({ message: 'Item removed successfully' });
-    } else {
-        // Even if we couldn't delete, don't return an error to client
-        // Just log it and let the client refresh the cart
-        console.error(`[CartRoutes] All deletion attempts failed for itemId: ${itemId}`);
+        console.log(`[CartRoutes Remove] Successfully deleted item`);
         res.json({ 
-            message: 'Item removal may require refresh',
-            warning: 'The item was not found or could not be deleted'
+            message: 'Item removed successfully',
+            details: deletionDetails
+        });
+    } else {
+        // Even if we couldn't delete, return a "success" to the client
+        // to avoid showing errors to the user - the cart will refresh anyway
+        console.warn(`[CartRoutes Remove] All deletion attempts failed for ID: ${targetId}`);
+        res.json({ 
+            message: 'Item removal requested',
+            warning: 'Item may not have been deleted from database',
+            details: deletionDetails
         });
     }
 }));

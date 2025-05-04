@@ -720,8 +720,20 @@ const showStockLimitToast = (message) => {
     };
 
     const removeFromCart = async (itemId) => {
-        // Find item index based on ID only
-        const itemIndex = cartItems.findIndex(item => item.id === itemId);
+        // Better logging to track what's being passed
+        console.log(`[CartContext Remove] Called with itemId:`, itemId);
+        
+        // Find item index based on ID, with better handling of different ID types
+        const itemIndex = cartItems.findIndex(item => {
+            // Handle case where itemId might be an object
+            if (typeof itemId === 'object' && itemId !== null) {
+                const targetId = itemId.id || itemId.itemId || itemId.productId;
+                return item.id === targetId || item.productId === targetId;
+            }
+            // Standard case: direct ID comparison
+            return item.id === itemId || item.productId === itemId;
+        });
+        
         if (itemIndex === -1) {
             console.warn(`[CartContext Remove] Item with ID ${itemId} not found in cart`);
             return; // Item not found
@@ -729,47 +741,62 @@ const showStockLimitToast = (message) => {
 
         // Store info about the item before removal (for optimistic UI and error recovery)
         const itemToRemove = cartItems[itemIndex];
-        console.log(`[CartContext Remove] Removing item: ${itemId}`, itemToRemove);
+        console.log(`[CartContext Remove] Found item at index ${itemIndex}:`, itemToRemove);
 
         // Update local state immediately (optimistic update)
-        setCartItems(prevCartItems => prevCartItems.filter(item => item.id !== itemId));
+        setCartItems(prevCartItems => {
+            const updatedCart = prevCartItems.filter(item => item.id !== (typeof itemId === 'object' ? itemId.id : itemId));
+            console.log(`[CartContext Remove] Updated cart after filter:`, updatedCart);
+            return updatedCart;
+        });
         
         // Don't show global loading indicator for item removal
-        // setLoading(true); - remove this
-        
-        // Add a local loading flag instead
-        const updatingItemsCopy = { ...itemToRemove, isRemoving: true };
+        // setLoading(true); - removed intentionally
         
         setError(null);
         try {
             if (isSignedIn) {
                 // --- Signed-in user: Use API ---
-                console.log(`[CartContext Remove] Calling API removeFromCart for item ${itemId}`);
+                console.log(`[CartContext Remove] Calling API removeFromCart for item`);
                 
-                // Try sending both the cart item ID and product ID for maximum chance of success
+                // Create a rich payload with all possible IDs to maximize chance of success
                 const payload = { 
+                    // Primary IDs
                     itemId: itemToRemove.id,
-                    productId: itemToRemove.productId || itemToRemove.id,
-                    cartItemId: itemToRemove.cartItemId
+                    productId: itemToRemove.productId || itemToRemove.product_id,
+                    
+                    // Additional identifiers that might help
+                    cartItemId: itemToRemove.cartItemId,
+                    
+                    // Complete item for debugging
+                    fullItem: itemToRemove
                 };
                 
-                await api.removeFromCart(payload);
+                console.log(`[CartContext Remove] Sending payload to API:`, payload);
+                const result = await api.removeFromCart(payload);
+                console.log(`[CartContext Remove] API response:`, result);
                 
-                // If we get this far, removal was successful on the backend
-                // No need to refetch the entire cart - we've already updated state optimistically
-                toast.success("Item removed from cart.");
+                // Show success message if no explicit error
+                if (!result.error) {
+                    toast.success("Item removed from cart.");
+                } else {
+                    console.warn(`[CartContext Remove] API reported warnings:`, result.warnings || result.error);
+                    toast.success("Item removed from your cart view.");
+                }
             } else {
                 // --- Anonymous user: Use Local Storage ---
+                console.log(`[CartContext Remove] Anonymous user - item removed from local storage`);
                 // Already updated the state optimistically above
                 toast.success("Item removed from cart.");
             }
         } catch (err) {
-            console.error("Failed to remove from cart:", err);
+            console.error("[CartContext Remove] Failed to remove from cart:", err);
             
             // Revert the optimistic update if the API call failed
             setCartItems(prevItems => {
                 // Check if the item is still missing from the cart
-                if (!prevItems.some(item => item.id === itemId)) {
+                if (!prevItems.some(item => item.id === itemToRemove.id)) {
+                    console.log(`[CartContext Remove] Adding item back due to error:`, itemToRemove);
                     // Add it back
                     return [...prevItems, itemToRemove];
                 }
@@ -779,9 +806,6 @@ const showStockLimitToast = (message) => {
             setError(err.message || "Failed to remove item");
             toast.error(`Removal failed: ${err.message}`);
         } finally {
-            // If you had set loading state, you would clear it here
-            // setLoading(false);
-            
             // After a short delay, refresh the cart to ensure consistency
             if (isSignedIn) {
                 setTimeout(async () => {

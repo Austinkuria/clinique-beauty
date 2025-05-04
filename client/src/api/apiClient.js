@@ -378,28 +378,73 @@ const removeFromCart = async (itemData) => {
   try {
     console.log("[API Client removeFromCart] Attempting to remove item:", itemData);
     
-    // Accept either an object with itemId or a direct itemId string
-    const itemId = typeof itemData === 'object' ? itemData.itemId : itemData;
-    
-    if (!itemId) {
-      console.error("[API Client removeFromCart] No itemId provided:", itemData);
-      throw new Error("Missing itemId for cart removal");
+    // Handle different input formats: string ID, object with itemId, or object with id
+    let itemId;
+    if (typeof itemData === 'string') {
+      itemId = itemData;
+    } else if (itemData && typeof itemData === 'object') {
+      // Try all possible ID properties
+      itemId = itemData.itemId || itemData.id || itemData.cartItemId || itemData.productId;
     }
     
-    // Try the DELETE /cart/remove endpoint first (which uses request body)
+    if (!itemId) {
+      console.error("[API Client removeFromCart] No valid ID found in:", itemData);
+      throw new Error("Missing item identifier for cart removal");
+    }
+    
+    console.log(`[API Client removeFromCart] Extracted itemId: ${itemId}`);
+    
+    // Send both the itemId and a full payload to the server for maximum compatibility
+    const payload = {
+      itemId: itemId,
+      // Include these extra fields to help server-side debugging
+      originalItem: typeof itemData === 'object' ? itemData : { id: itemId },
+      timestamp: new Date().toISOString()
+    };
+    
+    // First try using the DELETE /cart/remove endpoint with body payload
     try {
-      console.log(`[API Client removeFromCart] Using /cart/remove endpoint with itemId: ${itemId}`);
-      const result = await _request('DELETE', '/cart/remove', { itemId }, true);
-      console.log("[API Client removeFromCart] Success with /cart/remove endpoint:", result);
+      console.log(`[API Client removeFromCart] Calling DELETE /cart/remove with payload:`, payload);
+      const result = await _request('DELETE', '/cart/remove', payload, true);
+      console.log("[API Client removeFromCart] Success response:", result);
       return result;
     } catch (primaryError) {
       console.error("[API Client removeFromCart] Primary removal attempt failed:", primaryError);
       
       // Fall back to the DELETE /cart/:id endpoint
-      console.log(`[API Client removeFromCart] Trying fallback with /cart/${itemId} endpoint`);
-      const fallbackResult = await _request('DELETE', `/cart/${itemId}`, null, true);
-      console.log("[API Client removeFromCart] Success with fallback endpoint:", fallbackResult);
-      return fallbackResult;
+      console.log(`[API Client removeFromCart] Trying fallback DELETE /cart/${itemId}`);
+      try {
+        const fallbackResult = await _request('DELETE', `/cart/${itemId}`, null, true);
+        console.log("[API Client removeFromCart] Fallback success:", fallbackResult);
+        return fallbackResult;
+      } catch (fallbackError) {
+        console.error("[API Client removeFromCart] Fallback attempt also failed:", fallbackError);
+        
+        // Try direct DELETE request as last resort
+        console.log(`[API Client removeFromCart] Attempting direct fetch to /api/cart/${itemId}`);
+        
+        // Get token from clerk
+        const token = clerkGetToken ? await clerkGetToken() : null;
+        if (!token) {
+          throw new Error("No authentication token available");
+        }
+        
+        const directResponse = await fetch(`${API_BASE_URL}/cart/${itemId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!directResponse.ok) {
+          throw new Error(`Direct DELETE failed with status ${directResponse.status}`);
+        }
+        
+        const directResult = await directResponse.json();
+        console.log("[API Client removeFromCart] Direct fetch succeeded:", directResult);
+        return directResult;
+      }
     }
   } catch (error) {
     console.error("[API Client removeFromCart] All removal attempts failed:", error);
@@ -410,23 +455,25 @@ const removeFromCart = async (itemData) => {
       return { 
         success: true, 
         simulated: true,
-        message: "Simulated success in development" 
+        message: "Simulated success in development",
+        itemData: itemData
       };
     }
     
     throw error;
   } finally {
-    // Force a cart refresh after removal, whether successful or not
+    // Force a cart refresh after removal attempt, regardless of outcome
     try {
-      console.log("[API Client removeFromCart] Forcing cart refresh");
+      console.log("[API Client removeFromCart] Scheduling cart refresh");
       setTimeout(async () => {
         try {
+          console.log("[API Client removeFromCart] Executing forced cart refresh");
           await getCart();
-          console.log("[API Client removeFromCart] Cart refreshed after removal");
+          console.log("[API Client removeFromCart] Cart refreshed after removal attempt");
         } catch (refreshError) {
           console.error("[API Client removeFromCart] Cart refresh failed:", refreshError);
         }
-      }, 500); // Short delay
+      }, 700); // Short delay before refresh
     } catch (refreshError) {
       console.error("[API Client removeFromCart] Failed to schedule cart refresh:", refreshError);
     }
