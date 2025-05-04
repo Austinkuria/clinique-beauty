@@ -175,9 +175,9 @@ export const CartProvider = ({ children }) => {
                         // Show a toast to inform the user
                         if (adjustedItems.length === 1) {
                             const item = adjustedItems[0];
-                            toast.warning(`Quantity for ${item.name} adjusted to ${item.newQuantity} due to stock limitations.`);
+                            toast.error(`Quantity for ${item.name} adjusted to ${item.newQuantity} due to stock limitations.`);
                         } else {
-                            toast.warning(`${adjustedItems.length} items in your cart were adjusted due to stock limitations.`);
+                            toast.error(`${adjustedItems.length} items in your cart were adjusted due to stock limitations.`);
                         }
                     }
 
@@ -218,7 +218,7 @@ export const CartProvider = ({ children }) => {
                         if (Array.isArray(recoveryCart) && recoveryCart.length > 0) {
                             const formattedRecoveryCart = recoveryCart.map(formatCartItem).filter(item => item !== null);
                             setCartItems(formattedRecoveryCart);
-                            toast.warning("Some items in your cart were adjusted due to stock limitations.");
+                            toast.error("Some items in your cart were adjusted due to stock limitations.");
                             console.log("[CartContext Load Effect] Recovery successful.");
                             setError(null); // Clear the error since we recovered
                             setLoading(false);
@@ -492,7 +492,7 @@ const showStockLimitToast = (message) => {
         if (currentItem.stock !== undefined && quantity > currentItem.stock) {
             console.log(`[CartContext UpdateQ] Adjusting quantity from ${quantity} to ${currentItem.stock} due to stock limitation`);
             quantity = currentItem.stock;
-            toast.warning(`Quantity adjusted to ${currentItem.stock} (maximum available stock)`, { duration: 2000 });
+            toast.error(`Quantity adjusted to ${currentItem.stock} (maximum available stock)`, { duration: 2000 });
         }
         
         // First update state optimistically (for immediate UI feedback)
@@ -667,7 +667,7 @@ const showStockLimitToast = (message) => {
                             };
                             setCartItems(adjustedCart);
                             
-                            toast.warning(`Quantity adjusted to ${availableStock} (maximum available)`, { duration: 2000 });
+                            toast.error(`Quantity adjusted to ${availableStock} (maximum available)`, { duration: 2000 });
                             return;
                         }
                     }
