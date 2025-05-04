@@ -722,36 +722,79 @@ const showStockLimitToast = (message) => {
     const removeFromCart = async (itemId) => {
         // Find item index based on ID only
         const itemIndex = cartItems.findIndex(item => item.id === itemId);
-        if (itemIndex === -1) return; // Item not found
+        if (itemIndex === -1) {
+            console.warn(`[CartContext Remove] Item with ID ${itemId} not found in cart`);
+            return; // Item not found
+        }
 
-        setLoading(true);
+        // Store info about the item before removal (for optimistic UI and error recovery)
+        const itemToRemove = cartItems[itemIndex];
+        console.log(`[CartContext Remove] Removing item: ${itemId}`, itemToRemove);
+
+        // Update local state immediately (optimistic update)
+        setCartItems(prevCartItems => prevCartItems.filter(item => item.id !== itemId));
+        
+        // Don't show global loading indicator for item removal
+        // setLoading(true); - remove this
+        
+        // Add a local loading flag instead
+        const updatingItemsCopy = { ...itemToRemove, isRemoving: true };
+        
         setError(null);
         try {
             if (isSignedIn) {
                 // --- Signed-in user: Use API ---
                 console.log(`[CartContext Remove] Calling API removeFromCart for item ${itemId}`);
-                // Assume api.removeFromCart handles token internally
-                await api.removeFromCart({ itemId }); // Adjust payload as needed by API
-
-                // Refetch cart after successful removal
-                console.log("[CartContext Remove] Refetching cart after remove...");
-                const apiCart = await api.getCart();
-                const formattedCart = (Array.isArray(apiCart) ? apiCart : []).map(formatCartItem).filter(item => item !== null);
-                setCartItems(formattedCart);
+                
+                // Try sending both the cart item ID and product ID for maximum chance of success
+                const payload = { 
+                    itemId: itemToRemove.id,
+                    productId: itemToRemove.productId || itemToRemove.id,
+                    cartItemId: itemToRemove.cartItemId
+                };
+                
+                await api.removeFromCart(payload);
+                
+                // If we get this far, removal was successful on the backend
+                // No need to refetch the entire cart - we've already updated state optimistically
                 toast.success("Item removed from cart.");
-
             } else {
                 // --- Anonymous user: Use Local Storage ---
-                let updatedCart = cartItems.filter(item => item.id !== itemId);
-                setCartItems(updatedCart); // Update state, triggers save effect
+                // Already updated the state optimistically above
                 toast.success("Item removed from cart.");
             }
         } catch (err) {
             console.error("Failed to remove from cart:", err);
+            
+            // Revert the optimistic update if the API call failed
+            setCartItems(prevItems => {
+                // Check if the item is still missing from the cart
+                if (!prevItems.some(item => item.id === itemId)) {
+                    // Add it back
+                    return [...prevItems, itemToRemove];
+                }
+                return prevItems;
+            });
+            
             setError(err.message || "Failed to remove item");
             toast.error(`Removal failed: ${err.message}`);
         } finally {
-            setLoading(false);
+            // If you had set loading state, you would clear it here
+            // setLoading(false);
+            
+            // After a short delay, refresh the cart to ensure consistency
+            if (isSignedIn) {
+                setTimeout(async () => {
+                    try {
+                        console.log("[CartContext Remove] Refreshing cart after removal...");
+                        const apiCart = await api.getCart();
+                        const formattedCart = (Array.isArray(apiCart) ? apiCart : []).map(formatCartItem).filter(item => item !== null);
+                        setCartItems(formattedCart);
+                    } catch (refreshError) {
+                        console.error("Failed to refresh cart after removal:", refreshError);
+                    }
+                }, 1000);
+            }
         }
     };
 

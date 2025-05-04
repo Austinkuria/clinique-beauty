@@ -376,13 +376,37 @@ const updateCartItemQuantity = async (itemData) => {
 
 const removeFromCart = async (itemData) => {
   try {
-    const result = await _request('DELETE', '/cart/remove', itemData, true);
-    return result;
+    console.log("[API Client removeFromCart] Attempting to remove item:", itemData);
+    
+    // Accept either an object with itemId or a direct itemId string
+    const itemId = typeof itemData === 'object' ? itemData.itemId : itemData;
+    
+    if (!itemId) {
+      console.error("[API Client removeFromCart] No itemId provided:", itemData);
+      throw new Error("Missing itemId for cart removal");
+    }
+    
+    // Try the DELETE /cart/remove endpoint first (which uses request body)
+    try {
+      console.log(`[API Client removeFromCart] Using /cart/remove endpoint with itemId: ${itemId}`);
+      const result = await _request('DELETE', '/cart/remove', { itemId }, true);
+      console.log("[API Client removeFromCart] Success with /cart/remove endpoint:", result);
+      return result;
+    } catch (primaryError) {
+      console.error("[API Client removeFromCart] Primary removal attempt failed:", primaryError);
+      
+      // Fall back to the DELETE /cart/:id endpoint
+      console.log(`[API Client removeFromCart] Trying fallback with /cart/${itemId} endpoint`);
+      const fallbackResult = await _request('DELETE', `/cart/${itemId}`, null, true);
+      console.log("[API Client removeFromCart] Success with fallback endpoint:", fallbackResult);
+      return fallbackResult;
+    }
   } catch (error) {
-    console.error("Failed to remove item from cart:", error);
+    console.error("[API Client removeFromCart] All removal attempts failed:", error);
     
     // In development, return simulated success
     if (import.meta.env.DEV) {
+      console.log("[API Client removeFromCart] DEV MODE: Returning simulated success");
       return { 
         success: true, 
         simulated: true,
@@ -391,6 +415,21 @@ const removeFromCart = async (itemData) => {
     }
     
     throw error;
+  } finally {
+    // Force a cart refresh after removal, whether successful or not
+    try {
+      console.log("[API Client removeFromCart] Forcing cart refresh");
+      setTimeout(async () => {
+        try {
+          await getCart();
+          console.log("[API Client removeFromCart] Cart refreshed after removal");
+        } catch (refreshError) {
+          console.error("[API Client removeFromCart] Cart refresh failed:", refreshError);
+        }
+      }, 500); // Short delay
+    } catch (refreshError) {
+      console.error("[API Client removeFromCart] Failed to schedule cart refresh:", refreshError);
+    }
   }
 };
 
