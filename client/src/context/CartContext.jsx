@@ -23,6 +23,7 @@ export const useCart = () => {
             updateCartItem: () => console.error('CartProvider not found - updateCartItem unavailable'),
             removeFromCart: () => console.error('CartProvider not found - removeFromCart unavailable'),
             clearCart: () => console.error('CartProvider not found - clearCart unavailable'),
+            loadCart: () => console.error('CartProvider not found - loadCart unavailable'), // Add loadCart function
         };
     }
     return context;
@@ -850,6 +851,57 @@ const showStockLimitToast = (message) => {
         }
     };
 
+    // Extract loadCart function to make it available to components
+    const loadCart = async () => {
+        // Only proceed if auth state is loaded
+        if (!isLoaded) {
+            console.log("[CartContext loadCart] Auth not loaded yet, skipping");
+            return;
+        }
+
+        console.log("[CartContext loadCart] Called directly, loading cart");
+        setLoading(true);
+        setError(null); // Clear previous errors
+        try {
+            console.log("[CartContext loadCart] TRY block entered");
+            let rawCartData = [];
+            
+            if (isSignedIn) {
+                console.log("[CartContext loadCart] User signed in, fetching from API");
+                // Fetch from API logic
+                const apiCart = await api.getCart();
+                console.log("[CartContext loadCart] API response:", apiCart);
+                rawCartData = Array.isArray(apiCart) ? apiCart : [];
+            } else {
+                console.log("[CartContext loadCart] User not signed in, loading from local storage");
+                // Load from localStorage logic
+                const localCartString = localStorage.getItem('cartItems');
+                if (localCartString) {
+                    try {
+                        rawCartData = JSON.parse(localCartString);
+                        rawCartData = Array.isArray(rawCartData) ? rawCartData : [];
+                    } catch (parseError) {
+                        console.error("[CartContext loadCart] Error parsing local cart data:", parseError);
+                        rawCartData = [];
+                    }
+                }
+            }
+            
+            // Format and set the cart items
+            console.log("[CartContext loadCart] Formatting cart data");
+            const formattedCart = rawCartData.map(formatCartItem).filter(item => item !== null);
+            console.log("[CartContext loadCart] Setting cart items:", formattedCart);
+            setCartItems(formattedCart);
+            
+        } catch (error) {
+            console.error("[CartContext loadCart] Error:", error);
+            setError(error.message || "Failed to load cart");
+        } finally {
+            console.log("[CartContext loadCart] FINALLY block entered");
+            setLoading(false);
+        }
+    };
+
     return (
         <CartContext.Provider value={{
             cartItems,
@@ -861,6 +913,7 @@ const showStockLimitToast = (message) => {
             updateCartItem,
             removeFromCart,
             clearCart,
+            loadCart, // Expose the loadCart function
         }}>
             {children}
         </CartContext.Provider>

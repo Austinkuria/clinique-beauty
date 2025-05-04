@@ -29,7 +29,8 @@ function CartPage() {
         clearCart,
         cartTotal,
         cartItemCount,
-        loading: cartLoading
+        loading: cartLoading,
+        loadCart // Get the loadCart function from context if available
     } = useCart();
     const { theme, colorValues } = useContext(ThemeContext);
     const navigate = useNavigate();
@@ -46,6 +47,18 @@ function CartPage() {
             setLocalCartItems(cartItems);
         }
     }, [cartItems]);
+
+    // Add effect to load cart data when component mounts
+    useEffect(() => {
+        console.log("[CartPage] Component mounted, ensuring cart is loaded");
+        // Check if loadCart function exists, otherwise try to access cart items directly
+        if (loadCart && typeof loadCart === 'function') {
+            console.log("[CartPage] Calling loadCart from context");
+            loadCart();
+        } else {
+            console.log("[CartPage] loadCart function not available in context");
+        }
+    }, [loadCart]); // Only run on mount and if loadCart changes
 
     // Create a debounced update function to reduce API calls
     // eslint-disable-next-line react-hooks/exhaustive-deps
