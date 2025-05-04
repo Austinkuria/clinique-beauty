@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { ThemeContext } from '../context/ThemeContext';
@@ -12,38 +12,93 @@ import {
     IconButton,
     TextField,
     Divider,
-    Link // Import Link for breadcrumbs/navigation
+    Link, // Import Link for breadcrumbs/navigation
+    CircularProgress
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import defaultProductImage from '../assets/images/placeholder.webp'; // Fallback image
+import { debounce } from '../utils/helpers'; // We'll create this utility if needed
 
 function CartPage() {
     const {
         cartItems,
         removeFromCart,
-        updateQuantity,
+        updateCartItem, // Renamed for clarity
         clearCart,
         cartTotal,
         cartItemCount,
-        loading: cartLoading // Get loading state from context
+        loading: cartLoading
     } = useCart();
     const { theme, colorValues } = useContext(ThemeContext);
     const navigate = useNavigate();
+    
+    // Add state to track items being updated
+    const [updatingItems, setUpdatingItems] = useState({});
+
+    // Local state for optimistic UI updates
+    const [localCartItems, setLocalCartItems] = useState([]);
+
+    // Sync local state with context when cart items change
+    useEffect(() => {
+        if (cartItems && cartItems.length > 0) {
+            setLocalCartItems(cartItems);
+        }
+    }, [cartItems]);
+
+    // Create a debounced update function to reduce API calls
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedUpdateQuantity = React.useCallback(
+        debounce((itemId, quantity, shade) => {
+            updateCartItem(itemId, quantity, shade);
+        }, 750), // 750ms delay
+        [updateCartItem]
+    );
 
     // --- Add Logging ---
     console.log("[CartPage Render] Cart Items:", cartItems);
     console.log("[CartPage Render] Cart Loading:", cartLoading);
     // --- End Logging ---
 
-
+    // Fixed version that avoids unnecessary API calls
     const handleQuantityChange = (item, newQuantity) => {
         const quantityNum = parseInt(newQuantity, 10);
-        if (!isNaN(quantityNum) && quantityNum >= 0) {
-            // Use item.selectedShade?.name if available, otherwise null
-            updateQuantity(item.id, quantityNum, item.selectedShade?.name);
+        
+        // Early return for invalid values or no change
+        if (isNaN(quantityNum) || quantityNum < 1 || quantityNum === item.quantity) {
+            return;
         }
+        
+        // Respect stock limitations if available
+        if (item.stock !== undefined && quantityNum > item.stock) {
+            // If user is trying to exceed stock, cap at max stock
+            console.log(`[CartPage] Capping quantity at stock limit: ${item.stock}`);
+            updateCartItem(item.id, item.stock);
+            return;
+        }
+        
+        // Show local updating state
+        setUpdatingItems(prev => ({...prev, [item.id]: true}));
+        
+        // Call context update function with correct item ID
+        updateCartItem(item.id, quantityNum);
+        
+        // Clear updating state after a delay
+        setTimeout(() => {
+            setUpdatingItems(prev => ({...prev, [item.id]: false}));
+        }, 2000);
+    };
+
+    const handleIncrementQuantity = (item) => {
+        // Don't allow incrementing beyond stock
+        if (item.stock && item.quantity >= item.stock) return;
+        handleQuantityChange(item, item.quantity + 1);
+    };
+
+    const handleDecrementQuantity = (item) => {
+        if (item.quantity <= 1) return;
+        handleQuantityChange(item, item.quantity - 1);
     };
 
     const handleRemoveItem = (item) => {
@@ -54,7 +109,6 @@ function CartPage() {
     const handleCheckout = () => {
         navigate('/checkout'); // Navigate to checkout page
     };
-
 
     return (
         <Box sx={{ backgroundColor: colorValues.bgDefault, color: colorValues.textPrimary, py: 4, minHeight: '80vh' }}>
@@ -81,11 +135,12 @@ function CartPage() {
                     <Grid container spacing={4}>
                         {/* Cart Items List */}
                         <Grid item xs={12} md={8}>
-                            {cartItems.map((item, index) => {
+                            {(localCartItems.length > 0 ? localCartItems : cartItems).map((item, index) => {
                                 // --- Add Logging for each item ---
                                 console.log(`[CartPage Render] Item ${index}:`, item);
                                 // --- End Logging ---
                                 const itemSubtotal = (item.price || 0) * item.quantity; // Use default 0 if price missing
+                                const isUpdating = updatingItems[item.id];
 
                                 return (
                                     <Paper key={`${item.id}-${item.selectedShade?.name || index}`} elevation={theme === 'dark' ? 3 : 1} sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', backgroundColor: colorValues.bgPaper }}>
@@ -112,11 +167,11 @@ function CartPage() {
                                                 ${typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
                                             </Typography>
                                         </Box>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2, position: 'relative' }}>
                                             <IconButton
                                                 size="small"
-                                                onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                                                disabled={item.quantity <= 1 || cartLoading} // Disable if loading
+                                                onClick={() => item.quantity > 1 && handleQuantityChange(item, item.quantity - 1)}
+                                                disabled={item.quantity <= 1 || cartLoading || updatingItems[item.id]}
                                                 aria-label="Decrease quantity"
                                             >
                                                 <RemoveIcon fontSize="small" />
@@ -126,18 +181,54 @@ function CartPage() {
                                                 onChange={(e) => handleQuantityChange(item, e.target.value)}
                                                 type="number"
                                                 size="small"
-                                                disabled={cartLoading} // Disable if loading
-                                                inputProps={{ min: 1, style: { textAlign: 'center', width: '40px', MozAppearance: 'textfield' } }}
-                                                sx={{ mx: 0.5, '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { WebkitAppearance: 'none', margin: 0 } }}
+                                                disabled={cartLoading || updatingItems[item.id]}
+                                                inputProps={{ 
+                                                    min: 1, 
+                                                    max: item.stock || undefined,
+                                                    style: { textAlign: 'center', width: '40px', MozAppearance: 'textfield' } 
+                                                }}
+                                                sx={{ 
+                                                    mx: 0.5, 
+                                                    '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { 
+                                                        WebkitAppearance: 'none', 
+                                                        margin: 0 
+                                                    },
+                                                    position: 'relative'
+                                                }}
                                             />
                                             <IconButton
                                                 size="small"
-                                                onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                                                disabled={cartLoading} // Disable if loading
+                                                onClick={() => {
+                                                    // Don't allow incrementing beyond stock
+                                                    if (item.stock !== undefined && item.quantity >= item.stock) return;
+                                                    handleQuantityChange(item, item.quantity + 1);
+                                                }}
+                                                disabled={cartLoading || updatingItems[item.id] || (item.stock !== undefined && item.quantity >= item.stock)}
                                                 aria-label="Increase quantity"
                                             >
                                                 <AddIcon fontSize="small" />
                                             </IconButton>
+                                            
+                                            {/* Item-specific loading indicator */}
+                                            {isUpdating && (
+                                                <Box
+                                                    sx={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        right: 0,
+                                                        bottom: 0,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                                        borderRadius: '4px',
+                                                        zIndex: 1,
+                                                    }}
+                                                >
+                                                    <CircularProgress size={16} thickness={4} sx={{ color: colorValues.primary }} />
+                                                </Box>
+                                            )}
                                         </Box>
                                         <Typography variant="body1" sx={{ fontWeight: 500, minWidth: '80px', textAlign: 'right', mr: 2 }}>
                                             ${itemSubtotal.toFixed(2)}

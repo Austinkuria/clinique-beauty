@@ -137,8 +137,49 @@ export const CartProvider = ({ children }) => {
                     console.log("[CartContext Load Effect] Calling api.getCart()...");
                     const apiCart = await api.getCart(); // Assume this returns the array of cart items
                     console.log("[CartContext Load Effect] api.getCart() response:", apiCart);
+                    
+                    // Process the cart data to handle any stock limitations
                     rawCartData = Array.isArray(apiCart) ? apiCart : [];
-                    // localStorage.removeItem('cartItems'); // Moved this to after merge attempt
+                    
+                    // Check if any items exceed stock limits and adjust them
+                    const adjustedItems = [];
+                    for (const item of rawCartData) {
+                        if (item.stock !== undefined && item.quantity > item.stock) {
+                            adjustedItems.push({
+                                id: item.id,
+                                name: item.name || 'Product',
+                                oldQuantity: item.quantity,
+                                newQuantity: item.stock
+                            });
+                            item.quantity = item.stock; // Adjust the quantity in-place
+                        }
+                    }
+                    
+                    // Notify the user if any items were adjusted
+                    if (adjustedItems.length > 0) {
+                        console.log("[CartContext Load Effect] Adjusted quantities for items with insufficient stock:", adjustedItems);
+                        
+                        // Update the server with the adjusted quantities
+                        for (const item of adjustedItems) {
+                            try {
+                                // Try to update the item quantity on the server
+                                await api.updateCartItemQuantity({
+                                    itemId: item.id,
+                                    quantity: item.newQuantity
+                                });
+                            } catch (updateError) {
+                                console.error(`[CartContext Load Effect] Failed to update quantity for ${item.name}:`, updateError);
+                            }
+                        }
+                        
+                        // Show a toast to inform the user
+                        if (adjustedItems.length === 1) {
+                            const item = adjustedItems[0];
+                            toast.warning(`Quantity for ${item.name} adjusted to ${item.newQuantity} due to stock limitations.`);
+                        } else {
+                            toast.warning(`${adjustedItems.length} items in your cart were adjusted due to stock limitations.`);
+                        }
+                    }
 
                 } else {
                     console.log("[CartContext Load Effect] User not signed in, loading from local storage...");
@@ -165,6 +206,30 @@ export const CartProvider = ({ children }) => {
 
                 console.log("[CartContext Load Effect] TRY block finished successfully.");
             } catch (error) {
+                // Check for specific stock-related errors
+                if (error && error.message && error.message.includes("Not enough stock")) {
+                    console.error("[CartContext Load Effect] Stock limitation error:", error.message);
+                    
+                    // Try to recover by refreshing the cart with a special flag
+                    try {
+                        console.log("[CartContext Load Effect] Attempting recovery from stock error...");
+                        const recoveryCart = await api.getCart(true); // Pass 'true' to indicate recovery mode
+                        
+                        if (Array.isArray(recoveryCart) && recoveryCart.length > 0) {
+                            const formattedRecoveryCart = recoveryCart.map(formatCartItem).filter(item => item !== null);
+                            setCartItems(formattedRecoveryCart);
+                            toast.warning("Some items in your cart were adjusted due to stock limitations.");
+                            console.log("[CartContext Load Effect] Recovery successful.");
+                            setError(null); // Clear the error since we recovered
+                            setLoading(false);
+                            return; // Exit early since we recovered
+                        }
+                    } catch (recoveryError) {
+                        console.error("[CartContext Load Effect] Recovery attempt failed:", recoveryError);
+                        // Continue with normal error handling
+                    }
+                }
+                
                 // --- MODIFICATION START ---
                 // Log the specific error object for better debugging
                 console.error("[CartContext Load Effect] CATCH block error object:", error);
@@ -210,6 +275,70 @@ export const CartProvider = ({ children }) => {
     }, [cartItems, isSignedIn, isLoaded]);
 
 
+// Function to generate friendly stock limitation messages
+const getStockLimitMessage = (productName, availableStock) => {
+    const messages = [
+        `We adjusted your cart to ${availableStock} units of ${productName} (our current inventory limit).`,
+        `Only ${availableStock} of ${productName} available! We've updated your cart.`,
+        `Our warehouse elves could only find ${availableStock} units of ${productName}! Cart updated.`,
+        `Popular choice! We have ${availableStock} ${productName} left and reserved them for you.`,
+        `Limited stock alert! ${availableStock} units of ${productName} added to your cart.`,
+        `Hot item! Only ${availableStock} ${productName} left - we've adjusted your cart.`
+    ];
+    
+    // Choose a random message for variety
+    return messages[Math.floor(Math.random() * messages.length)];
+};
+
+// Enhanced visual toast options
+const showStockLimitToast = (message) => {
+    toast.custom((t) => (
+        <div
+            className={`${
+                t.visible ? 'animate-enter' : 'animate-leave'
+            } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+            style={{
+                borderLeft: '6px solid #f97316', // Orange border
+                padding: '16px',
+                backgroundColor: '#fffaf0',  // Warm background
+                borderRadius: '6px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+            }}
+        >
+            <div className="flex-1 w-0 p-0">
+                <div className="flex items-start">
+                    <div className="flex-shrink-0 pt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </div>
+                    <div className="ml-3 flex-1">
+                        <p className="text-sm font-medium text-gray-900" style={{ color: '#733612' }}>
+                            Stock Limited
+                        </p>
+                        <p className="mt-1 text-sm text-gray-700" style={{ color: '#92400e' }}>
+                            {message}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div className="flex">
+                <button
+                    onClick={() => toast.dismiss(t.id)}
+                    className="mr-2 bg-white rounded-md p-1 hover:text-gray-700"
+                    style={{ color: '#92400e' }}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    ), { duration: 4000 });
+};
+
+
     const addToCart = async (product, quantity) => {
         // --- ADD DETAILED LOGGING HERE ---
         // Log exactly which product is being added *every time* this function is called
@@ -237,6 +366,16 @@ export const CartProvider = ({ children }) => {
             if (isSignedIn) {
                 // --- Signed-in user: Use API ---
                 console.log(`[CartContext Add API] Calling API for Product ID: ${product.id}`);
+                
+                // Check if we know the stock limit locally before making the API call
+                if (product.stock !== undefined && quantity > product.stock) {
+                    console.log(`[CartContext Add API] Adjusting quantity from ${quantity} to ${product.stock} due to stock limit`);
+                    quantity = product.stock;
+                    // Show a warning toast
+                    const message = getStockLimitMessage(product.name, product.stock);
+                    showStockLimitToast(message);
+                }
+                
                 // Assume api.addToCart handles token internally now
                 const result = await api.addToCart({
                     productId: product.id,
@@ -250,8 +389,11 @@ export const CartProvider = ({ children }) => {
                 const apiCart = await api.getCart();
                 const formattedCart = (Array.isArray(apiCart) ? apiCart : []).map(formatCartItem).filter(item => item !== null);
                 setCartItems(formattedCart);
-                toast.success(`${product.name} added to cart!`);
-
+                
+                // Only show success toast if a warning wasn't already shown
+                if (product.stock === undefined || quantity < product.stock) {
+                    toast.success(`${product.name} added to cart!`);
+                }
             } else {
                 // --- Anonymous user: Use Local Storage ---
                 console.log(`[CartContext Add Local] Updating local cart for Product ID: ${product.id}`);
@@ -276,18 +418,52 @@ export const CartProvider = ({ children }) => {
                         // Set quantity to maxStock instead of failing
                         newItem.quantity = maxStock;
                         updatedCart.push(newItem);
-                        toast.warning(`Added ${maxStock} of ${newItem.name} (maximum available stock).`);
+                        const message = getStockLimitMessage(newItem.name, maxStock);
+                        showStockLimitToast(message);
                     } else if (newItem) {
                         updatedCart.push(newItem);
+                        // Only show success toast if a warning wasn't shown
+                        toast.success(`${product.name} added to cart!`);
                     }
                 }
                 setCartItems(updatedCart); // Update state, which triggers local storage save effect
-                // Only show success toast if quantity actually changed or item was added
-                 if (existingItemIndex === -1 || updatedCart[existingItemIndex]?.quantity > cartItems[existingItemIndex]?.quantity) {
-                    toast.success(`${product.name} added to cart!`);
-                 }
             }
         } catch (error) {
+            // Check for specific stock errors
+            if (error.message && error.message.includes("Not enough stock")) {
+                console.error(`[CartContext Add] Stock limitation error:`, error.message);
+                
+                // Try to extract the available stock from the error message
+                const stockMatch = error.message.match(/Only (\d+) available/);
+                const availableStock = stockMatch && stockMatch[1] ? parseInt(stockMatch[1], 10) : null;
+                
+                if (availableStock !== null && !isNaN(availableStock)) {
+                    // Try to add the item with the available stock instead
+                    try {
+                        console.log(`[CartContext Add] Retrying with adjusted quantity ${availableStock}`);
+                        
+                        const result = await api.addToCart({
+                            productId: product.id,
+                            quantity: availableStock,
+                            shade: product.selectedShade?.name || null
+                        });
+                        
+                        // Refetch cart after successful retry
+                        const apiCart = await api.getCart();
+                        const formattedCart = (Array.isArray(apiCart) ? apiCart : []).map(formatCartItem).filter(item => item !== null);
+                        setCartItems(formattedCart);
+                        
+                        const message = getStockLimitMessage(product.name, availableStock);
+                        showStockLimitToast(message);
+                        setLoading(false);
+                        return; // Exit early since we recovered
+                    } catch (retryError) {
+                        console.error(`[CartContext Add] Retry failed:`, retryError);
+                        // Fall through to normal error handling
+                    }
+                }
+            }
+            
             console.error(`[CartContext Add] Failed to add item (ID: ${product?.id}):`, error);
             setError(error.message || "Failed to add item");
             toast.error(`Failed to add ${product.name}. ${error.message || ''}`);
@@ -305,6 +481,20 @@ export const CartProvider = ({ children }) => {
             return; // Item not found
         }
         
+        // IMPORTANT FIX: Don't let API calls go through if quantity is unchanged
+        if (cartItems[itemIndex].quantity === quantity) {
+            console.log(`[CartContext UpdateQ] Quantity unchanged (${quantity}), skipping API call`);
+            return; // No need to update if quantity is the same
+        }
+        
+        // Check if the requested quantity exceeds stock before proceeding
+        const currentItem = cartItems[itemIndex];
+        if (currentItem.stock !== undefined && quantity > currentItem.stock) {
+            console.log(`[CartContext UpdateQ] Adjusting quantity from ${quantity} to ${currentItem.stock} due to stock limitation`);
+            quantity = currentItem.stock;
+            toast.warning(`Quantity adjusted to ${currentItem.stock} (maximum available stock)`, { duration: 2000 });
+        }
+        
         // First update state optimistically (for immediate UI feedback)
         const updatedCart = [...cartItems];
         updatedCart[itemIndex] = { 
@@ -314,14 +504,12 @@ export const CartProvider = ({ children }) => {
         setCartItems(updatedCart);
         
         // Then make API request - BUT DON'T SET GLOBAL LOADING STATE
-        // This allows incrementing/decrementing without showing global loading spinner
         setError(null);
         
         // Use a local loading state instead for this specific item
-        const currentItem = updatedCart[itemIndex];
         const updatedWithLoading = [...updatedCart];
         updatedWithLoading[itemIndex] = {
-            ...currentItem,
+            ...updatedCart[itemIndex],
             isUpdating: true // Add a flag to the item itself
         };
         setCartItems(updatedWithLoading);
@@ -341,41 +529,99 @@ export const CartProvider = ({ children }) => {
                 else if (item.cart_item_id) cartItemId = item.cart_item_id;
                 else if (item.cart_id) cartItemId = item.cart_id;
                 
+                // FIX: Consider the case where the ID itself is the cart item ID (not the product ID)
+                // This is important when the cart item ID and product ID are different
+                const possibleCartItemId = item.id !== itemId ? item.id : null;
+                if (possibleCartItemId && !cartItemId) {
+                    console.log(`[CartContext UpdateQ] Using item.id as cartItemId since it differs from product ID`);
+                    cartItemId = possibleCartItemId;
+                }
+                
                 console.log(`[CartContext UpdateQ] Using ID properties:`, {
                     cartItemId,
                     itemId,
                     itemObject: item
                 });
                 
-                // If we don't have a direct cartItemId, try to find one in the data structure
-                if (!cartItemId) {
-                    // Make a best effort to find any property that looks like it could be a cart item ID
-                    // besides the product ID itself
-                    const possibleIdProps = Object.entries(item)
-                        .filter(([key, value]) => 
-                            key !== 'id' && // not the main product ID 
-                            key.includes('id') && // has "id" in the name
-                            typeof value === 'string' && // is a string
-                            value.length > 8 // reasonably long to be a UUID
-                        );
-                    
-                    if (possibleIdProps.length > 0) {
-                        // Use the first matching property
-                        cartItemId = possibleIdProps[0][1];
-                        console.log(`[CartContext UpdateQ] Found potential cart item ID: ${cartItemId} (from ${possibleIdProps[0][0]})`);
+                // IMPORTANT FIX: For decrements, first try to use the direct update endpoint
+                if (cartItemId) {
+                    try {
+                        await api.updateCartItemQuantity({ 
+                            itemId: cartItemId,
+                            quantity: quantity,
+                            productId: itemId
+                        });
+                        
+                        // Clear the updating flag
+                        const finalUpdatedCart = [...cartItems];
+                        finalUpdatedCart[itemIndex] = {
+                            ...finalUpdatedCart[itemIndex],
+                            quantity: quantity,
+                            isUpdating: false
+                        };
+                        setCartItems(finalUpdatedCart);
+                        
+                        // Only show toast for significant changes
+                        if (Math.abs(quantity - currentItem.quantity) > 2) {
+                            toast.success("Cart updated", { duration: 1500 });
+                        }
+                        
+                        return; // Exit early if successful
+                    } catch (updateError) {
+                        console.log(`[CartContext UpdateQ] Direct update failed, trying alternative approach`, updateError);
+                        // Continue to alternative approaches
                     }
                 }
                 
-                // If we still don't have a cartItemId, create a special approach for quick updates
-                if (!cartItemId) {
-                    console.log('[CartContext UpdateQ] No cartItemId found, using streamlined approach for updates');
+                // IMPORTANT FIX: Use remove and add approach for decrement operations instead of the replace flag
+                if (quantity < currentItem.quantity) {
+                    console.log('[CartContext UpdateQ] Using remove/add approach for decreasing quantity');
                     
-                    // Try to add the product with the new quantity directly
+                    try {
+                        // First remove the item
+                        await api.removeFromCart({ itemId });
+                        
+                        // Then add with new quantity if quantity > 0
+                        if (quantity > 0) {
+                            await api.addToCart({
+                                productId: itemId,
+                                quantity: quantity,
+                                // Include shade if available
+                                shade: currentItem.selectedShade?.name
+                            });
+                        }
+                        
+                        // Success - update local state
+                        const finalUpdatedCart = [...cartItems];
+                        finalUpdatedCart[itemIndex] = {
+                            ...finalUpdatedCart[itemIndex],
+                            quantity: quantity,
+                            isUpdating: false
+                        };
+                        setCartItems(finalUpdatedCart);
+                        
+                        // Only show toast for significant changes
+                        if (Math.abs(quantity - currentItem.quantity) > 2) {
+                            toast.success("Cart updated", { duration: 1500 });
+                        }
+                        
+                        return; // Exit early if successful
+                    } catch (removeAddError) {
+                        console.log(`[CartContext UpdateQ] Remove/add approach failed`, removeAddError);
+                        // Continue to fallback approaches
+                    }
+                }
+                
+                // If we still don't have a working approach, try the replacement approach (last resort)
+                console.log('[CartContext UpdateQ] Using streamlined approach for updates');
+                
+                try {
                     // This will either create a new entry or find & update existing one
                     const result = await api.addToCart({
                         productId: itemId,
                         quantity: quantity,
-                        replace: true // Add a flag to indicate replacement
+                        replace: true, // Add a flag to indicate replacement
+                        shade: currentItem.selectedShade?.name // Include shade if available
                     });
                     
                     console.log('[CartContext UpdateQ] Streamlined update result:', result);
@@ -402,35 +648,40 @@ export const CartProvider = ({ children }) => {
                     
                     // Toast success message
                     toast.success("Cart updated", { duration: 1500 });
-                    return;
-                }
-                
-                // If we have a cartItemId, proceed with normal update
-                if (cartItemId) {
-                    console.log(`[CartContext UpdateQ] Using cartItemId: ${cartItemId} (product ID: ${itemId})`);
+                } catch (apiError) {
+                    // Handle the specific stock limitation error
+                    if (apiError && apiError.message && apiError.message.includes("Not enough stock")) {
+                        // Extract available stock from error message
+                        const stockMatch = apiError.message.match(/Only (\d+) available/);
+                        const availableStock = stockMatch && stockMatch[1] ? parseInt(stockMatch[1], 10) : null;
+                        
+                        if (availableStock !== null && !isNaN(availableStock)) {
+                            console.log(`[CartContext UpdateQ] Stock limitation detected. Available: ${availableStock}`);
+                            
+                            // Update UI with available stock
+                            const adjustedCart = [...cartItems];
+                            adjustedCart[itemIndex] = {
+                                ...adjustedCart[itemIndex],
+                                quantity: availableStock,
+                                isUpdating: false
+                            };
+                            setCartItems(adjustedCart);
+                            
+                            toast.warning(`Quantity adjusted to ${availableStock} (maximum available)`, { duration: 2000 });
+                            return;
+                        }
+                    }
                     
-                    await api.updateCartItemQuantity({ 
-                        itemId: cartItemId,
-                        quantity: quantity,
-                        productId: itemId
-                    });
-                    
-                    // Clear the updating flag
-                    const finalUpdatedCart = [...cartItems];
-                    finalUpdatedCart[itemIndex] = {
-                        ...finalUpdatedCart[itemIndex],
-                        quantity: quantity,
+                    // For other errors, revert the change and show error
+                    console.error('[CartContext UpdateQ] Update failed:', apiError);
+                    const revertedCart = [...cartItems];
+                    revertedCart[itemIndex] = {
+                        ...cartItems[itemIndex],
                         isUpdating: false
                     };
-                    setCartItems(finalUpdatedCart);
-                    
-                    // Show a more subtle toast for quantity updates
-                    toast.success("Cart updated", { duration: 1500 });
-                } else {
-                    // Fall back to a more robust approach - refresh the entire cart
-                    console.log('[CartContext UpdateQ] No cart item ID found, refreshing entire cart');
-                    await loadCart();
-                    toast.success("Cart updated", { duration: 1500 });
+                    setCartItems(revertedCart);
+                    toast.error('Failed to update cart');
+                    return;
                 }
             } else {
                 // --- Anonymous user: Use Local Storage ---
@@ -447,10 +698,10 @@ export const CartProvider = ({ children }) => {
             }
         } catch (err) {
             console.error("Failed to update cart item:", err);
-            setError(err.message || "Failed to update item");
-            
-            // Show error toast
-            toast.error(`Update failed: ${err.message}`);
+            // Don't set the global error state for stock limitation errors
+            if (!err.message || !err.message.includes("Not enough stock")) {
+                setError(err.message || "Failed to update item");
+            }
             
             // Revert to original cart if the API call failed
             const revertedCart = [...cartItems];
@@ -459,9 +710,13 @@ export const CartProvider = ({ children }) => {
                 isUpdating: false // Clear the updating flag
             };
             setCartItems(revertedCart);
+            
+            // Only show error toast for non-stock issues
+            if (!err.message || !err.message.includes("Not enough stock")) {
+                toast.error(`Update failed: ${err.message || "Unknown error"}`);
+            }
         }
         // We're not using the global loading state, so we don't need to clear it
-        // setLoading(false); <-- REMOVE THIS
     };
 
     const removeFromCart = async (itemId) => {

@@ -151,7 +151,7 @@ function Cart() {
                     <Typography variant="h6" component="div">{item.name || 'Product Name Unavailable'}</Typography>
                     <Typography variant="body2" color={colorValues.textSecondary}>
                       {/* Access price directly from item */}
-                      Price: ${typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
+                      Price: Ksh{typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
                     </Typography>
                     {/* Display selected shade if available */}
                     {item.selectedShade && (
@@ -245,7 +245,7 @@ function Cart() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, mb: 3 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>Total</Typography>
                   {/* Use cartTotal from context */}
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>${cartTotal.toFixed(2)}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Ksh{cartTotal.toFixed(2)}</Typography>
                 </Box>
                 <Button
                   variant="contained"
