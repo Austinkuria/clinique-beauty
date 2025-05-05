@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Container, Typography, Box, Grid, Paper, Divider, Button, 
   TextField, FormControlLabel, Checkbox, RadioGroup, Radio, 
   FormControl, FormLabel, CircularProgress, Alert, Stepper,
-  Step, StepLabel, Card, CardContent, IconButton
+  Step, StepLabel, Card, CardContent, IconButton, MenuItem, Select, InputLabel
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LockIcon from '@mui/icons-material/Lock';
@@ -12,7 +12,6 @@ import { useCart } from '../../context/CartContext';
 import { useApi } from '../../api/apiClient';
 import { useUser } from '@clerk/clerk-react';
 import { ThemeContext } from '../../context/ThemeContext';
-import { useContext } from 'react';
 import { prepareCheckout, createCheckoutSession } from './checkoutApi';
 import defaultProductImage from '../../assets/images/placeholder.webp';
 
@@ -31,12 +30,119 @@ const PAYMENT_METHODS = [
   { id: 'paypal', name: 'PayPal' }
 ];
 
+// Kenya counties data
+const KENYA_COUNTIES = [
+  'Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo Marakwet', 'Embu', 'Garissa', 
+  'Homa Bay', 'Isiolo', 'Kajiado', 'Kakamega', 'Kericho', 'Kiambu', 'Kilifi', 
+  'Kirinyaga', 'Kisii', 'Kisumu', 'Kitui', 'Kwale', 'Laikipia', 'Lamu', 'Machakos', 
+  'Makueni', 'Mandera', 'Marsabit', 'Meru', 'Migori', 'Mombasa', 'Murang\'a', 'Nairobi', 
+  'Nakuru', 'Nandi', 'Narok', 'Nyamira', 'Nyandarua', 'Nyeri', 'Samburu', 'Siaya', 
+  'Taita Taveta', 'Tana River', 'Tharaka Nithi', 'Trans Nzoia', 'Turkana', 'Uasin Gishu', 
+  'Vihiga', 'Wajir', 'West Pokot'
+];
+
+// Major cities by county
+const KENYA_CITIES = {
+  'Baringo': ['Kabarnet', 'Eldama Ravine', 'Marigat'],
+  'Bomet': ['Bomet', 'Sotik'],
+  'Bungoma': ['Bungoma', 'Kimilili', 'Webuye'],
+  'Busia': ['Busia', 'Malaba', 'Nambale'],
+  'Elgeyo Marakwet': ['Iten', 'Kapsowar', 'Chepkorio'],
+  'Embu': ['Embu', 'Runyenjes', 'Manyatta'],
+  'Garissa': ['Garissa', 'Dadaab', 'Masalani'],
+  'Homa Bay': ['Homa Bay', 'Kendu Bay', 'Oyugis'],
+  'Isiolo': ['Isiolo', 'Merti', 'Garbatulla'],
+  'Kajiado': ['Kajiado', 'Ngong', 'Ongata Rongai', 'Kitengela'],
+  'Kakamega': ['Kakamega', 'Mumias', 'Butere'],
+  'Kericho': ['Kericho', 'Londiani', 'Kipkelion'],
+  'Kiambu': ['Kiambu', 'Thika', 'Kikuyu', 'Ruiru', 'Limuru', 'Juja'],
+  'Kilifi': ['Kilifi', 'Malindi', 'Mtwapa', 'Mariakani'],
+  'Kirinyaga': ['Kerugoya', 'Sagana', 'Kagio'],
+  'Kisii': ['Kisii', 'Ogembo', 'Suneka'],
+  'Kisumu': ['Kisumu', 'Awasi', 'Ahero'],
+  'Kitui': ['Kitui', 'Mwingi', 'Mutomo'],
+  'Kwale': ['Kwale', 'Msambweni', 'Ukunda'],
+  'Laikipia': ['Nanyuki', 'Nyahururu', 'Rumuruti'],
+  'Lamu': ['Lamu', 'Mpeketoni', 'Witu'],
+  'Machakos': ['Machakos', 'Athi River', 'Kangundo', 'Matuu'],
+  'Makueni': ['Wote', 'Mtito Andei', 'Emali'],
+  'Mandera': ['Mandera', 'Rhamu', 'Elwak'],
+  'Marsabit': ['Marsabit', 'Moyale', 'Laisamis'],
+  'Meru': ['Meru', 'Nkubu', 'Maua'],
+  'Migori': ['Migori', 'Rongo', 'Awendo'],
+  'Mombasa': ['Mombasa', 'Nyali', 'Kisauni', 'Likoni', 'Changamwe'],
+  'Murang\'a': ['Murang\'a', 'Kangema', 'Maragua'],
+  'Nairobi': ['Nairobi CBD', 'Westlands', 'Karen', 'Eastleigh', 'Kasarani', 'Kayole', 'South B', 'South C', 'Kilimani', 'Lavington', 'Dagoretti', 'Kawangware', 'Kangemi', 'Githurai', 'Ruaka', 'Embakasi', 'Donholm', 'Buruburu', 'Komarock', 'Utawala', 'Kileleshwa'],
+  'Nakuru': ['Nakuru', 'Naivasha', 'Molo', 'Gilgil'],
+  'Nandi': ['Kapsabet', 'Nandi Hills', 'Kaptumo'],
+  'Narok': ['Narok', 'Kilgoris', 'Ololulunga'],
+  'Nyamira': ['Nyamira', 'Nyansiongo', 'Keroka'],
+  'Nyandarua': ['Ol Kalou', 'Engineer', 'Njabini'],
+  'Nyeri': ['Nyeri', 'Karatina', 'Othaya'],
+  'Samburu': ['Maralal', 'Baragoi', 'Archer\'s Post'],
+  'Siaya': ['Siaya', 'Bondo', 'Yala'],
+  'Taita Taveta': ['Voi', 'Wundanyi', 'Taveta'],
+  'Tana River': ['Hola', 'Madogo', 'Bura'],
+  'Tharaka Nithi': ['Chuka', 'Marimanti', 'Nkondi'],
+  'Trans Nzoia': ['Kitale', 'Kiminini', 'Endebess'],
+  'Turkana': ['Lodwar', 'Kakuma', 'Lokichogio'],
+  'Uasin Gishu': ['Eldoret', 'Burnt Forest', 'Turbo'],
+  'Vihiga': ['Vihiga', 'Luanda', 'Majengo'],
+  'Wajir': ['Wajir', 'Habaswein', 'Bute'],
+  'West Pokot': ['Kapenguria', 'Sigor', 'Chepareria']
+};
+
+// Postal codes for major cities
+const KENYA_POSTAL_CODES = {
+  'Nairobi CBD': '00100',
+  'Westlands': '00800',
+  'Karen': '00502',
+  'Eastleigh': '00610',
+  'Kasarani': '00608',
+  'Kayole': '00518',
+  'Kilimani': '00619',
+  'Lavington': '00603',
+  'Mombasa': '80100',
+  'Nyali': '80118',
+  'Kisauni': '80122',
+  'Likoni': '80110',
+  'Kisumu': '40100',
+  'Nakuru': '20100',
+  'Eldoret': '30100',
+  'Thika': '01000',
+  'Ruiru': '00232',
+  'Kikuyu': '00902',
+  'Machakos': '90100',
+  'Athi River': '00204',
+  'Garissa': '70100',
+  'Kakamega': '50100',
+  'Meru': '60200',
+  'Nyeri': '10100',
+  'Kiambu': '00900',
+  'Kitale': '30200',
+  'Kericho': '20200',
+  'Embu': '60100',
+  'Bungoma': '50200',
+  'Malindi': '80200',
+  'Kitui': '90200',
+  'Naivasha': '20117',
+  'Voi': '80300',
+  'Namanga': '00207',
+  'Kilifi': '80108'
+};
+
+// Default postal code
+const DEFAULT_POSTAL_CODE = '00100';
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { cartItems, cartTotal, clearCart, loadCart } = useCart();
   const { isSignedIn, user } = useUser();
   const { theme, colorValues } = useContext(ThemeContext);
   const api = useApi();
+  
+  // Create a ref for tracking component mount
+  const mounted = useRef(false);
   
   // Form state
   const [activeStep, setActiveStep] = useState(0);
@@ -74,11 +180,14 @@ const CheckoutPage = () => {
   const [selectedPayment, setSelectedPayment] = useState('mpesa');
   const [mpesaNumber, setMpesaNumber] = useState('');
   
+  // New state for managing dependent dropdowns
+  const [availableCities, setAvailableCities] = useState([]);
+  
   // Format currency helper
   const formatCurrency = (amount) => {
     return `Ksh${Number(amount).toFixed(2)}`;
   };
-  
+
   // Calculate totals
   const calculateTotals = () => {
     const subtotal = cartTotal || 0;
@@ -136,6 +245,11 @@ const CheckoutPage = () => {
           }));
         }
         
+        // Initialize available cities if county is already selected
+        if (customerInfo.county) {
+          setAvailableCities(KENYA_CITIES[customerInfo.county] || []);
+        }
+        
       } catch (err) {
         console.error('Error preparing checkout:', err);
         setError(err.message || 'Failed to prepare checkout');
@@ -145,8 +259,6 @@ const CheckoutPage = () => {
     };
     
     // Only run this effect once when the component mounts
-    // Add a ref to track this
-    const mounted = React.useRef(false);
     if (!mounted.current) {
       mounted.current = true;
       prepareCheckoutData();
@@ -186,6 +298,68 @@ const CheckoutPage = () => {
         [name]: value
       });
     }
+  };
+  
+  // Handle county selection
+  const handleCountyChange = (e) => {
+    const selectedCounty = e.target.value;
+    const countyCities = KENYA_CITIES[selectedCounty] || [];
+    
+    setCustomerInfo({
+      ...customerInfo,
+      county: selectedCounty,
+      city: '', // Reset city when county changes
+      postalCode: '' // Reset postal code when county changes
+    });
+    
+    setAvailableCities(countyCities);
+  };
+  
+  // Handle city selection
+  const handleCityChange = (e) => {
+    const selectedCity = e.target.value;
+    const cityPostalCode = KENYA_POSTAL_CODES[selectedCity] || DEFAULT_POSTAL_CODE;
+    
+    console.log(`City selected: ${selectedCity}, Postal code: ${cityPostalCode}`);
+    
+    setCustomerInfo({
+      ...customerInfo,
+      city: selectedCity,
+      postalCode: cityPostalCode // Ensure postal code is updated when city changes
+    });
+  };
+  
+  // Handle billing county selection
+  const handleBillingCountyChange = (e) => {
+    const selectedCounty = e.target.value;
+    const billingCities = KENYA_CITIES[selectedCounty] || [];
+    
+    setCustomerInfo({
+      ...customerInfo,
+      billingAddress: {
+        ...customerInfo.billingAddress,
+        county: selectedCounty,
+        city: '',
+        postalCode: ''
+      }
+    });
+  };
+  
+  // Handle billing city selection
+  const handleBillingCityChange = (e) => {
+    const selectedCity = e.target.value;
+    const cityPostalCode = KENYA_POSTAL_CODES[selectedCity] || DEFAULT_POSTAL_CODE;
+    
+    console.log(`Billing city selected: ${selectedCity}, Postal code: ${cityPostalCode}`);
+    
+    setCustomerInfo({
+      ...customerInfo,
+      billingAddress: {
+        ...customerInfo.billingAddress,
+        city: selectedCity,
+        postalCode: cityPostalCode // Ensure postal code is updated when city changes
+      }
+    });
   };
   
   // Handle shipping method selection
@@ -296,7 +470,6 @@ const CheckoutPage = () => {
                 Customer Information
               </Typography>
             </Grid>
-            
             <Grid item xs={12} sm={6}>
               <TextField
                 required
@@ -309,7 +482,6 @@ const CheckoutPage = () => {
                 onChange={handleInputChange}
               />
             </Grid>
-            
             <Grid item xs={12} sm={6}>
               <TextField
                 required
@@ -322,7 +494,6 @@ const CheckoutPage = () => {
                 onChange={handleInputChange}
               />
             </Grid>
-            
             <Grid item xs={12} sm={6}>
               <TextField
                 required
@@ -335,7 +506,6 @@ const CheckoutPage = () => {
                 onChange={handleInputChange}
               />
             </Grid>
-            
             <Grid item xs={12} sm={6}>
               <TextField
                 required
@@ -348,13 +518,11 @@ const CheckoutPage = () => {
                 onChange={handleInputChange}
               />
             </Grid>
-            
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                 Shipping Address
               </Typography>
             </Grid>
-            
             <Grid item xs={12}>
               <TextField
                 required
@@ -379,33 +547,41 @@ const CheckoutPage = () => {
                 onChange={handleInputChange}
               />
             </Grid>
-            
+            {/* County dropdown */}
             <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                id="city"
-                name="city"
-                label="City"
-                fullWidth
-                variant="outlined"
-                value={customerInfo.city}
-                onChange={handleInputChange}
-              />
+              <FormControl fullWidth required>
+                <InputLabel id="county-label">County</InputLabel>
+                <Select
+                  labelId="county-label"
+                  id="county"
+                  value={customerInfo.county}
+                  label="County"
+                  onChange={handleCountyChange}
+                >
+                  {KENYA_COUNTIES.map((county) => (
+                    <MenuItem key={county} value={county}>{county}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
-            
+            {/* City dropdown - dynamically populated based on county */}
             <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                id="county"
-                name="county"
-                label="County"
-                fullWidth
-                variant="outlined"
-                value={customerInfo.county}
-                onChange={handleInputChange}
-              />
+              <FormControl fullWidth required disabled={!customerInfo.county}>
+                <InputLabel id="city-label">City</InputLabel>
+                <Select
+                  labelId="city-label"
+                  id="city"
+                  value={customerInfo.city}
+                  label="City"
+                  onChange={handleCityChange}
+                >
+                  {availableCities.map((city) => (
+                    <MenuItem key={city} value={city}>{city}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
-            
+            {/* Postal code automatically filled based on city */}
             <Grid item xs={12} sm={6}>
               <TextField
                 required
@@ -415,7 +591,8 @@ const CheckoutPage = () => {
                 fullWidth
                 variant="outlined"
                 value={customerInfo.postalCode}
-                onChange={handleInputChange}
+                disabled={true}
+                helperText="Automatically filled based on city selection"
               />
             </Grid>
             
@@ -432,7 +609,6 @@ const CheckoutPage = () => {
                 label="Billing address same as shipping address"
               />
             </Grid>
-            
             {!customerInfo.sameAsBilling && (
               <>
                 <Grid item xs={12}>
@@ -491,33 +667,42 @@ const CheckoutPage = () => {
                     onChange={handleInputChange}
                   />
                 </Grid>
-                
+                {/* Billing County dropdown */}
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    id="billing.city"
-                    name="billing.city"
-                    label="City"
-                    fullWidth
-                    variant="outlined"
-                    value={customerInfo.billingAddress.city}
-                    onChange={handleInputChange}
-                  />
+                  <FormControl fullWidth required>
+                    <InputLabel id="billing-county-label">County</InputLabel>
+                    <Select
+                      labelId="billing-county-label"
+                      id="billing.county"
+                      value={customerInfo.billingAddress.county}
+                      label="County"
+                      onChange={handleBillingCountyChange}
+                    >
+                      {KENYA_COUNTIES.map((county) => (
+                        <MenuItem key={county} value={county}>{county}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
-                
+                {/* Billing City dropdown */}
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    id="billing.county"
-                    name="billing.county"
-                    label="County"
-                    fullWidth
-                    variant="outlined"
-                    value={customerInfo.billingAddress.county}
-                    onChange={handleInputChange}
-                  />
+                  <FormControl fullWidth required disabled={!customerInfo.billingAddress.county}>
+                    <InputLabel id="billing-city-label">City</InputLabel>
+                    <Select
+                      labelId="billing-city-label"
+                      id="billing.city"
+                      value={customerInfo.billingAddress.city}
+                      label="City"
+                      onChange={handleBillingCityChange}
+                    >
+                      {customerInfo.billingAddress.county && 
+                        KENYA_CITIES[customerInfo.billingAddress.county]?.map((city) => (
+                          <MenuItem key={city} value={city}>{city}</MenuItem>
+                        ))}
+                    </Select>
+                  </FormControl>
                 </Grid>
-                
+                {/* Billing Postal code automatically filled */}
                 <Grid item xs={12} sm={6}>
                   <TextField
                     required
@@ -527,7 +712,8 @@ const CheckoutPage = () => {
                     fullWidth
                     variant="outlined"
                     value={customerInfo.billingAddress.postalCode}
-                    onChange={handleInputChange}
+                    disabled={true}
+                    helperText="Automatically filled based on city selection"
                   />
                 </Grid>
               </>
@@ -631,7 +817,6 @@ const CheckoutPage = () => {
                 </RadioGroup>
               </FormControl>
             </Grid>
-            
             {selectedPayment === 'mpesa' && (
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -690,7 +875,6 @@ const CheckoutPage = () => {
                 <Typography variant="body2">{customerInfo.phone}</Typography>
               </Box>
             </Grid>
-            
             <Grid item xs={12} sm={6}>
               <Typography variant="subtitle1" gutterBottom>
                 Shipping Address
@@ -705,7 +889,6 @@ const CheckoutPage = () => {
                 </Typography>
               </Box>
             </Grid>
-            
             <Grid item xs={12} sm={6}>
               <Typography variant="subtitle1" gutterBottom>
                 Billing Address
@@ -729,7 +912,6 @@ const CheckoutPage = () => {
                 )}
               </Box>
             </Grid>
-            
             <Grid item xs={12} sm={6}>
               <Typography variant="subtitle1" gutterBottom>
                 Shipping Method
@@ -742,7 +924,6 @@ const CheckoutPage = () => {
                 )}
               </Box>
             </Grid>
-            
             <Grid item xs={12} sm={6}>
               <Typography variant="subtitle1" gutterBottom>
                 Payment Method
@@ -754,7 +935,6 @@ const CheckoutPage = () => {
                 )}
               </Box>
             </Grid>
-            
             {customerInfo.orderNotes && (
               <Grid item xs={12}>
                 <Typography variant="subtitle1" gutterBottom>
@@ -763,7 +943,6 @@ const CheckoutPage = () => {
                 <Typography variant="body2">{customerInfo.orderNotes}</Typography>
               </Grid>
             )}
-            
             <Grid item xs={12}>
               <Divider sx={{ my: 2 }} />
               <Typography variant="h6" gutterBottom>
