@@ -105,19 +105,28 @@ const CheckoutPage = () => {
       
       try {
         // Make sure cart is loaded
-        if (loadCart) {
+        if (loadCart && !cartItems.length) {
+          console.log("Loading cart data since it's empty");
           await loadCart();
+        } else {
+          console.log("Cart already has items, skipping load");
         }
         
         // Validate cart and get shipping options
-        const checkoutData = await prepareCheckout();
-        
-        if (!checkoutData.valid) {
-          setOrderIssues(checkoutData.issues || []);
+        // Only call prepareCheckout if we have items and haven't already processed issues
+        if (cartItems.length > 0 && orderIssues.length === 0) {
+          console.log("Preparing checkout with existing cart items");
+          const checkoutData = await prepareCheckout();
+          
+          if (!checkoutData.valid) {
+            setOrderIssues(checkoutData.issues || []);
+          }
         }
         
         // Pre-fill user data if signed in
-        if (isSignedIn && user) {
+        if (isSignedIn && user && 
+            (!customerInfo.email || !customerInfo.firstName || !customerInfo.lastName)) {
+          console.log("Pre-filling user data");
           setCustomerInfo(prev => ({
             ...prev,
             email: user.primaryEmailAddress?.emailAddress || '',
@@ -135,8 +144,14 @@ const CheckoutPage = () => {
       }
     };
     
-    prepareCheckoutData();
-  }, [isSignedIn, loadCart, user]);
+    // Only run this effect once when the component mounts
+    // Add a ref to track this
+    const mounted = React.useRef(false);
+    if (!mounted.current) {
+      mounted.current = true;
+      prepareCheckoutData();
+    }
+  }, []); // Empty dependency array to run only once
   
   // Handle input changes
   const handleInputChange = (e) => {
