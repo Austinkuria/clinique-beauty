@@ -116,10 +116,17 @@ const CheckoutConfirmation = () => {
             <Typography variant="body2">
               Payment Method: {orderDetails.payment.method.toUpperCase()}
             </Typography>
-            {orderDetails.payment.mpesaNumber && (
-              <Typography variant="body2">
-                M-Pesa Number: {orderDetails.payment.mpesaNumber}
-              </Typography>
+            {orderDetails.payment.method === 'mpesa' && orderDetails.payment.mpesaNumber && (
+              <>
+                <Typography variant="body2">
+                  M-Pesa Number: {orderDetails.payment.mpesaNumber}
+                </Typography>
+                {orderDetails.payment.mpesaReceiptNumber && (
+                  <Typography variant="body2">
+                    M-Pesa Receipt: {orderDetails.payment.mpesaReceiptNumber}
+                  </Typography>
+                )}
+              </>
             )}
             <Typography variant="body2" sx={{ mt: 1 }}>
               Subtotal: {formatCurrency(orderDetails.totals.subtotal)}

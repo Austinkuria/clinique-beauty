@@ -4,8 +4,7 @@ import {
   Container, Typography, Box, Grid, Paper, Divider, Button, 
   TextField, FormControlLabel, Checkbox, RadioGroup, Radio, 
   FormControl, FormLabel, CircularProgress, Alert, Stepper,
-  Step, StepLabel, Card, CardContent, IconButton, MenuItem, Select, InputLabel,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions
+  Step, StepLabel, Card, CardContent, IconButton, MenuItem, Select, InputLabel
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LockIcon from '@mui/icons-material/Lock';
@@ -14,7 +13,6 @@ import { useApi } from '../../api/apiClient';
 import { useUser } from '@clerk/clerk-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { prepareCheckout, createCheckoutSession } from './checkoutApi';
-import { initiateSTKPush, querySTKStatus, formatPhoneNumber } from '../../api/mpesaService';
 import defaultProductImage from '../../assets/images/placeholder.webp';
 
 // Define shipping method options with Ksh currency
@@ -184,13 +182,6 @@ const CheckoutPage = () => {
   
   // New state for managing dependent dropdowns
   const [availableCities, setAvailableCities] = useState([]);
-  
-  // Add state for M-Pesa payment flow
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState(null);
-  const [checkoutRequestId, setCheckoutRequestId] = useState(null);
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [paymentPollingInterval, setPaymentPollingInterval] = useState(null);
   
   // Format currency helper
   const formatCurrency = (amount) => {
@@ -390,133 +381,6 @@ const CheckoutPage = () => {
     setActiveStep((prevStep) => prevStep - 1);
   };
   
-  // Handle M-Pesa payment
-  const handleMpesaPayment = async (orderData) => {
-    try {
-      setPaymentProcessing(true);
-      setPaymentStatus({ status: 'processing', message: 'Initiating M-Pesa payment...' });
-      setPaymentDialogOpen(true);
-      
-      // Format the phone number
-      const formattedPhone = formatPhoneNumber(mpesaNumber);
-      
-      // Initiate STK push
-      const stkResponse = await initiateSTKPush({
-        phoneNumber: formattedPhone,
-        amount: orderData.totals.total,
-        orderId: orderData.orderId,
-        description: `Payment for order at Clinique Beauty`
-      });
-      
-      if (stkResponse.success) {
-        setCheckoutRequestId(stkResponse.checkoutRequestId);
-        setPaymentStatus({ 
-          status: 'waiting', 
-          message: 'Please check your phone and enter M-Pesa PIN to complete payment' 
-        });
-        
-        // Start polling for payment status
-        const intervalId = setInterval(async () => {
-          try {
-            const statusResponse = await querySTKStatus(stkResponse.checkoutRequestId);
-            
-            if (statusResponse.success) {
-              // Check if payment is completed based on ResultCode
-              if (statusResponse.ResultCode === 0) {
-                // Payment successful
-                clearInterval(intervalId);
-                setPaymentPollingInterval(null);
-                setPaymentStatus({ 
-                  status: 'success', 
-                  message: 'Payment processed successfully!' 
-                });
-                
-                // Wait 2 seconds then proceed to confirmation
-                setTimeout(() => {
-                  setPaymentDialogOpen(false);
-                  setPaymentProcessing(false);
-                  
-                  // Clear the cart and navigate to confirmation
-                  clearCart();
-                  navigate('/checkout/confirmation', { 
-                    state: { 
-                      orderId: orderData.orderId,
-                      orderDetails: orderData
-                    } 
-                  });
-                }, 2000);
-              } else if (statusResponse.ResultCode === 1032) {
-                // Payment cancelled by user
-                clearInterval(intervalId);
-                setPaymentPollingInterval(null);
-                setPaymentStatus({ 
-                  status: 'error', 
-                  message: 'Payment cancelled. Please try again.' 
-                });
-                
-                // Allow retrying
-                setPaymentProcessing(false);
-              } else if (statusResponse.ResultCode) {
-                // Other error
-                clearInterval(intervalId);
-                setPaymentPollingInterval(null);
-                setPaymentStatus({ 
-                  status: 'error', 
-                  message: `Payment failed: ${statusResponse.ResultDesc || 'Unknown error'}` 
-                });
-                
-                // Allow retrying
-                setPaymentProcessing(false);
-              }
-            }
-          } catch (statusError) {
-            console.error('Error checking payment status:', statusError);
-            // Don't stop polling on error, just continue
-          }
-        }, 5000); // Check every 5 seconds
-        
-        setPaymentPollingInterval(intervalId);
-      } else {
-        // STK push failed
-        setPaymentStatus({ 
-          status: 'error', 
-          message: stkResponse.message || 'Failed to initiate payment. Please try again.' 
-        });
-        setPaymentProcessing(false);
-      }
-    } catch (error) {
-      console.error('M-Pesa payment error:', error);
-      setPaymentStatus({ 
-        status: 'error', 
-        message: error.message || 'Failed to process payment. Please try again.' 
-      });
-      setPaymentProcessing(false);
-    }
-  };
-  
-  // Clean up interval on component unmount
-  useEffect(() => {
-    return () => {
-      if (paymentPollingInterval) {
-        clearInterval(paymentPollingInterval);
-      }
-    };
-  }, [paymentPollingInterval]);
-  
-  // Handle dialog close
-  const handlePaymentDialogClose = () => {
-    // Only allow closing if not processing
-    if (!paymentProcessing) {
-      setPaymentDialogOpen(false);
-      
-      // Clean up interval
-      if (paymentPollingInterval) {
-        clearInterval(paymentPollingInterval);
-        setPaymentPollingInterval(null);
-      }
-    }
-  };
-  
   // Handle form submission
   const handleSubmitOrder = async () => {
     setLoading(true);
@@ -534,9 +398,8 @@ const CheckoutPage = () => {
         throw new Error('Please enter your M-Pesa number');
       }
       
-      // Create order data
-      const orderData = {
-        orderId: 'ORD-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+      // Create checkout session
+      const checkoutData = {
         customer: {
           email: customerInfo.email,
           firstName: customerInfo.firstName,
@@ -572,31 +435,26 @@ const CheckoutPage = () => {
         }
       };
       
-      // Handle different payment methods
-      if (selectedPayment === 'mpesa') {
-        setLoading(false); // Turn off main loading as we'll use the dialog
-        await handleMpesaPayment(orderData);
+      const result = await createCheckoutSession(checkoutData);
+      
+      if (result.success) {
+        // Clear the cart and navigate to confirmation
+        await clearCart();
+        navigate('/checkout/confirmation', { 
+          state: { 
+            orderId: result.sessionId,
+            orderDetails: checkoutData
+          } 
+        });
       } else {
-        // Handle other payment methods (mock success for now)
-        const result = await createCheckoutSession(orderData);
-        
-        if (result.success) {
-          // Clear the cart and navigate to confirmation
-          await clearCart();
-          navigate('/checkout/confirmation', { 
-            state: { 
-              orderId: result.sessionId || orderData.orderId,
-              orderDetails: orderData
-            } 
-          });
-        } else {
-          throw new Error(result.message || 'Failed to create checkout session');
-        }
+        throw new Error(result.message || 'Failed to create checkout session');
       }
+      
     } catch (err) {
       console.error('Error submitting order:', err);
       setError(err.message || 'Failed to submit order');
       window.scrollTo(0, 0); // Scroll to top to see error
+    } finally {
       setLoading(false);
     }
   };
@@ -1310,86 +1168,6 @@ const CheckoutPage = () => {
           </Grid>
         </Grid>
       )}
-      
-      {/* M-Pesa Payment Dialog */}
-      <Dialog 
-        open={paymentDialogOpen} 
-        onClose={handlePaymentDialogClose}
-        disableEscapeKeyDown={paymentProcessing}
-        fullWidth
-      >
-        <DialogTitle>
-          M-Pesa Payment
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {paymentStatus?.status === 'processing' && (
-              <>
-                <CircularProgress size={24} sx={{ mr: 2 }} />
-                {paymentStatus.message}
-              </>
-            )}
-            
-            {paymentStatus?.status === 'waiting' && (
-              <>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body1">
-                    <strong>A payment request has been sent to your phone.</strong>
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    Please check your phone {mpesaNumber} and enter your M-Pesa PIN to complete the payment.
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CircularProgress size={30} sx={{ mr: 2 }} />
-                  <Typography variant="body2">
-                    Waiting for payment confirmation...
-                  </Typography>
-                </Box>
-              </>
-            )}
-            
-            {paymentStatus?.status === 'success' && (
-              <Box sx={{ textAlign: 'center' }}>
-                <CheckCircleIcon sx={{ color: 'success.main', fontSize: 48, mb: 2 }} />
-                <Typography variant="body1">
-                  {paymentStatus.message}
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  Redirecting to confirmation page...
-                </Typography>
-              </Box>
-            )}
-            
-            {paymentStatus?.status === 'error' && (
-              <Box>
-                <Typography variant="body1" color="error">
-                  {paymentStatus.message}
-                </Typography>
-              </Box>
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          {!paymentProcessing && paymentStatus?.status !== 'success' && (
-            <Button onClick={handlePaymentDialogClose}>
-              Close
-            </Button>
-          )}
-          {paymentStatus?.status === 'error' && (
-            <Button 
-              onClick={() => handleMpesaPayment({
-                orderId: 'ORD-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
-                totals: { total }
-              })}
-              variant="contained"
-              color="primary"
-            >
-              Try Again
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
     </Container>
   );
 };
