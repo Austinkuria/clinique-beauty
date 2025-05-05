@@ -1,4 +1,28 @@
 {
+    "version": 2,
+    "builds": [
+        {
+            "src": "server/src/server.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "client/dist/**",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "server/src/server.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "client/dist/$1"
+        }
+    ],
+    "env": {
+        "NODE_ENV": "production"
+    },
     "buildCommand": "pnpm build",
     "outputDirectory": "dist",
     "framework": "vite",

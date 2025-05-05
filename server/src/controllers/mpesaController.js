@@ -1,19 +1,16 @@
 import axios from 'axios';
 import { Buffer } from 'buffer';
 import { supabase } from '../config/db.js';
+import MPESA_CONFIG from '../config/mpesaConfig.js';
 
-// M-Pesa API credentials from environment variables
-const CONSUMER_KEY = process.env.MPESA_CONSUMER_KEY;
-const CONSUMER_SECRET = process.env.MPESA_CONSUMER_SECRET;
-const PASSKEY = process.env.MPESA_PASSKEY;
-const BUSINESS_SHORT_CODE = process.env.MPESA_SHORTCODE;
-const TRANSACTION_TYPE = 'CustomerPayBillOnline';
-const CALLBACK_URL = process.env.MPESA_CALLBACK_URL || 'https://your-domain.com/api/mpesa/callback';
-
-// Base URLs for Safaricom API
-const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.safaricom.co.ke' 
-  : 'https://sandbox.safaricom.co.ke';
+// M-Pesa API credentials from the config
+const CONSUMER_KEY = MPESA_CONFIG.CONSUMER_KEY;
+const CONSUMER_SECRET = MPESA_CONFIG.CONSUMER_SECRET;
+const PASSKEY = MPESA_CONFIG.PASSKEY;
+const BUSINESS_SHORT_CODE = MPESA_CONFIG.SHORTCODE;
+const TRANSACTION_TYPE = MPESA_CONFIG.TRANSACTION_TYPE;
+const CALLBACK_URL = MPESA_CONFIG.CALLBACK_URL;
+const BASE_URL = MPESA_CONFIG.BASE_URL;
 
 /**
  * Generates an OAuth token for Safaricom API
