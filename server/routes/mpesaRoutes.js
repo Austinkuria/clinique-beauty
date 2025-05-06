@@ -330,21 +330,29 @@ router.post('/payment', async (req, res) => {
     }
 });
 
+// Import the Supabase integration
+import { processMpesaCallback, getMpesaTransactionStatus } from '../utils/supabaseMpesaIntegration.js';
+
 // Callback route for M-Pesa - this receives the transaction result
-router.post('/callback', (req, res) => {
+router.post('/callback', async (req, res) => {
     console.log('M-Pesa callback received:', JSON.stringify(req.body, null, 2));
     
     // Extract the callback data
     const callbackData = req.body;
     
-    // In a production app, you would process the callback data
-    // For example: update order status, notify user, etc.
+    // Process the callback and update Supabase
+    try {
+        const result = await processMpesaCallback(callbackData);
+        console.log('Callback processing result:', result);
+    } catch (error) {
+        console.error('Error processing callback:', error);
+    }
     
-    // Respond to Safaricom
+    // Always respond to Safaricom with success to avoid retries
     res.json({ ResultCode: 0, ResultDesc: 'Callback received successfully' });
 });
 
-// Query STK Push status
+// Enhanced STK status query endpoint with Supabase integration
 router.post('/query', async (req, res) => {
     try {
         const { checkoutRequestId } = req.body;
@@ -356,6 +364,19 @@ router.post('/query', async (req, res) => {
             });
         }
         
+        // First check if we already have the transaction in Supabase
+        const supabaseStatus = await getMpesaTransactionStatus(checkoutRequestId);
+        
+        // If the transaction is already completed in Supabase, return that status
+        if (supabaseStatus.success && supabaseStatus.status === 'completed') {
+            return res.json({
+                ResultCode: 0,
+                ResultDesc: 'The service request is processed successfully.',
+                ...supabaseStatus
+            });
+        }
+        
+        // If not found or not completed, query Safaricom API
         // Get the M-Pesa token
         const tokenResponse = await axios.get(`${req.protocol}://${req.get('host')}/api/mpesa/token`);
         const token = tokenResponse.data.token;
