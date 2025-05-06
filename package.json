@@ -6,7 +6,9 @@
     "start": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
     "online": "node server/scripts/online.js",
     "ngrok:static": "ngrok http --domain=deer-equal-blowfish.ngrok-free.app 5000",
-    "build": "cd client && npm run build"
+    "build": "cd client && npm run build",
+    "ngrok": "node scripts/startNgrok.js",
+    "mpesa:ngrok": "node scripts/startMpesaNgrok.js"
   },
   "keywords": [
     "ecommerce",
