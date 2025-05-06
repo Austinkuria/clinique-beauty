@@ -397,6 +397,14 @@ const CheckoutPage = () => {
       setPaymentStatus({ status: 'processing', message: 'Initiating M-Pesa payment...' });
       setPaymentDialogOpen(true);
       
+      // Log that we're initiating payment (debug)
+      console.log('Initiating M-Pesa payment:', { 
+        phoneNumber: mpesaNumber, 
+        amount: orderData.totals.total,
+        environment: import.meta.env.PROD ? 'production' : 'development',
+        orderId: orderData.orderId
+      });
+      
       // Format the phone number
       const formattedPhone = formatPhoneNumber(mpesaNumber);
       
@@ -408,6 +416,8 @@ const CheckoutPage = () => {
         description: `Payment for order at Clinique Beauty`
       });
       
+      console.log('STK push response received:', stkResponse);
+      
       if (stkResponse.success) {
         setCheckoutRequestId(stkResponse.checkoutRequestId);
         setPaymentStatus({ 
@@ -418,7 +428,10 @@ const CheckoutPage = () => {
         // Start polling for payment status
         const intervalId = setInterval(async () => {
           try {
+            console.log('Polling payment status for:', stkResponse.checkoutRequestId);
             const statusResponse = await querySTKStatus(stkResponse.checkoutRequestId);
+            
+            console.log('Status response received:', statusResponse);
             
             if (statusResponse.success) {
               // Check if payment is completed based on ResultCode
@@ -530,6 +543,12 @@ const CheckoutPage = () => {
         throw new Error('Please fill in all required fields');
       }
       
+      // Validate phone number (Kenya format)
+      if (!/^(0|\+?254|0?7)\d{8,9}$/.test(customerInfo.phone)) {
+        throw new Error('Please enter a valid Kenyan phone number');
+      }
+      
+      // M-Pesa specific validation
       if (selectedPayment === 'mpesa' && !mpesaNumber) {
         throw new Error('Please enter your M-Pesa number');
       }
@@ -575,7 +594,13 @@ const CheckoutPage = () => {
       // Handle different payment methods
       if (selectedPayment === 'mpesa') {
         setLoading(false); // Turn off main loading as we'll use the dialog
+        console.log('Processing M-Pesa payment for order:', orderData.orderId);
+        
+        // Force the payment dialog to appear even in production
         await handleMpesaPayment(orderData);
+        
+        // The rest of the process is handled by the handleMpesaPayment function
+        // which includes navigation to confirmation page upon success
       } else {
         // Handle other payment methods (mock success for now)
         const result = await createCheckoutSession(orderData);
@@ -1370,7 +1395,7 @@ const CheckoutPage = () => {
             )}
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
+        <DialogActions></DialogActions>
           {!paymentProcessing && paymentStatus?.status !== 'success' && (
             <Button onClick={handlePaymentDialogClose}>
               Close

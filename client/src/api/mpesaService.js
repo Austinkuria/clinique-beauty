@@ -1,12 +1,21 @@
 import axios from 'axios';
 
-// Base URLs - Update to use direct Express server URL instead of Supabase Functions
-const BASE_URL = 'http://localhost:5000/api';
+// Determine the base URL based on environment
+const getBaseUrl = () => {
+  // Check if we're in production (Vercel)
+  if (import.meta.env.PROD) {
+    console.log('Using production API URL for M-Pesa');
+    // Use the Vercel server URL for production
+    return 'https://clinique-beauty.vercel.app/api';
+  } else {
+    console.log('Using development API URL for M-Pesa');
+    // Use localhost for development
+    return 'http://localhost:5000/api';
+  }
+};
 
-// For production, we can conditionally set this based on environment
-// const BASE_URL = import.meta.env.PROD 
-//   ? 'https://deer-equal-blowfish.ngrok-free.app/api'
-//   : 'http://localhost:5000/api';
+// Base URLs - Use conditional URL based on environment
+const BASE_URL = getBaseUrl();
 
 // M-Pesa Endpoints
 const ENDPOINTS = {
@@ -27,16 +36,21 @@ const ENDPOINTS = {
  */
 export const initiateSTKPush = async (paymentData) => {
   try {
-    console.log('Sending payment request to:', `${BASE_URL}${ENDPOINTS.STK_PUSH}`);
+    console.log(`Sending payment request to: ${BASE_URL}${ENDPOINTS.STK_PUSH}`);
     console.log('Payment data:', paymentData);
     
     // Format the phone number if needed
     const formattedPhone = formatPhoneNumber(paymentData.phoneNumber);
     
-    const response = await axios.post(`${BASE_URL}${ENDPOINTS.STK_PUSH}`, {
+    // Add environment info to help with debugging
+    const enhancedPaymentData = {
       ...paymentData,
-      phoneNumber: formattedPhone
-    });
+      phoneNumber: formattedPhone,
+      environment: import.meta.env.PROD ? 'production' : 'development',
+      timestamp: new Date().toISOString()
+    };
+    
+    const response = await axios.post(`${BASE_URL}${ENDPOINTS.STK_PUSH}`, enhancedPaymentData);
     
     console.log('STK push response:', response.data);
     return response.data;
@@ -57,10 +71,16 @@ export const initiateSTKPush = async (paymentData) => {
  */
 export const querySTKStatus = async (checkoutRequestId) => {
   try {
+    console.log(`Checking payment status at: ${BASE_URL}${ENDPOINTS.QUERY_STATUS}`);
+    console.log('Checkout request ID:', checkoutRequestId);
+    
     const response = await axios.post(`${BASE_URL}${ENDPOINTS.QUERY_STATUS}`, {
-      checkoutRequestId
+      checkoutRequestId,
+      environment: import.meta.env.PROD ? 'production' : 'development',
+      timestamp: new Date().toISOString()
     });
     
+    console.log('Status response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error querying STK status:', error);
