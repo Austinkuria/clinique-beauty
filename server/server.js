@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 
-// Load environment variables BEFORE other imports
+// Load environment variables
 dotenv.config();
 
 // Debug logging
@@ -9,37 +9,109 @@ console.log("Environment loaded, SUPABASE_SERVICE_ROLE_KEY exists:", !!process.e
 
 import express from 'express';
 import cors from 'cors';
-import connectDB, { supabase } from './src/config/db.js';
-import productRoutes from './src/routes/productRoutes.js';
-import cartRoutes from './src/routes/cartRoutes.js';
-import orderRoutes from './src/routes/orderRoutes.js';
-import searchRoutes from './src/routes/searchRoutes.js';
-import userRoutes from './src/routes/userRoutes.js';
-import { errorMiddleware } from './src/middleware/errorMiddleware.js';
-import { clerkMiddleware } from './src/middleware/clerkMiddleware.js'; // Keep Clerk middleware
+import axios from 'axios';
+import connectDB, { supabase } from './config/db.js';
+import productRoutes from './routes/productRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import searchRoutes from './routes/searchRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import mpesaRoutes from './routes/mpesaRoutes.js';
+import { errorMiddleware } from './middleware/errorMiddleware.js';
+import { clerkMiddleware } from './middleware/clerkMiddleware.js';
 
 // Connect to Supabase
 connectDB();
 
-// Make supabase client available globally (optional, consider dependency injection)
+// Make supabase client available globally
 global.supabase = supabase;
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads')); // If you have local uploads
+app.use('/uploads', express.static('uploads'));
+
+// ngrok status check
+const checkNgrokStatus = async () => {
+  const ports = [4040, 4041];
+  for (const port of ports) {
+    try {
+      console.log(`Checking ngrok on port ${port}...`);
+      const response = await axios.get(`http://localhost:${port}/api/tunnels`, { timeout: 2000 });
+      if (response.data.tunnels.length > 0) {
+        const tunnel = response.data.tunnels[0];
+        console.log(`ngrok tunnel found on port ${port}: ${tunnel.public_url}`);
+        return { online: true, url: tunnel.public_url };
+      }
+    } catch (error) {
+      console.error(`ngrok check failed on port ${port}:`, error.message);
+    }
+  }
+  console.error('No active ngrok tunnels found');
+  return { online: false, message: 'Ngrok tunnel is offline. Please run: npm run ngrok' };
+};
+
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+  const ngrokStatus = await checkNgrokStatus();
+  res.json({
+    status: 'ok',
+    message: 'Server is running',
+    environment: process.env.NODE_ENV || 'development',
+    ngrok: {
+      online: ngrokStatus.online,
+      message: ngrokStatus.message || 'Ngrok tunnel is online',
+      domain: process.env.NGROK_STATIC_DOMAIN || 'deer-equal-blowfish.ngrok-free.app',
+      url: ngrokStatus.url
+    }
+  });
+});
+
+// Add a root route handler
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Clinique Beauty API Server',
+    version: '1.0.0',
+    status: 'online',
+    documentation: '/api/docs',
+    endpoints: [
+      '/api/products',
+      '/api/cart',
+      '/api/orders',
+      '/api/search',
+      '/api/users',
+      '/api/mpesa'
+    ]
+  });
+});
+
+// M-Pesa callback endpoint
+app.post('/api/mpesa/callback', async (req, res) => {
+  const ngrokStatus = await checkNgrokStatus();
+  if (!ngrokStatus.online) {
+    return res.status(503).json({
+      error: 'ERR_NGROK_OFFLINE',
+      message: 'The ngrok tunnel is currently offline.',
+      resolution: 'Please start the ngrok tunnel.'
+    });
+  }
+  console.log('M-Pesa callback:', req.body);
+  res.json({ ResultCode: 0, ResultDesc: 'Received' });
+});
 
 // Routes
 app.use('/api/products', productRoutes);
 app.use('/api/cart', clerkMiddleware, cartRoutes);
 app.use('/api/orders', clerkMiddleware, orderRoutes);
 app.use('/api/search', searchRoutes);
-app.use('/api/users', clerkMiddleware, userRoutes);  // Add the user routes
+app.use('/api/users', clerkMiddleware, userRoutes);
+app.use('/api/mpesa', mpesaRoutes);
 
 // Error handling middleware
 app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🔗 M-Pesa callback URL: ${process.env.MPESA_CALLBACK_URL || 'Not configured'}`);
 });

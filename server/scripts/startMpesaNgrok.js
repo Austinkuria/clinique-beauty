@@ -1,4 +1,4 @@
-import ngrok from 'ngrok';
+import { spawn } from 'child_process';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -24,52 +24,88 @@ async function startNgrok() {
   try {
     console.log(chalk.blue('🚀 Starting M-Pesa ngrok tunnel...'));
     
-    // Connect to ngrok
-    let url;
-    
+    // Use the global ngrok command via spawn
+    const args = ['http', PORT.toString()];
     if (STATIC_DOMAIN) {
-      // Use static/reserved domain if available
       console.log(chalk.yellow(`Using reserved domain: ${STATIC_DOMAIN}`));
-      url = await ngrok.connect({
-        addr: PORT,
-        domain: STATIC_DOMAIN
-      });
+      args.push(`--domain=${STATIC_DOMAIN}`);
     } else {
-      // Use random domain
-      url = await ngrok.connect(PORT);
       console.log(chalk.yellow('Using free ngrok tunnel (random URL)'));
     }
     
-    // Format URLs for display and configuration
-    const callbackUrl = `${url}${CALLBACK_PATH}`;
+    // Try to find ngrok in the PATH - this works with globally installed ngrok
+    const ngrokProcess = spawn('ngrok', args);
     
-    console.log(chalk.green('\n✅ ngrok tunnel established!'));
-    console.log(chalk.cyan('Base URL:'), url);
-    console.log(chalk.cyan('M-Pesa Callback URL:'), callbackUrl);
+    let url = '';
     
-    // Update .env file with the ngrok URL
-    updateEnvFile(callbackUrl);
+    // Handle stdout data
+    ngrokProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      console.log(chalk.gray(output));
+      
+      // Try to extract the URL from the output
+      const match = output.match(/(https:\/\/[a-zA-Z0-9-]+\.ngrok-free\.app)/);
+      if (match && !url) {
+        url = match[1];
+        const callbackUrl = `${url}${CALLBACK_PATH}`;
+        
+        console.log(chalk.green('\n✅ ngrok tunnel established!'));
+        console.log(chalk.cyan('Base URL:'), url);
+        console.log(chalk.cyan('M-Pesa Callback URL:'), callbackUrl);
+        
+        // Update .env file
+        updateEnvFile(callbackUrl);
+        
+        // Show additional information
+        console.log(chalk.magenta('\n🔍 ngrok tunnel inspection'));
+        console.log(chalk.magenta('Inspect tunnel traffic at:'), chalk.underline('http://localhost:4040'));
+        
+        console.log(chalk.yellow('\n📝 M-Pesa configuration'));
+        console.log(chalk.yellow('Use this callback URL in your Safaricom Daraja portal:'));
+        console.log(callbackUrl);
+        
+        console.log(chalk.blue('\n🧪 Testing M-Pesa Payments:'));
+        console.log('- Test Phone: 254708374149');
+        console.log('- Test PIN: 12345678');
+        
+        console.log(chalk.green('\n✨ Ready to receive M-Pesa callbacks!'));
+        console.log(chalk.yellow('\nPress Ctrl+C to stop the tunnel'));
+        
+        // Check server health
+        checkLocalServer();
+      }
+    });
     
-    // Check local server health
-    await checkLocalServer();
+    // Handle stderr data
+    ngrokProcess.stderr.on('data', (data) => {
+      console.error(chalk.red(`Error: ${data.toString()}`));
+    });
     
-    console.log(chalk.magenta('\n🔍 ngrok tunnel inspection'));
-    console.log(chalk.magenta('Inspect tunnel traffic at:'), chalk.underline('http://localhost:4040'));
+    // Handle process exit
+    ngrokProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error(chalk.red(`ngrok process exited with code ${code}`));
+        console.log(chalk.yellow('\nTips:'));
+        console.log('1. Make sure ngrok is installed globally: npm install -g ngrok');
+        console.log('2. Authenticate ngrok: ngrok authtoken YOUR_AUTH_TOKEN');
+        console.log('3. Try again with: pnpm run mpesa:ngrok');
+      }
+      process.exit(code);
+    });
     
-    // Instructions for manual configuration in Safaricom portal if needed
-    console.log(chalk.yellow('\n📝 M-Pesa configuration'));
-    console.log(chalk.yellow('Use this callback URL in your Safaricom Daraja portal:'));
-    console.log(callbackUrl);
-    
-    // Display test instructions
-    console.log(chalk.blue('\n🧪 Testing M-Pesa Payments:'));
-    console.log('- Test Phone: 254708374149');
-    console.log('- Test PIN: 12345678');
-    
-    console.log(chalk.green('\n✨ Ready to receive M-Pesa callbacks!'));
+    // Handle main process exit
+    process.on('SIGINT', () => {
+      console.log(chalk.yellow('\nShutting down ngrok tunnel...'));
+      ngrokProcess.kill();
+      process.exit(0);
+    });
     
   } catch (error) {
     console.error(chalk.red('❌ Error starting ngrok:'), error);
+    console.log(chalk.yellow('\nTips:'));
+    console.log('1. Make sure ngrok is installed globally: npm install -g ngrok');
+    console.log('2. Authenticate ngrok: ngrok authtoken YOUR_AUTH_TOKEN');
+    console.log('3. Try again with: pnpm run mpesa:ngrok');
     process.exit(1);
   }
 }

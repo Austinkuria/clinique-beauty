@@ -8,7 +8,8 @@
     "ngrok:static": "ngrok http --domain=deer-equal-blowfish.ngrok-free.app 5000",
     "build": "cd client && npm run build",
     "ngrok": "node scripts/startNgrok.js",
-    "mpesa:ngrok": "node scripts/startMpesaNgrok.js"
+    "mpesa:ngrok": "node scripts/startMpesaNgrok.js",
+    "dev": "nodemon src/server.js"
   },
   "keywords": [
     "ecommerce",
