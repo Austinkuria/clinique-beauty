@@ -1395,7 +1395,7 @@ const CheckoutPage = () => {
             )}
           </DialogContentText>
         </DialogContent>
-        <DialogActions></DialogActions>
+        <DialogActions>
           {!paymentProcessing && paymentStatus?.status !== 'success' && (
             <Button onClick={handlePaymentDialogClose}>
               Close
