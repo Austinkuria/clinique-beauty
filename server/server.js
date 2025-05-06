@@ -107,6 +107,22 @@ app.use('/api/search', searchRoutes);
 app.use('/api/users', clerkMiddleware, userRoutes);
 app.use('/api/mpesa', mpesaRoutes);
 
+// Add a documentation route
+app.get('/api/docs', (req, res) => {
+  res.json({
+    message: 'API Documentation',
+    mpesaEndpoints: {
+      '/api/mpesa/token': 'GET - Get M-Pesa OAuth token',
+      '/api/mpesa/stkpush': 'POST - Initiate STK Push payment',
+      '/api/mpesa/payment': 'POST - Process M-Pesa payment (alternative route)',
+      '/api/mpesa/callback': 'POST - M-Pesa transaction callback',
+      '/api/mpesa/query': 'POST - Query STK Push status',
+      '/api/mpesa/health': 'GET - Check M-Pesa configuration'
+    },
+    // Other documentation sections
+  });
+});
+
 // Error handling middleware
 app.use(errorMiddleware);
 

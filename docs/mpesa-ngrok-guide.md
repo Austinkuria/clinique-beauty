@@ -15,6 +15,18 @@ ngrok creates a secure tunnel to your localhost, allowing external services like
    
 2. When prompted, enter your ngrok auth token. You can get this token by signing up at [ngrok.com](https://ngrok.com).
 
+3. Ensure your .env file has the correct M-Pesa API configuration:
+   ```
+   # M-Pesa Configuration
+   MPESA_CONSUMER_KEY=your_consumer_key
+   MPESA_CONSUMER_SECRET=your_consumer_secret
+   MPESA_PASSKEY=bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919
+   MPESA_SHORTCODE=174379
+   MPESA_CALLBACK_URL=https://your-ngrok-domain.ngrok-free.app/api/mpesa/callback
+   MPESA_API_URL=https://sandbox.safaricom.co.ke
+   MPESA_DEBUG=true
+   ```
+
 ## Setting Up ngrok for M-Pesa
 
 We've created a few scripts to simplify using ngrok with M-Pesa:
@@ -78,6 +90,12 @@ NGROK_STATIC_DOMAIN=your-reserved-domain.ngrok-free.app
    - PIN: 12345678
 2. Check your server logs for errors
 3. Run `npm run mpesa:check` to verify your setup
+
+### Token Request Error
+
+1. Ensure your .env file has the correct M-Pesa API configuration as mentioned in the prerequisites.
+2. Verify your M-Pesa API credentials.
+3. Check your server logs for token request errors.
 
 ## Terminal Commands Reference
 

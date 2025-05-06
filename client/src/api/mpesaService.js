@@ -1,7 +1,12 @@
 import axios from 'axios';
 
-// Base URLs
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Base URLs - Update to use direct Express server URL instead of Supabase Functions
+const BASE_URL = 'http://localhost:5000/api';
+
+// For production, we can conditionally set this based on environment
+// const BASE_URL = import.meta.env.PROD 
+//   ? 'https://deer-equal-blowfish.ngrok-free.app/api'
+//   : 'http://localhost:5000/api';
 
 // M-Pesa Endpoints
 const ENDPOINTS = {
@@ -22,7 +27,10 @@ const ENDPOINTS = {
  */
 export const initiateSTKPush = async (paymentData) => {
   try {
-    // Format the phone number if needed (remove leading 0, ensure 254 prefix)
+    console.log('Sending payment request to:', `${BASE_URL}${ENDPOINTS.STK_PUSH}`);
+    console.log('Payment data:', paymentData);
+    
+    // Format the phone number if needed
     const formattedPhone = formatPhoneNumber(paymentData.phoneNumber);
     
     const response = await axios.post(`${BASE_URL}${ENDPOINTS.STK_PUSH}`, {
@@ -30,9 +38,14 @@ export const initiateSTKPush = async (paymentData) => {
       phoneNumber: formattedPhone
     });
     
+    console.log('STK push response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error initiating STK push:', error);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+    }
     throw new Error(error.response?.data?.message || 'Failed to initiate M-Pesa payment');
   }
 };
