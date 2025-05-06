@@ -110,22 +110,21 @@ router.post('/stkpush', async (req, res) => {
     }
 });
 
-// Callback route for M-Pesa
-// This is the same as the one in server.js, but moved here for organization
+// Callback route for M-Pesa - this receives the transaction result
 router.post('/callback', (req, res) => {
     console.log('M-Pesa callback received:', JSON.stringify(req.body, null, 2));
     
     // Extract the callback data
     const callbackData = req.body;
     
-    // Process the callback data as needed
-    // TODO: Implement your business logic here (update order status, etc.)
+    // In a production app, you would process the callback data
+    // For example: update order status, notify user, etc.
     
     // Respond to Safaricom
     res.json({ ResultCode: 0, ResultDesc: 'Callback received successfully' });
 });
 
-// Status query endpoint
+// Query STK Push status
 router.post('/query', async (req, res) => {
     try {
         const { checkoutRequestId } = req.body;
@@ -181,6 +180,21 @@ router.post('/query', async (req, res) => {
             message: error.response?.data?.errorMessage || error.message || 'Failed to query payment status'
         });
     }
+});
+
+// Health check endpoint specific to M-Pesa
+router.get('/health', (req, res) => {
+    const callbackUrl = process.env.MPESA_CALLBACK_URL;
+    const consumerKey = process.env.MPESA_CONSUMER_KEY;
+    const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
+    
+    res.json({
+        status: 'ok',
+        message: 'M-Pesa API routes are operational',
+        callbackConfigured: !!callbackUrl,
+        apiCredentialsConfigured: !!(consumerKey && consumerSecret),
+        callbackUrl: callbackUrl || 'Not configured'
+    });
 });
 
 export default router;
