@@ -1,0 +1,22 @@
+{
+  "name": "clinique-beauty",
+  "version": "1.0.0",
+  "description": "Clinique Beauty E-commerce with M-Pesa integration",
+  "scripts": {
+    "start": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "online": "node server/scripts/online.js",
+    "ngrok:static": "ngrok http --domain=deer-equal-blowfish.ngrok-free.app 5000",
+    "build": "cd client && npm run build"
+  },
+  "keywords": [
+    "ecommerce",
+    "beauty",
+    "mpesa",
+    "daraja"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

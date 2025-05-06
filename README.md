@@ -83,7 +83,42 @@ A full-stack e-commerce application built with the PERN stack (PostgreSQL, Expre
     *   Ensure your PostgreSQL server is running.
     *   Connect to your database and create the specified database (`DATABASE_NAME`).
     *   Run database migrations if applicable (e.g., `npx prisma migrate dev` if using Prisma). Add specific instructions based on your ORM setup.
-c
+
+## Running the Application Online
+
+With ngrok installed, you can make the application available online:
+
+```bash
+# Start the application and expose it with ngrok
+npm run online
+```
+
+This will:
+1. Start your server on port 5000
+2. Create a secure tunnel using your reserved ngrok domain
+3. Configure the M-Pesa callback URL automatically
+
+Your site will be available at: https://deer-equal-blowfish.ngrok-free.app
+
+## Developing Locally
+
+```bash
+# Start both client and server in development mode
+npm start
+
+# Run just the client
+cd client && npm run dev
+
+# Run just the server
+cd server && npm run dev
+```
+
+## Testing M-Pesa Integration
+
+For testing M-Pesa integration in the sandbox environment:
+- Phone Number: 254708374149
+- PIN: 12345678
+
 ## Contributing
 
 We welcome contributions to improve Clinique Beauty! Here's how you can help:
