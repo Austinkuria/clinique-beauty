@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LockIcon from '@mui/icons-material/Lock';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useCart } from '../../context/CartContext';
 import { useApi } from '../../api/apiClient';
 import { useUser } from '@clerk/clerk-react';
@@ -16,6 +17,7 @@ import { ThemeContext } from '../../context/ThemeContext';
 import { prepareCheckout, createCheckoutSession } from './checkoutApi';
 import { initiateSTKPush, querySTKStatus, formatPhoneNumber } from '../../api/mpesaService';
 import defaultProductImage from '../../assets/images/placeholder.webp';
+import DOMPurify from 'dompurify'; // Import DOMPurify for sanitization
 
 // Define shipping method options with Ksh currency
 const SHIPPING_METHODS = [
@@ -192,6 +194,9 @@ const CheckoutPage = () => {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentPollingInterval, setPaymentPollingInterval] = useState(null);
   
+  // Add state for input validation
+  const [validationErrors, setValidationErrors] = useState({});
+  
   // Format currency helper
   const formatCurrency = (amount) => {
     return `Ksh${Number(amount).toFixed(2)}`;
@@ -274,9 +279,92 @@ const CheckoutPage = () => {
     }
   }, []); // Empty dependency array to run only once
   
-  // Handle input changes
+  // Validation functions
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    // Validate Kenya phone number format
+    const phoneRegex = /^(0|\+?254|0?7)\d{8,9}$/;
+    return phoneRegex.test(phone);
+  };
+  
+  const validateName = (name) => {
+    // Name should be at least 2 characters and contain only letters, spaces, and hyphens
+    const nameRegex = /^[A-Za-z\s-]{2,}$/;
+    return nameRegex.test(name);
+  };
+  
+  const validateRequired = (value) => {
+    return value && value.trim().length > 0;
+  };
+  
+  // Sanitize input to prevent XSS
+  const sanitizeInput = (input) => {
+    if (typeof input === 'string') {
+      return DOMPurify.sanitize(input.trim());
+    }
+    return input;
+  };
+  
+  // Real-time validation
+  const validateField = (name, value) => {
+    let error = '';
+    
+    switch (name) {
+      case 'email':
+        if (!validateEmail(value)) {
+          error = 'Please enter a valid email address';
+        }
+        break;
+      case 'phone':
+      case 'mpesaNumber':
+        if (!validatePhone(value)) {
+          error = 'Please enter a valid Kenyan phone number';
+        }
+        break;
+      case 'firstName':
+      case 'lastName':
+      case 'billing.firstName':
+      case 'billing.lastName':
+        if (!validateName(value)) {
+          error = 'Please enter a valid name';
+        }
+        break;
+      case 'address':
+      case 'billing.address':
+        if (!validateRequired(value)) {
+          error = 'Address is required';
+        }
+        break;
+      default:
+        // Other required fields
+        if (name !== 'apartment' && 
+            name !== 'billing.apartment' && 
+            name !== 'orderNotes' && 
+            !validateRequired(value)) {
+          error = 'This field is required';
+        }
+    }
+    
+    return error;
+  };
+
+  // Enhanced handleInputChange with validation
   const handleInputChange = (e) => {
-    const { name, value, checked } = e.target;
+    const { name, value, checked, type } = e.target;
+    const inputValue = type === 'checkbox' ? checked : value;
+    
+    // Validate input in real-time
+    if (type !== 'checkbox') {
+      const error = validateField(name, value);
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
+    }
     
     if (name.startsWith('billing.')) {
       // Handle billing address fields
@@ -285,7 +373,7 @@ const CheckoutPage = () => {
         ...customerInfo,
         billingAddress: {
           ...customerInfo.billingAddress,
-          [billingField]: value
+          [billingField]: inputValue
         }
       });
     } else if (name === 'sameAsBilling') {
@@ -304,12 +392,73 @@ const CheckoutPage = () => {
       // Handle regular fields
       setCustomerInfo({
         ...customerInfo,
-        [name]: value
+        [name]: inputValue
       });
     }
   };
   
-  // Handle county selection
+  // Validate entire form
+  const validateForm = () => {
+    const errors = {};
+    
+    // Validate customer info
+    errors.firstName = validateField('firstName', customerInfo.firstName);
+    errors.lastName = validateField('lastName', customerInfo.lastName);
+    errors.email = validateField('email', customerInfo.email);
+    errors.phone = validateField('phone', customerInfo.phone);
+    errors.address = validateField('address', customerInfo.address);
+    errors.county = validateField('county', customerInfo.county);
+    errors.city = validateField('city', customerInfo.city);
+    
+    // Validate billing if not same as shipping
+    if (!customerInfo.sameAsBilling) {
+      errors['billing.firstName'] = validateField('billing.firstName', customerInfo.billingAddress.firstName);
+      errors['billing.lastName'] = validateField('billing.lastName', customerInfo.billingAddress.lastName);
+      errors['billing.address'] = validateField('billing.address', customerInfo.billingAddress.address);
+      errors['billing.county'] = validateField('billing.county', customerInfo.billingAddress.county);
+      errors['billing.city'] = validateField('billing.city', customerInfo.billingAddress.city);
+    }
+    
+    // Validate M-Pesa number if selected
+    if (selectedPayment === 'mpesa') {
+      errors.mpesaNumber = validateField('mpesaNumber', mpesaNumber);
+    }
+    
+    // Validate terms agreement
+    if (!customerInfo.agreeToTerms) {
+      errors.agreeToTerms = 'You must agree to the Terms and Conditions';
+    }
+    
+    setValidationErrors(errors);
+    
+    // Check if there are any errors
+    return Object.values(errors).every(error => !error);
+  };
+  
+  // Sanitize all form data before submission
+  const sanitizeFormData = () => {
+    const sanitizedInfo = {
+      ...customerInfo,
+      email: sanitizeInput(customerInfo.email),
+      phone: sanitizeInput(customerInfo.phone),
+      firstName: sanitizeInput(customerInfo.firstName),
+      lastName: sanitizeInput(customerInfo.lastName),
+      address: sanitizeInput(customerInfo.address),
+      apartment: sanitizeInput(customerInfo.apartment || ''),
+      orderNotes: sanitizeInput(customerInfo.orderNotes || ''),
+      billingAddress: {
+        ...customerInfo.billingAddress,
+        firstName: sanitizeInput(customerInfo.billingAddress.firstName),
+        lastName: sanitizeInput(customerInfo.billingAddress.lastName),
+        address: sanitizeInput(customerInfo.billingAddress.address),
+        apartment: sanitizeInput(customerInfo.billingAddress.apartment || '')
+      }
+    };
+    
+    return sanitizedInfo;
+  };
+
+  // Enhanced version of handleCountyChange with validation
   const handleCountyChange = (e) => {
     const selectedCounty = e.target.value;
     const countyCities = KENYA_CITIES[selectedCounty] || [];
@@ -322,9 +471,15 @@ const CheckoutPage = () => {
     });
     
     setAvailableCities(countyCities);
+    
+    // Clear city validation error when county changes
+    setValidationErrors(prev => ({
+      ...prev,
+      city: ''
+    }));
   };
   
-  // Handle city selection
+  // Enhanced version of handleCityChange with validation
   const handleCityChange = (e) => {
     const selectedCity = e.target.value;
     const cityPostalCode = KENYA_POSTAL_CODES[selectedCity] || DEFAULT_POSTAL_CODE;
@@ -336,6 +491,12 @@ const CheckoutPage = () => {
       city: selectedCity,
       postalCode: cityPostalCode // Ensure postal code is updated when city changes
     });
+    
+    // Clear city validation error when city is selected
+    setValidationErrors(prev => ({
+      ...prev,
+      city: ''
+    }));
   };
   
   // Handle billing county selection
@@ -390,7 +551,99 @@ const CheckoutPage = () => {
     setActiveStep((prevStep) => prevStep - 1);
   };
   
-  // Handle M-Pesa payment
+  // Enhanced handleSubmitOrder with validation and sanitization
+  const handleSubmitOrder = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Validate all fields
+      const isValid = validateForm();
+      
+      if (!isValid) {
+        throw new Error('Please correct the highlighted errors before proceeding');
+      }
+      
+      // Sanitize all input data
+      const sanitizedInfo = sanitizeFormData();
+      
+      // Get sanitized M-Pesa number
+      const sanitizedMpesaNumber = sanitizeInput(mpesaNumber);
+      
+      // Create order data with sanitized inputs
+      const orderData = {
+        orderId: 'ORD-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+        customer: {
+          email: sanitizedInfo.email,
+          firstName: sanitizedInfo.firstName,
+          lastName: sanitizedInfo.lastName,
+          phone: sanitizedInfo.phone
+        },
+        shipping: {
+          address: sanitizedInfo.address,
+          apartment: sanitizedInfo.apartment,
+          city: sanitizedInfo.city,
+          county: sanitizedInfo.county,
+          postalCode: sanitizedInfo.postalCode,
+          method: selectedShipping
+        },
+        billing: sanitizedInfo.sameAsBilling 
+          ? { 
+              ...sanitizedInfo, 
+              apartment: sanitizedInfo.apartment 
+            }
+          : { 
+              ...sanitizedInfo.billingAddress 
+            },
+        payment: {
+          method: selectedPayment,
+          mpesaNumber: sanitizedMpesaNumber
+        },
+        orderNotes: sanitizedInfo.orderNotes,
+        totals: {
+          subtotal,
+          shipping: shippingCost,
+          tax,
+          total
+        }
+      };
+      
+      // Handle different payment methods
+      if (selectedPayment === 'mpesa') {
+        setLoading(false); // Turn off main loading as we'll use the dialog
+        console.log('Processing M-Pesa payment for order:', orderData.orderId);
+        
+        // Force the payment dialog to appear even in production
+        await handleMpesaPayment(orderData);
+        
+        // The rest of the process is handled by the handleMpesaPayment function
+        // which includes navigation to confirmation page upon success
+      } else {
+        // Handle other payment methods (mock success for now)
+        const result = await createCheckoutSession(orderData);
+        
+        if (result.success) {
+          // Clear the cart and navigate to confirmation
+          await clearCart();
+          navigate('/checkout/confirmation', { 
+            state: { 
+              orderId: result.sessionId || orderData.orderId,
+              orderDetails: orderData
+            } 
+          });
+        } else {
+          throw new Error(result.message || 'Failed to create checkout session');
+        }
+      }
+    } catch (err) {
+      console.error('Error submitting order:', err);
+      setError(err.message || 'Failed to submit order');
+      window.scrollTo(0, 0); // Scroll to top to see error
+      setLoading(false);
+    }
+  };
+  
+  // Enhanced handleMpesaPayment with sanitization
   const handleMpesaPayment = async (orderData) => {
     try {
       setPaymentProcessing(true);
@@ -399,21 +652,24 @@ const CheckoutPage = () => {
       
       // Log that we're initiating payment (debug)
       console.log('Initiating M-Pesa payment:', { 
-        phoneNumber: mpesaNumber, 
+        phoneNumber: orderData.payment.mpesaNumber, 
         amount: orderData.totals.total,
         environment: import.meta.env.PROD ? 'production' : 'development',
         orderId: orderData.orderId
       });
       
-      // Format the phone number
-      const formattedPhone = formatPhoneNumber(mpesaNumber);
+      // Format and sanitize the phone number
+      const formattedPhone = formatPhoneNumber(orderData.payment.mpesaNumber);
       
-      // Initiate STK push
+      // Sanitize description to prevent injection
+      const sanitizedDescription = sanitizeInput(`Payment for order at Clinique Beauty`);
+      
+      // Initiate STK push with sanitized data
       const stkResponse = await initiateSTKPush({
         phoneNumber: formattedPhone,
         amount: orderData.totals.total,
         orderId: orderData.orderId,
-        description: `Payment for order at Clinique Beauty`
+        description: sanitizedDescription
       });
       
       console.log('STK push response received:', stkResponse);
@@ -530,102 +786,6 @@ const CheckoutPage = () => {
     }
   };
   
-  // Handle form submission
-  const handleSubmitOrder = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Validate form data
-      if (!customerInfo.email || !customerInfo.phone || !customerInfo.firstName || 
-          !customerInfo.lastName || !customerInfo.address || !customerInfo.city ||
-          !customerInfo.county || !customerInfo.postalCode || !customerInfo.agreeToTerms) {
-        throw new Error('Please fill in all required fields');
-      }
-      
-      // Validate phone number (Kenya format)
-      if (!/^(0|\+?254|0?7)\d{8,9}$/.test(customerInfo.phone)) {
-        throw new Error('Please enter a valid Kenyan phone number');
-      }
-      
-      // M-Pesa specific validation
-      if (selectedPayment === 'mpesa' && !mpesaNumber) {
-        throw new Error('Please enter your M-Pesa number');
-      }
-      
-      // Create order data
-      const orderData = {
-        orderId: 'ORD-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
-        customer: {
-          email: customerInfo.email,
-          firstName: customerInfo.firstName,
-          lastName: customerInfo.lastName,
-          phone: customerInfo.phone
-        },
-        shipping: {
-          address: customerInfo.address,
-          apartment: customerInfo.apartment,
-          city: customerInfo.city,
-          county: customerInfo.county,
-          postalCode: customerInfo.postalCode,
-          method: selectedShipping
-        },
-        billing: customerInfo.sameAsBilling 
-          ? { 
-              ...customerInfo, 
-              apartment: customerInfo.apartment 
-            }
-          : { 
-              ...customerInfo.billingAddress 
-            },
-        payment: {
-          method: selectedPayment,
-          mpesaNumber: mpesaNumber
-        },
-        orderNotes: customerInfo.orderNotes,
-        totals: {
-          subtotal,
-          shipping: shippingCost,
-          tax,
-          total
-        }
-      };
-      
-      // Handle different payment methods
-      if (selectedPayment === 'mpesa') {
-        setLoading(false); // Turn off main loading as we'll use the dialog
-        console.log('Processing M-Pesa payment for order:', orderData.orderId);
-        
-        // Force the payment dialog to appear even in production
-        await handleMpesaPayment(orderData);
-        
-        // The rest of the process is handled by the handleMpesaPayment function
-        // which includes navigation to confirmation page upon success
-      } else {
-        // Handle other payment methods (mock success for now)
-        const result = await createCheckoutSession(orderData);
-        
-        if (result.success) {
-          // Clear the cart and navigate to confirmation
-          await clearCart();
-          navigate('/checkout/confirmation', { 
-            state: { 
-              orderId: result.sessionId || orderData.orderId,
-              orderDetails: orderData
-            } 
-          });
-        } else {
-          throw new Error(result.message || 'Failed to create checkout session');
-        }
-      }
-    } catch (err) {
-      console.error('Error submitting order:', err);
-      setError(err.message || 'Failed to submit order');
-      window.scrollTo(0, 0); // Scroll to top to see error
-      setLoading(false);
-    }
-  };
-  
   // Get content for current step
   const getStepContent = (step) => {
     switch (step) {
@@ -647,6 +807,9 @@ const CheckoutPage = () => {
                 variant="outlined"
                 value={customerInfo.firstName}
                 onChange={handleInputChange}
+                error={!!validationErrors.firstName}
+                helperText={validationErrors.firstName}
+                inputProps={{ maxLength: 50 }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -659,6 +822,9 @@ const CheckoutPage = () => {
                 variant="outlined"
                 value={customerInfo.lastName}
                 onChange={handleInputChange}
+                error={!!validationErrors.lastName}
+                helperText={validationErrors.lastName}
+                inputProps={{ maxLength: 50 }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -671,6 +837,9 @@ const CheckoutPage = () => {
                 variant="outlined"
                 value={customerInfo.email}
                 onChange={handleInputChange}
+                error={!!validationErrors.email}
+                helperText={validationErrors.email}
+                inputProps={{ maxLength: 100 }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -683,6 +852,9 @@ const CheckoutPage = () => {
                 variant="outlined"
                 value={customerInfo.phone}
                 onChange={handleInputChange}
+                error={!!validationErrors.phone}
+                helperText={validationErrors.phone || "Format: 254XXXXXXXXX or 07XXXXXXXX"}
+                inputProps={{ maxLength: 15 }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -700,6 +872,9 @@ const CheckoutPage = () => {
                 variant="outlined"
                 value={customerInfo.address}
                 onChange={handleInputChange}
+                error={!!validationErrors.address}
+                helperText={validationErrors.address}
+                inputProps={{ maxLength: 100 }}
               />
             </Grid>
             
@@ -712,11 +887,14 @@ const CheckoutPage = () => {
                 variant="outlined"
                 value={customerInfo.apartment}
                 onChange={handleInputChange}
+                error={!!validationErrors.apartment}
+                helperText={validationErrors.apartment}
+                inputProps={{ maxLength: 100 }}
               />
             </Grid>
             {/* County dropdown */}
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
+              <FormControl fullWidth required error={!!validationErrors.county}>
                 <InputLabel id="county-label">County</InputLabel>
                 <Select
                   labelId="county-label"
@@ -729,11 +907,16 @@ const CheckoutPage = () => {
                     <MenuItem key={county} value={county}>{county}</MenuItem>
                   ))}
                 </Select>
+                {validationErrors.county && (
+                  <Typography variant="caption" color="error">
+                    {validationErrors.county}
+                  </Typography>
+                )}
               </FormControl>
             </Grid>
             {/* City dropdown - dynamically populated based on county */}
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required disabled={!customerInfo.county}>
+              <FormControl fullWidth required disabled={!customerInfo.county} error={!!validationErrors.city}>
                 <InputLabel id="city-label">City</InputLabel>
                 <Select
                   labelId="city-label"
@@ -746,6 +929,11 @@ const CheckoutPage = () => {
                     <MenuItem key={city} value={city}>{city}</MenuItem>
                   ))}
                 </Select>
+                {validationErrors.city && (
+                  <Typography variant="caption" color="error">
+                    {validationErrors.city}
+                  </Typography>
+                )}
               </FormControl>
             </Grid>
             {/* Postal code automatically filled based on city */}
@@ -794,6 +982,9 @@ const CheckoutPage = () => {
                     variant="outlined"
                     value={customerInfo.billingAddress.firstName}
                     onChange={handleInputChange}
+                    error={!!validationErrors['billing.firstName']}
+                    helperText={validationErrors['billing.firstName']}
+                    inputProps={{ maxLength: 50 }}
                   />
                 </Grid>
                 
@@ -807,6 +998,9 @@ const CheckoutPage = () => {
                     variant="outlined"
                     value={customerInfo.billingAddress.lastName}
                     onChange={handleInputChange}
+                    error={!!validationErrors['billing.lastName']}
+                    helperText={validationErrors['billing.lastName']}
+                    inputProps={{ maxLength: 50 }}
                   />
                 </Grid>
                 
@@ -820,6 +1014,9 @@ const CheckoutPage = () => {
                     variant="outlined"
                     value={customerInfo.billingAddress.address}
                     onChange={handleInputChange}
+                    error={!!validationErrors['billing.address']}
+                    helperText={validationErrors['billing.address']}
+                    inputProps={{ maxLength: 100 }}
                   />
                 </Grid>
                 
@@ -832,6 +1029,9 @@ const CheckoutPage = () => {
                     variant="outlined"
                     value={customerInfo.billingAddress.apartment}
                     onChange={handleInputChange}
+                    error={!!validationErrors['billing.apartment']}
+                    helperText={validationErrors['billing.apartment']}
+                    inputProps={{ maxLength: 100 }}
                   />
                 </Grid>
                 {/* Billing County dropdown */}
@@ -993,9 +1193,18 @@ const CheckoutPage = () => {
                   fullWidth
                   variant="outlined"
                   value={mpesaNumber}
-                  onChange={(e) => setMpesaNumber(e.target.value)}
+                  onChange={(e) => {
+                    setMpesaNumber(e.target.value);
+                    const error = validateField('mpesaNumber', e.target.value);
+                    setValidationErrors(prev => ({
+                      ...prev,
+                      mpesaNumber: error
+                    }));
+                  }}
                   placeholder="e.g., 254712345678"
-                  helperText="Enter your M-Pesa registered phone number"
+                  helperText={validationErrors.mpesaNumber || "Enter your M-Pesa registered phone number"}
+                  error={!!validationErrors.mpesaNumber}
+                  inputProps={{ maxLength: 15 }}
                 />
               </Grid>
             )}
@@ -1017,6 +1226,11 @@ const CheckoutPage = () => {
                   </Typography>
                 }
               />
+              {validationErrors.agreeToTerms && (
+                <Typography variant="caption" color="error" display="block">
+                  {validationErrors.agreeToTerms}
+                </Typography>
+              )}
             </Grid>
           </Grid>
         );
