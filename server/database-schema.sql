@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS system_settings (
 
 -- Insert the admin setup code
 INSERT INTO system_settings (key, value, description)
-VALUES ('admin_setup_code', 'clinique-admin-2023', 'Code used for setting up admin accounts')
+VALUES ('admin_setup_code', 'clinique-beauty-admin-2023', 'Code used for setting up admin accounts')
 ON CONFLICT (key) DO NOTHING;
 
 -- Create user_profiles table to match our code

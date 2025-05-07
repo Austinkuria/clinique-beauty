@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Container, 
@@ -16,14 +16,16 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { toast } from 'react-hot-toast';
-import { useApi } from '../../../api/apiClient';
 import { handleApiError } from '../../../components/ErrorHandler';
+// Import the setUserAsAdmin function from userSyncService
+import { setUserAsAdmin } from '../../../services/userSyncService';
 
 // In a real application, this would be verified on the server side only
 // This is just for demo purposes - in production, never hard-code the admin code in the frontend
 const ADMIN_CODES = {
   dev: 'admin123', // Development code
-  prod: import.meta.env.VITE_ADMIN_CODE || 'clinique-beauty-admin-2023' // Production code from env variable
+  prod: 'clinique-beauty-admin-2023', // Match exactly with the database value
+  fallback: 'clinique-admin-2023' // Also add the old code as fallback
 };
 
 function AdminSetup() {
@@ -35,7 +37,8 @@ function AdminSetup() {
   const navigate = useNavigate();
   const { user } = useUser();
   const { getToken } = useAuth();
-  const api = useApi();
+  // Create a ref to store the code input element reference
+  const codeInputRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,8 +52,10 @@ function AdminSetup() {
     setError('');
     
     try {
-      // Verify admin code - in a real app, this would be a server-side verification
-      const isValidCode = code === ADMIN_CODES.dev || code === ADMIN_CODES.prod;
+      // Verify admin code - check all possible valid codes
+      const isValidCode = code === ADMIN_CODES.dev || 
+                          code === ADMIN_CODES.prod || 
+                          code === ADMIN_CODES.fallback;
       
       if (!isValidCode) {
         setError('Invalid admin code. Please try again or contact your administrator.');
@@ -58,22 +63,54 @@ function AdminSetup() {
         return;
       }
       
+      // Store the code in a hidden input field for our helper function to access
+      if (!document.getElementById('admin-setup-code')) {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.id = 'admin-setup-code';
+        hiddenInput.value = code;
+        document.body.appendChild(hiddenInput);
+      } else {
+        document.getElementById('admin-setup-code').value = code;
+      }
+      
       // User verification passed, now update the user metadata with admin role
       if (user) {
-        // Get the token for API authorization
-        const token = await getToken();
-        
-        // Call your backend API to update the user's role to admin
-        await api.updateUserRole(user.id, 'admin', token);
-        
-        // Update successful
-        setSuccess(true);
-        toast.success('Admin privileges granted successfully!');
-        
-        // Wait 2 seconds before redirecting to admin panel
-        setTimeout(() => {
-          navigate('/admin');
-        }, 2000);
+        try {
+          // First update Clerk metadata directly to ensure it works
+          await user.update({
+            publicMetadata: {
+              ...user.publicMetadata,
+              role: 'admin'
+            }
+          });
+          
+          console.log("Updated Clerk metadata with admin role");
+          
+          // Then call our helper function to update Supabase
+          const result = await setUserAsAdmin(user, getToken);
+          
+          if (result) {
+            // Success case - both Clerk and Supabase updated
+            setSuccess(true);
+            toast.success('Admin privileges granted successfully!');
+          } else {
+            // If setUserAsAdmin returns false but didn't throw
+            console.warn("Admin role may have been partially set");
+            // Still proceed to admin panel - the role is at least set in Clerk
+            setSuccess(true);
+            toast.success('Admin role set in Clerk. Database sync may be pending.');
+          }
+          
+          // Wait 2 seconds before redirecting to admin panel
+          setTimeout(() => {
+            navigate('/admin');
+          }, 2000);
+        } catch (adminError) {
+          // Only throw if both methods fail
+          console.error("Error setting admin role:", adminError);
+          throw new Error('Failed to update admin role. Please try again.');
+        }
       } else {
         throw new Error('User not authenticated');
       }
@@ -83,6 +120,13 @@ function AdminSetup() {
       setError(err.message || 'Failed to set up admin privileges. Please try again later.');
     } finally {
       setLoading(false);
+      // Clean up the hidden input
+      setTimeout(() => {
+        const hiddenInput = document.getElementById('admin-setup-code');
+        if (hiddenInput) {
+          hiddenInput.remove();
+        }
+      }, 500);
     }
   };
 
