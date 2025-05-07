@@ -542,31 +542,92 @@ const CheckoutPage = () => {
     setSelectedPayment(e.target.value);
   };
   
+  // Validate current step before proceeding
+  const validateStep = (step) => {
+    let errors = {};
+    
+    if (step === 0) {
+      // Validate customer information and shipping address
+      errors.firstName = validateField('firstName', customerInfo.firstName);
+      errors.lastName = validateField('lastName', customerInfo.lastName);
+      errors.email = validateField('email', customerInfo.email);
+      errors.phone = validateField('phone', customerInfo.phone);
+      errors.address = validateField('address', customerInfo.address);
+      errors.county = validateField('county', customerInfo.county);
+      errors.city = validateField('city', customerInfo.city);
+    } else if (step === 1) {
+      // Validate shipping and payment method
+      if (selectedPayment === 'mpesa') {
+        errors.mpesaNumber = validateField('mpesaNumber', mpesaNumber);
+      }
+      
+      // Validate billing info if different from shipping
+      if (!customerInfo.sameAsBilling) {
+        errors['billing.firstName'] = validateField('billing.firstName', customerInfo.billingAddress.firstName);
+        errors['billing.lastName'] = validateField('billing.lastName', customerInfo.billingAddress.lastName);
+        errors['billing.address'] = validateField('billing.address', customerInfo.billingAddress.address);
+        errors['billing.county'] = validateField('billing.county', customerInfo.billingAddress.county);
+        errors['billing.city'] = validateField('billing.city', customerInfo.billingAddress.city);
+      }
+    }
+    
+    // Update validation errors state
+    setValidationErrors(errors);
+    
+    // Return true if all fields are valid (no errors)
+    return Object.values(errors).every(error => !error);
+  };
+
   // Navigate through checkout steps
   const handleNext = () => {
-    setActiveStep((prevStep) => prevStep + 1);
+    // Validate current step
+    const isValid = validateStep(activeStep);
+    
+    if (isValid) {
+      // Only proceed if validation passes
+      setActiveStep((prevStep) => prevStep + 1);
+      window.scrollTo(0, 0); // Scroll to top when moving to next step
+    } else {
+      // Display a message or highlight the errors
+      // We're already setting the errors state
+      
+      // Scroll to the first form element with an error
+      setTimeout(() => {
+        const firstErrorElement = document.querySelector('.Mui-error');
+        if (firstErrorElement) {
+          firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
   };
   
   const handleBack = () => {
     setActiveStep((prevStep) => prevStep - 1);
+    window.scrollTo(0, 0); // Scroll to top when going back
   };
-  
+
   // Enhanced handleSubmitOrder with validation and sanitization
   const handleSubmitOrder = async () => {
+    // Validate the final step before submitting
+    const isValid = validateForm();
+    
+    if (!isValid) {
+      // Scroll to the first error
+      setTimeout(() => {
+        const firstErrorElement = document.querySelector('.Mui-error');
+        if (firstErrorElement) {
+          firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      return; // Don't proceed with order submission
+    }
+    
     setLoading(true);
     setError(null);
     
     try {
-      // Validate all fields
-      const isValid = validateForm();
-      
-      if (!isValid) {
-        throw new Error('Please correct the highlighted errors before proceeding');
-      }
-      
       // Sanitize all input data
       const sanitizedInfo = sanitizeFormData();
-      
       // Get sanitized M-Pesa number
       const sanitizedMpesaNumber = sanitizeInput(mpesaNumber);
       
@@ -612,7 +673,6 @@ const CheckoutPage = () => {
       if (selectedPayment === 'mpesa') {
         setLoading(false); // Turn off main loading as we'll use the dialog
         console.log('Processing M-Pesa payment for order:', orderData.orderId);
-        
         // Force the payment dialog to appear even in production
         await handleMpesaPayment(orderData);
         
@@ -642,7 +702,7 @@ const CheckoutPage = () => {
       setLoading(false);
     }
   };
-  
+
   // Enhanced handleMpesaPayment with sanitization
   const handleMpesaPayment = async (orderData) => {
     try {
@@ -686,7 +746,6 @@ const CheckoutPage = () => {
           try {
             console.log('Polling payment status for:', stkResponse.checkoutRequestId);
             const statusResponse = await querySTKStatus(stkResponse.checkoutRequestId);
-            
             console.log('Status response received:', statusResponse);
             
             if (statusResponse.success) {
@@ -753,6 +812,7 @@ const CheckoutPage = () => {
         });
         setPaymentProcessing(false);
       }
+      
     } catch (error) {
       console.error('M-Pesa payment error:', error);
       setPaymentStatus({ 
@@ -762,7 +822,7 @@ const CheckoutPage = () => {
       setPaymentProcessing(false);
     }
   };
-  
+
   // Clean up interval on component unmount
   useEffect(() => {
     return () => {
@@ -771,7 +831,7 @@ const CheckoutPage = () => {
       }
     };
   }, [paymentPollingInterval]);
-  
+
   // Handle dialog close
   const handlePaymentDialogClose = () => {
     // Only allow closing if not processing
@@ -785,8 +845,8 @@ const CheckoutPage = () => {
       }
     }
   };
-  
-  // Get content for current step
+
+  // Get content for current step - enhancing input fields with more explicit validation
   const getStepContent = (step) => {
     switch (step) {
       case 0:
@@ -808,7 +868,7 @@ const CheckoutPage = () => {
                 value={customerInfo.firstName}
                 onChange={handleInputChange}
                 error={!!validationErrors.firstName}
-                helperText={validationErrors.firstName}
+                helperText={validationErrors.firstName || "Required"}
                 inputProps={{ maxLength: 50 }}
               />
             </Grid>
@@ -823,7 +883,7 @@ const CheckoutPage = () => {
                 value={customerInfo.lastName}
                 onChange={handleInputChange}
                 error={!!validationErrors.lastName}
-                helperText={validationErrors.lastName}
+                helperText={validationErrors.lastName || "Required"}
                 inputProps={{ maxLength: 50 }}
               />
             </Grid>
@@ -838,7 +898,7 @@ const CheckoutPage = () => {
                 value={customerInfo.email}
                 onChange={handleInputChange}
                 error={!!validationErrors.email}
-                helperText={validationErrors.email}
+                helperText={validationErrors.email || "Required"}
                 inputProps={{ maxLength: 100 }}
               />
             </Grid>
@@ -873,11 +933,10 @@ const CheckoutPage = () => {
                 value={customerInfo.address}
                 onChange={handleInputChange}
                 error={!!validationErrors.address}
-                helperText={validationErrors.address}
+                helperText={validationErrors.address || "Required"}
                 inputProps={{ maxLength: 100 }}
               />
             </Grid>
-            
             <Grid item xs={12}>
               <TextField
                 id="apartment"
@@ -950,7 +1009,6 @@ const CheckoutPage = () => {
                 helperText="Automatically filled based on city selection"
               />
             </Grid>
-            
             <Grid item xs={12}>
               <FormControlLabel
                 control={
@@ -971,7 +1029,6 @@ const CheckoutPage = () => {
                     Billing Address
                   </Typography>
                 </Grid>
-                
                 <Grid item xs={12} sm={6}>
                   <TextField
                     required
@@ -983,11 +1040,10 @@ const CheckoutPage = () => {
                     value={customerInfo.billingAddress.firstName}
                     onChange={handleInputChange}
                     error={!!validationErrors['billing.firstName']}
-                    helperText={validationErrors['billing.firstName']}
+                    helperText={validationErrors['billing.firstName'] || "Required"}
                     inputProps={{ maxLength: 50 }}
                   />
                 </Grid>
-                
                 <Grid item xs={12} sm={6}>
                   <TextField
                     required
@@ -999,11 +1055,10 @@ const CheckoutPage = () => {
                     value={customerInfo.billingAddress.lastName}
                     onChange={handleInputChange}
                     error={!!validationErrors['billing.lastName']}
-                    helperText={validationErrors['billing.lastName']}
+                    helperText={validationErrors['billing.lastName'] || "Required"}
                     inputProps={{ maxLength: 50 }}
                   />
                 </Grid>
-                
                 <Grid item xs={12}>
                   <TextField
                     required
@@ -1015,11 +1070,10 @@ const CheckoutPage = () => {
                     value={customerInfo.billingAddress.address}
                     onChange={handleInputChange}
                     error={!!validationErrors['billing.address']}
-                    helperText={validationErrors['billing.address']}
+                    helperText={validationErrors['billing.address'] || "Required"}
                     inputProps={{ maxLength: 100 }}
                   />
                 </Grid>
-                
                 <Grid item xs={12}>
                   <TextField
                     id="billing.apartment"
@@ -1085,7 +1139,7 @@ const CheckoutPage = () => {
                 </Grid>
               </>
             )}
-            
+                
             <Grid item xs={12}>
               <TextField
                 id="orderNotes"
@@ -1101,7 +1155,6 @@ const CheckoutPage = () => {
             </Grid>
           </Grid>
         );
-        
       case 1:
         return (
           <Grid container spacing={3}>
@@ -1119,10 +1172,10 @@ const CheckoutPage = () => {
                     <Paper
                       key={method.id}
                       elevation={selectedShipping === method.id ? 3 : 1}
-                      sx={{
-                        mb: 2,
-                        p: 2,
-                        borderRadius: 2,
+                      sx={{ 
+                        mb: 2, 
+                        p: 2, 
+                        borderRadius: 2, 
                         border: selectedShipping === method.id ? `2px solid ${colorValues.primary}` : 'none',
                         backgroundColor: colorValues.bgPaper
                       }}
@@ -1150,7 +1203,6 @@ const CheckoutPage = () => {
                 </RadioGroup>
               </FormControl>
             </Grid>
-            
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
                 Payment Method
@@ -1165,10 +1217,10 @@ const CheckoutPage = () => {
                     <Paper
                       key={method.id}
                       elevation={selectedPayment === method.id ? 3 : 1}
-                      sx={{
-                        mb: 2,
-                        p: 2,
-                        borderRadius: 2,
+                      sx={{ 
+                        mb: 2, 
+                        p: 2, 
+                        borderRadius: 2, 
                         border: selectedPayment === method.id ? `2px solid ${colorValues.primary}` : 'none',
                         backgroundColor: colorValues.bgPaper
                       }}
@@ -1202,13 +1254,12 @@ const CheckoutPage = () => {
                     }));
                   }}
                   placeholder="e.g., 254712345678"
-                  helperText={validationErrors.mpesaNumber || "Enter your M-Pesa registered phone number"}
+                  helperText={validationErrors.mpesaNumber || "Required - format: 254XXXXXXXXX"}
                   error={!!validationErrors.mpesaNumber}
                   inputProps={{ maxLength: 15 }}
                 />
               </Grid>
             )}
-            
             <Grid item xs={12}>
               <FormControlLabel
                 control={
@@ -1234,7 +1285,6 @@ const CheckoutPage = () => {
             </Grid>
           </Grid>
         );
-        
       case 2:
         return (
           <Grid container spacing={3}>
@@ -1243,7 +1293,6 @@ const CheckoutPage = () => {
                 Order Review
               </Typography>
             </Grid>
-            
             <Grid item xs={12}>
               <Typography variant="subtitle1" gutterBottom>
                 Customer Information
@@ -1330,7 +1379,6 @@ const CheckoutPage = () => {
                 Order Items
               </Typography>
             </Grid>
-            
             <Grid item xs={12}>
               {cartItems.map((item) => (
                 <Box key={item.id} sx={{ display: 'flex', mb: 2, alignItems: 'center' }}>
@@ -1359,34 +1407,33 @@ const CheckoutPage = () => {
             </Grid>
           </Grid>
         );
-        
       default:
         return 'Unknown step';
     }
   };
-  
+
   // Render the page
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Button
+      <Button 
         startIcon={<ArrowBackIcon />}
         onClick={() => navigate('/cart')}
         sx={{ mb: 4 }}
       >
         Return to Cart
       </Button>
-      
+
       <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
         Checkout
       </Typography>
-      
+
       {/* Show errors */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
-      
+
       {/* Show cart issues */}
       {orderIssues.length > 0 && (
         <Alert severity="warning" sx={{ mb: 3 }}>
@@ -1400,14 +1447,14 @@ const CheckoutPage = () => {
           </ul>
         </Alert>
       )}
-      
+
       {/* Loading state */}
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
           <CircularProgress />
         </Box>
       )}
-      
+
       {/* Empty cart warning */}
       {!loading && cartItems.length === 0 && (
         <Paper elevation={1} sx={{ p: 4, textAlign: 'center', backgroundColor: colorValues.bgPaper }}>
@@ -1417,7 +1464,7 @@ const CheckoutPage = () => {
           </Button>
         </Paper>
       )}
-      
+
       {/* Main checkout flow */}
       {!loading && cartItems.length > 0 && (
         <Grid container spacing={4}>
@@ -1435,11 +1482,9 @@ const CheckoutPage = () => {
                   <StepLabel>Review Order</StepLabel>
                 </Step>
               </Stepper>
-              
               <Box sx={{ mt: 2 }}>
                 {getStepContent(activeStep)}
               </Box>
-              
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
                 {activeStep !== 0 && (
                   <Button
@@ -1449,7 +1494,6 @@ const CheckoutPage = () => {
                     Back
                   </Button>
                 )}
-                
                 <Box sx={{ flex: '1 1 auto' }} />
                 
                 {activeStep === 2 ? (
@@ -1480,7 +1524,6 @@ const CheckoutPage = () => {
               </Box>
             </Paper>
           </Grid>
-          
           {/* Right side: Order summary */}
           <Grid item xs={12} md={4}>
             <Card elevation={theme === 'dark' ? 3 : 1} sx={{ backgroundColor: colorValues.bgPaper, position: 'sticky', top: 20 }}>
@@ -1488,7 +1531,6 @@ const CheckoutPage = () => {
                 <Typography variant="h6" gutterBottom>
                   Order Summary
                 </Typography>
-                
                 <Box sx={{ mt: 2 }}>
                   {cartItems.map((item) => (
                     <Box key={item.id} sx={{ display: 'flex', mb: 2, alignItems: 'center' }}>
@@ -1509,35 +1551,28 @@ const CheckoutPage = () => {
                     </Box>
                   ))}
                 </Box>
-                
                 <Divider sx={{ my: 2 }} />
-                
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="body2">Subtotal</Typography>
                   <Typography variant="body2">{formatCurrency(subtotal)}</Typography>
                 </Box>
-                
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="body2">Shipping</Typography>
                   <Typography variant="body2">
                     {shippingCost === 0 ? 'FREE' : formatCurrency(shippingCost)}
                   </Typography>
                 </Box>
-                
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="body2">VAT (16%)</Typography>
                   <Typography variant="body2">{formatCurrency(tax)}</Typography>
                 </Box>
-                
                 <Divider sx={{ my: 2 }} />
-                
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Total</Typography>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                     {formatCurrency(total)}
                   </Typography>
                 </Box>
-                
                 <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <LockIcon fontSize="small" sx={{ mr: 1, color: colorValues.success }} />
                   <Typography variant="caption" color="text.secondary">
@@ -1549,7 +1584,7 @@ const CheckoutPage = () => {
           </Grid>
         </Grid>
       )}
-      
+
       {/* M-Pesa Payment Dialog */}
       <Dialog 
         open={paymentDialogOpen} 
