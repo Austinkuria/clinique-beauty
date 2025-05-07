@@ -5,8 +5,8 @@ const getBaseUrl = () => {
   // Check if we're in production (Vercel)
   if (import.meta.env.PROD) {
     console.log('Using production API URL for M-Pesa');
-    // Use the Vercel server URL for production
-    return 'https://clinique-beauty.vercel.app/api';
+    // Use the Vercel URL with /api prefix
+    return window.location.origin + '/api';
   } else {
     console.log('Using development API URL for M-Pesa');
     // Use localhost for development
@@ -50,7 +50,11 @@ export const initiateSTKPush = async (paymentData) => {
       timestamp: new Date().toISOString()
     };
     
-    const response = await axios.post(`${BASE_URL}${ENDPOINTS.STK_PUSH}`, enhancedPaymentData);
+    const response = await axios.post(`${BASE_URL}${ENDPOINTS.STK_PUSH}`, enhancedPaymentData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
     
     console.log('STK push response:', response.data);
     return response.data;

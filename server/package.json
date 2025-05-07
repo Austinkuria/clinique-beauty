@@ -21,7 +21,8 @@
     "mpesa:dev": "concurrently \"npm run dev\" \"npm run mpesa:ngrok\"",
     "mpesa:debug": "node scripts/debug-mpesa-token.js",
     "ngrok:kill": "node scripts/kill-ngrok.js",
-    "mpesa:ngrok:clean": "node scripts/kill-ngrok.js && npm run mpesa:ngrok"
+    "mpesa:ngrok:clean": "node scripts/kill-ngrok.js && npm run mpesa:ngrok",
+    "mpesa:verify-production": "node scripts/verify-mpesa-production.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.36.0",
