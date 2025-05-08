@@ -1,4 +1,4 @@
-import React, { useState, useContext, useRef } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Container, 
@@ -24,7 +24,8 @@ import { setUserAsAdmin } from '../../../services/userSyncService';
 // This is just for demo purposes - in production, never hard-code the admin code in the frontend
 const ADMIN_CODES = {
   dev: 'admin123', // Development code
-  prod: 'clinique-beauty-admin-2023' // Production code - matches database value
+  prod: 'clinique-beauty-admin-2023', // Production code - matches database value
+  fallback: 'clinique-admin-2023' // Fallback code for backward compatibility
 };
 
 function AdminSetup() {
@@ -36,9 +37,23 @@ function AdminSetup() {
   const navigate = useNavigate();
   const { user } = useUser();
   const { getToken } = useAuth();
-  // Create a ref to store the code input element reference
-  const codeInputRef = useRef(null);
-
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Check if the user is already an admin
+  useEffect(() => {
+    if (user) {
+      const userRole = user.publicMetadata?.role;
+      if (userRole === 'admin') {
+        setIsAdmin(true);
+        // If already admin, redirect after a short delay
+        setTimeout(() => {
+          toast.success('You are already an admin');
+          navigate('/admin');
+        }, 1500);
+      }
+    }
+  }, [user, navigate]);
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -51,9 +66,10 @@ function AdminSetup() {
     setError('');
     
     try {
-      // Verify admin code - check all possible valid codes
+      // Verify admin code - check all valid codes
       const isValidCode = code === ADMIN_CODES.dev || 
-                          code === ADMIN_CODES.prod;
+                          code === ADMIN_CODES.prod || 
+                          code === ADMIN_CODES.fallback;
       
       if (!isValidCode) {
         setError('Invalid admin code. Please try again or contact your administrator.');
@@ -72,7 +88,32 @@ function AdminSetup() {
         document.getElementById('admin-setup-code').value = code;
       }
       
-      // Use our centralized function to set admin status
+      // First update Clerk directly for better reliability
+      if (user) {
+        try {
+          // Update Clerk metadata first
+          await user.update({
+            publicMetadata: {
+              role: 'admin'
+            }
+          });
+          console.log("Successfully updated Clerk role directly");
+        } catch (clerkError) {
+          console.error("Error updating Clerk directly:", clerkError);
+          // Try alternative method
+          try {
+            await user.setPublicMetadata({
+              role: 'admin'
+            });
+            console.log("Successfully updated Clerk role using alternative method");
+          } catch (altError) {
+            console.error("Alternative Clerk update also failed:", altError);
+            // Continue anyway, our helper will try again
+          }
+        }
+      }
+      
+      // Now use the helper function to ensure database is also updated
       const result = await setUserAsAdmin(user, getToken);
       
       if (result) {
@@ -85,7 +126,20 @@ function AdminSetup() {
           navigate('/admin');
         }, 2000);
       } else {
-        throw new Error('Failed to set admin role. Please try again.');
+        // Check if Clerk update worked even if database update failed
+        const currentRole = user?.publicMetadata?.role;
+        if (currentRole === 'admin') {
+          // If at least Clerk was updated, consider it a partial success
+          setSuccess(true);
+          toast.success('Admin privileges set in Clerk. Database sync may be pending.');
+          
+          // Still redirect after a delay
+          setTimeout(() => {
+            navigate('/admin');
+          }, 2000);
+        } else {
+          throw new Error('Failed to set admin role. Please try again.');
+        }
       }
     } catch (err) {
       console.error('Error setting up admin privileges:', err);
@@ -102,6 +156,42 @@ function AdminSetup() {
       }, 500);
     }
   };
+
+  // If already admin, show a message
+  if (isAdmin) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 8 }}>
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 4, 
+            borderRadius: 2,
+            backgroundColor: colorValues.bgPaper
+          }}
+        >
+          <Box sx={{ textAlign: 'center' }}>
+            <AdminPanelSettingsIcon 
+              sx={{ 
+                fontSize: 60, 
+                mb: 2, 
+                color: colorValues.primary 
+              }} 
+            />
+            <Typography variant="h4" gutterBottom>
+              Already an Admin
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              You already have administrator privileges.
+            </Typography>
+            <CircularProgress size={24} sx={{ mb: 2 }} />
+            <Typography variant="body2" color="textSecondary">
+              Redirecting to admin panel...
+            </Typography>
+          </Box>
+        </Paper>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm" sx={{ py: 8 }}>
