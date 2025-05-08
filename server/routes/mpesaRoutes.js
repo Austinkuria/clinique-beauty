@@ -245,7 +245,8 @@ router.post('/payment', async (req, res) => {
         console.log(`Processing M-Pesa payment: ${amount} KES from ${phoneNumber} for order ${orderId || 'N/A'}`);
         
         // Get the M-Pesa token
-        const tokenResponse = await axios.get(`${req.protocol}://${req.get('host')}/api/mpesa/token`);
+        const tokenBaseUrl = process.env.MPESA_TOKEN_BASE_URL || 'https://default-trusted-url.com';
+        const tokenResponse = await axios.get(`${tokenBaseUrl}/api/mpesa/token`);
         const token = tokenResponse.data.token;
         
         // Prepare STK Push parameters
