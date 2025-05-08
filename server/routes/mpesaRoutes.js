@@ -378,7 +378,8 @@ router.post('/query', async (req, res) => {
         
         // If not found or not completed, query Safaricom API
         // Get the M-Pesa token
-        const tokenResponse = await axios.get(`${req.protocol}://${req.get('host')}/api/mpesa/token`);
+        const baseUrl = process.env.INTERNAL_BASE_URL || 'http://localhost';
+        const tokenResponse = await axios.get(`${baseUrl}/api/mpesa/token`);
         const token = tokenResponse.data.token;
         
         // Prepare query parameters
