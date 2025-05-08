@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Outlet, useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import { 
     Box, 
@@ -37,6 +37,7 @@ import {
 import { UserButton, useUser, useAuth } from '@clerk/clerk-react';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { toast } from 'react-hot-toast';
+import { useAdmin } from '../../../context/AdminContext';
 
 const drawerWidth = 240;
 
@@ -50,6 +51,19 @@ function AdminLayout() {
     const location = useLocation();
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
+    const { isAdmin, checkAdminStatus } = useAdmin();
+    
+    // Verify admin status when component loads
+    useEffect(() => {
+        // Force check admin status when admin layout is mounted
+        checkAdminStatus();
+        
+        if (!isAdmin) {
+            console.log("AdminLayout: User is not an admin, redirecting...");
+        } else {
+            console.log("AdminLayout: Admin status confirmed");
+        }
+    }, [checkAdminStatus, isAdmin]);
     
     const toggleDrawer = () => {
         if (isMobile) {

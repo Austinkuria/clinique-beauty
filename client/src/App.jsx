@@ -11,6 +11,7 @@ import { useUser, useClerk } from '@clerk/clerk-react';
 import { syncUserToSupabase } from './services/userSyncService';
 import { toast } from 'react-hot-toast';
 import { handleApiError } from './components/ErrorHandler';
+import { AdminProvider } from './context/AdminContext';
 
 function App() {
   const { muiTheme } = useContext(ThemeContext);
@@ -52,23 +53,25 @@ function App() {
       <CssBaseline />
       <CartProvider>
         <WishlistProvider>
-          <Suspense fallback={
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column',
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              height: '100vh',
-              gap: 2
-            }}>
-              <CircularProgress size={60} color="primary" />
-              <Typography variant="h6" color="textSecondary">
-                Loading Clinique Beauty...
-              </Typography>
-            </Box>
-          }>
-            <Outlet />
-          </Suspense>
+          <AdminProvider>
+            <Suspense fallback={
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '100vh',
+                gap: 2
+              }}>
+                <CircularProgress size={60} color="primary" />
+                <Typography variant="h6" color="textSecondary">
+                  Loading Clinique Beauty...
+                </Typography>
+              </Box>
+            }>
+              <Outlet />
+            </Suspense>
+          </AdminProvider>
         </WishlistProvider>
       </CartProvider>
     </MUIThemeProvider>

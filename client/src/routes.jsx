@@ -23,46 +23,12 @@ import AdminOrders from './features/admin/pages/Orders';
 import AdminUsers from './features/admin/pages/Users';
 import AdminSettings from './features/admin/pages/Settings';
 import AdminSetup from './features/admin/pages/AdminSetup';
+import AdminGuard from './components/AdminGuard';
 
 // Lazy-load these components for better performance
 const Login = React.lazy(() => import('./features/auth/Login.jsx'));
 const Register = React.lazy(() => import('./features/auth/Register.jsx'));
 const ClerkVerification = React.lazy(() => import('./features/auth/ClerkVerification.jsx'));
-
-// RequireAdmin component to protect admin routes
-const RequireAdmin = ({ children }) => {
-    const { isSignedIn, isLoaded } = useUser();
-    const { user } = useAuth();
-    const navigate = useNavigate();
-    
-    useEffect(() => {
-        const checkAdmin = async () => {
-            if (isLoaded && isSignedIn) {
-                // Check if user has admin role (stored in publicMetadata)
-                const isAdmin = user?.publicMetadata?.role === 'admin';
-                
-                if (!isAdmin) {
-                    toast.error('Access denied: Admin privileges required');
-                    navigate('/');
-                }
-            } else if (isLoaded && !isSignedIn) {
-                toast.error('Please sign in to access the admin panel');
-                navigate('/auth/login?redirect=/admin');
-            }
-        };
-        
-        checkAdmin();
-    }, [isLoaded, isSignedIn, navigate, user]);
-    
-    if (!isLoaded) return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <CircularProgress />
-            <Typography variant="h6" sx={{ ml: 2 }}>Loading authentication...</Typography>
-        </Box>
-    );
-    
-    return isSignedIn ? children : null;
-};
 
 // Export the router instance directly
 export const router = createBrowserRouter([
@@ -124,10 +90,10 @@ export const router = createBrowserRouter([
                 path: '/admin-setup',
                 element: <RequireAuth><AdminSetup /></RequireAuth>,
             },
-            // Admin Routes
+            // Admin Routes with AdminGuard
             {
                 path: '/admin',
-                element: <RequireAdmin><AdminLayout /></RequireAdmin>,
+                element: <AdminGuard><AdminLayout /></AdminGuard>,
                 children: [
                     { index: true, element: <AdminDashboard /> },
                     { path: 'products', element: <AdminProducts /> },
