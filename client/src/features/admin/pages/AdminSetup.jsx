@@ -51,8 +51,9 @@ function AdminSetup() {
     setError('');
     
     try {
-      // Verify admin code
-      const isValidCode = code === ADMIN_CODES.dev || code === ADMIN_CODES.prod;
+      // Verify admin code - check all possible valid codes
+      const isValidCode = code === ADMIN_CODES.dev || 
+                          code === ADMIN_CODES.prod;
       
       if (!isValidCode) {
         setError('Invalid admin code. Please try again or contact your administrator.');
@@ -71,10 +72,6 @@ function AdminSetup() {
         document.getElementById('admin-setup-code').value = code;
       }
       
-      // Display log for debugging
-      console.log(`Attempting to set user as admin with code: ${code}`);
-      console.log("Current user:", user);
-      
       // Use our centralized function to set admin status
       const result = await setUserAsAdmin(user, getToken);
       
@@ -92,21 +89,8 @@ function AdminSetup() {
       }
     } catch (err) {
       console.error('Error setting up admin privileges:', err);
-      
-      // In development mode, allow proceeding anyway
-      if (import.meta.env.DEV) {
-        console.log("DEV MODE: Proceeding despite error");
-        setSuccess(true);
-        toast.success('Admin role granted (development mode)');
-        
-        // Wait 2 seconds before redirecting to admin panel
-        setTimeout(() => {
-          navigate('/admin');
-        }, 2000);
-      } else {
-        handleApiError(err, 'Failed to set up admin privileges');
-        setError(err.message || 'Failed to set up admin privileges. Please try again later.');
-      }
+      handleApiError(err, 'Failed to set up admin privileges');
+      setError(err.message || 'Failed to set up admin privileges. Please try again later.');
     } finally {
       setLoading(false);
       // Clean up the hidden input
