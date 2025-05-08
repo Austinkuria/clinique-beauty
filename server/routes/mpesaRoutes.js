@@ -245,8 +245,12 @@ router.post('/payment', async (req, res) => {
         console.log(`Processing M-Pesa payment: ${amount} KES from ${phoneNumber} for order ${orderId || 'N/A'}`);
         
         // Get the M-Pesa token
-        const tokenBaseUrl = process.env.MPESA_TOKEN_BASE_URL || 'https://default-trusted-url.com';
-        const tokenResponse = await axios.get(`${tokenBaseUrl}/api/mpesa/token`);
+        const tokenResponse = await axios.get(`${req.protocol}://${req.get('host')}/api/mpesa/token`);
+        if (!tokenResponse.data || !tokenResponse.data.token) {
+            throw new Error('Failed to retrieve M-Pesa token');
+        }
+        console.log('Received token:', tokenResponse.data.token.substring(0, 10) + '...');
+        
         const token = tokenResponse.data.token;
         
         // Prepare STK Push parameters
