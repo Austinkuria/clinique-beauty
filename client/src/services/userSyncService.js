@@ -79,36 +79,102 @@ export const setUserAsAdmin = async (user, getToken) => {
       throw new Error('Admin setup code not found');
     }
     
-    // Try updating Supabase first through our API
+    const code = codeInput.value;
+    let adminCodeVerified = false;
+    
+    // First, try verifying the admin code through API
     try {
-      // First, verify the admin setup code through API
       console.log("Verifying admin code through API...");
-      const verifyResponse = await fetch('/api/users/verify-admin-code', {
+      // Determine the correct base URL for the API call
+      const baseUrl = import.meta.env.DEV ? 
+        (import.meta.env.VITE_API_URL || 'http://localhost:3001') : '';
+      
+      const verifyUrl = `${baseUrl}/api/users/verify-admin-code`;
+      console.log(`Trying to verify admin code at: ${verifyUrl}`);
+      
+      const verifyResponse = await fetch(verifyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          code: codeInput.value
-        })
+        body: JSON.stringify({ code })
       });
       
-      if (!verifyResponse.ok) {
+      if (verifyResponse.ok) {
+        console.log("Admin code verified successfully via API");
+        adminCodeVerified = true;
+      } else {
         const errorData = await verifyResponse.json();
-        console.warn("Admin code verification failed:", errorData);
-        
-        // If we're in development, continue despite verification failure
-        if (import.meta.env.DEV) {
-          console.log("DEV MODE: Bypassing admin code verification");
-        } else {
-          throw new Error(errorData.message || 'Invalid admin setup code');
+        console.warn("API verification failed:", errorData);
+      }
+    } catch (verifyError) {
+      console.warn("Error during API verification:", verifyError);
+      // Continue with local verification
+    }
+    
+    // If API verification failed, do local verification in development
+    if (!adminCodeVerified && import.meta.env.DEV) {
+      console.log("Falling back to local admin code verification");
+      // Check against known codes in dev mode
+      const validDevCodes = [
+        'admin123', 
+        'clinique-beauty-admin-2023', 
+        'clinique-admin-2023'
+      ];
+      
+      if (validDevCodes.includes(code)) {
+        console.log("Admin code verified locally");
+        adminCodeVerified = true;
+      } else {
+        throw new Error('Invalid admin setup code');
+      }
+    } else if (!adminCodeVerified) {
+      // In production, if API verification failed, we should fail
+      throw new Error('Failed to verify admin code');
+    }
+    
+    // Now update user role in Clerk
+    console.log("Updating Clerk user metadata with admin role...");
+    
+    try {
+      // Try the standard method first
+      await user.update({
+        publicMetadata: {
+          role: 'admin'
+        }
+      });
+      console.log("Clerk metadata updated successfully");
+    } catch (clerkError) {
+      console.error("Error updating Clerk metadata:", clerkError);
+      
+      // Try alternative method for Clerk v5+
+      try {
+        console.log("Trying alternative Clerk metadata update method...");
+        await user.setPublicMetadata({
+          role: 'admin'
+        });
+        console.log("Alternative Clerk metadata update successful");
+      } catch (altClerkError) {
+        console.error("Alternative Clerk metadata update failed:", altClerkError);
+        // In dev mode, continue anyway
+        if (!import.meta.env.DEV) {
+          throw new Error('Failed to update Clerk metadata');
         }
       }
-      
-      // Then update the user role in Supabase
+    }
+    
+    // Then update role in Supabase via direct API or server
+    try {
       console.log("Updating user role in Supabase...");
-      const updateResponse = await fetch('/api/users/set-admin', {
+      // Determine correct base URL
+      const baseUrl = import.meta.env.DEV ? 
+        (import.meta.env.VITE_API_URL || 'http://localhost:3001') : '';
+      
+      const updateUrl = `${baseUrl}/api/users/set-admin`;
+      console.log(`Calling: ${updateUrl}`);
+      
+      const updateResponse = await fetch(updateUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,43 +186,22 @@ export const setUserAsAdmin = async (user, getToken) => {
       });
       
       if (!updateResponse.ok) {
-        const updateErrorData = await updateResponse.json();
-        console.warn("Database role update failed:", updateErrorData);
+        const errorData = await updateResponse.json();
+        console.warn("Database role update response:", errorData);
         
-        // In development, continue despite database update failure
-        if (import.meta.env.DEV) {
-          console.log("DEV MODE: Continuing despite database update failure");
-        } else {
-          throw new Error(updateErrorData.message || 'Failed to update admin role in database');
-        }
-      }
-    } catch (apiError) {
-      // Log the error but don't fail completely yet - try the direct API client approach
-      console.warn("API approach for admin setup failed:", apiError);
-      
-      // Try using the API client directly as fallback
-      try {
-        await api.updateUserRole(user.id, 'admin', token);
-        console.log("Admin role updated successfully through direct API client");
-      } catch (clientError) {
-        console.error("Direct API client approach also failed:", clientError);
-        
-        // In production, fail if both approaches failed
+        // Only throw in production
         if (!import.meta.env.DEV) {
-          throw new Error('Failed to update role in database. Please try again.');
+          throw new Error(errorData.message || 'Failed to update admin role in database');
         }
+      } else {
+        console.log("Database role updated successfully");
       }
-    }
-    
-    // Now update user role in Clerk metadata if not already done in AdminSetup
-    if (!user.publicMetadata?.role || user.publicMetadata.role !== 'admin') {
-      console.log("Updating Clerk user metadata with admin role...");
-      await user.update({
-        publicMetadata: {
-          ...user.publicMetadata,
-          role: 'admin'
-        }
-      });
+    } catch (dbError) {
+      console.warn("Error updating database role:", dbError);
+      // Only throw in production
+      if (!import.meta.env.DEV) {
+        throw dbError;
+      }
     }
     
     toast.success('Admin role granted successfully');

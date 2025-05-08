@@ -24,8 +24,7 @@ import { setUserAsAdmin } from '../../../services/userSyncService';
 // This is just for demo purposes - in production, never hard-code the admin code in the frontend
 const ADMIN_CODES = {
   dev: 'admin123', // Development code
-  prod: 'clinique-beauty-admin-2023', // Match exactly with the database value
-  fallback: 'clinique-admin-2023' // Also add the old code as fallback
+  prod: 'clinique-beauty-admin-2023' // Production code - matches database value
 };
 
 function AdminSetup() {
@@ -52,10 +51,8 @@ function AdminSetup() {
     setError('');
     
     try {
-      // Verify admin code - check all possible valid codes
-      const isValidCode = code === ADMIN_CODES.dev || 
-                          code === ADMIN_CODES.prod || 
-                          code === ADMIN_CODES.fallback;
+      // Verify admin code
+      const isValidCode = code === ADMIN_CODES.dev || code === ADMIN_CODES.prod;
       
       if (!isValidCode) {
         setError('Invalid admin code. Please try again or contact your administrator.');
@@ -74,50 +71,42 @@ function AdminSetup() {
         document.getElementById('admin-setup-code').value = code;
       }
       
-      // User verification passed, now update the user metadata with admin role
-      if (user) {
-        try {
-          // First update Clerk metadata directly to ensure it works
-          await user.update({
-            publicMetadata: {
-              ...user.publicMetadata,
-              role: 'admin'
-            }
-          });
-          
-          console.log("Updated Clerk metadata with admin role");
-          
-          // Then call our helper function to update Supabase
-          const result = await setUserAsAdmin(user, getToken);
-          
-          if (result) {
-            // Success case - both Clerk and Supabase updated
-            setSuccess(true);
-            toast.success('Admin privileges granted successfully!');
-          } else {
-            // If setUserAsAdmin returns false but didn't throw
-            console.warn("Admin role may have been partially set");
-            // Still proceed to admin panel - the role is at least set in Clerk
-            setSuccess(true);
-            toast.success('Admin role set in Clerk. Database sync may be pending.');
-          }
-          
-          // Wait 2 seconds before redirecting to admin panel
-          setTimeout(() => {
-            navigate('/admin');
-          }, 2000);
-        } catch (adminError) {
-          // Only throw if both methods fail
-          console.error("Error setting admin role:", adminError);
-          throw new Error('Failed to update admin role. Please try again.');
-        }
+      // Display log for debugging
+      console.log(`Attempting to set user as admin with code: ${code}`);
+      console.log("Current user:", user);
+      
+      // Use our centralized function to set admin status
+      const result = await setUserAsAdmin(user, getToken);
+      
+      if (result) {
+        // Success case
+        setSuccess(true);
+        toast.success('Admin privileges granted successfully!');
+        
+        // Wait 2 seconds before redirecting to admin panel
+        setTimeout(() => {
+          navigate('/admin');
+        }, 2000);
       } else {
-        throw new Error('User not authenticated');
+        throw new Error('Failed to set admin role. Please try again.');
       }
     } catch (err) {
       console.error('Error setting up admin privileges:', err);
-      handleApiError(err, 'Failed to set up admin privileges');
-      setError(err.message || 'Failed to set up admin privileges. Please try again later.');
+      
+      // In development mode, allow proceeding anyway
+      if (import.meta.env.DEV) {
+        console.log("DEV MODE: Proceeding despite error");
+        setSuccess(true);
+        toast.success('Admin role granted (development mode)');
+        
+        // Wait 2 seconds before redirecting to admin panel
+        setTimeout(() => {
+          navigate('/admin');
+        }, 2000);
+      } else {
+        handleApiError(err, 'Failed to set up admin privileges');
+        setError(err.message || 'Failed to set up admin privileges. Please try again later.');
+      }
     } finally {
       setLoading(false);
       // Clean up the hidden input

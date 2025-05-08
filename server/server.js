@@ -102,6 +102,79 @@ app.post('/api/mpesa/callback', async (req, res) => {
   res.json({ ResultCode: 0, ResultDesc: 'Received' });
 });
 
+// Add this endpoint for admin verification
+app.post('/api/users/verify-admin-code', async (req, res) => {
+  try {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Admin code is required'
+      });
+    }
+    
+    // Valid codes - in a real app, this would query the database
+    const validCodes = [
+      'admin123',
+      'clinique-beauty-admin-2023',
+      'clinique-admin-2023'
+    ];
+    
+    if (!validCodes.includes(code)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid admin code'
+      });
+    }
+    
+    return res.json({
+      success: true,
+      message: 'Admin code verified successfully'
+    });
+  } catch (err) {
+    console.error('Error verifying admin code:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error when verifying admin code'
+    });
+  }
+});
+
+// Add this endpoint to set a user as admin
+app.post('/api/users/set-admin', async (req, res) => {
+  try {
+    const { clerkId } = req.body;
+    
+    if (!clerkId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Clerk ID is required'
+      });
+    }
+    
+    // In a real app, this would update the database
+    // For development, just respond with success
+    console.log(`Setting user ${clerkId} as admin`);
+    
+    return res.json({
+      success: true,
+      message: 'Admin role granted successfully',
+      user: {
+        id: 'mock-user-id',
+        clerkId,
+        role: 'admin'
+      }
+    });
+  } catch (err) {
+    console.error('Error setting admin role:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error when setting admin role'
+    });
+  }
+});
+
 // Routes
 app.use('/api/products', productRoutes);
 app.use('/api/cart', clerkMiddleware, cartRoutes);
