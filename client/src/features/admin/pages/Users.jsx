@@ -45,6 +45,14 @@ import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { toast } from 'react-hot-toast';
+import StatCard from '../components/charts/StatCard';
+import { mockDashboardData } from '../../../data/mockDashboardData';
+import { 
+    People as AllUsersIcon, 
+    Person as CustomerIcon,
+    Store as SellerIcon,
+    AdminPanelSettings as AdminIcon 
+} from '@mui/icons-material';
 
 function AdminUsers() {
     const { theme, colorValues } = useContext(ThemeContext);
@@ -61,6 +69,7 @@ function AdminUsers() {
     const [actionType, setActionType] = useState('');
     const [tabValue, setTabValue] = useState(0);
     const [error, setError] = useState(null);
+    const [userStats, setUserStats] = useState(null);
     
     useEffect(() => {
         const fetchUsers = async () => {
@@ -80,6 +89,26 @@ function AdminUsers() {
         
         fetchUsers();
     }, [api]);
+    
+    useEffect(() => {
+        const fetchUserStats = async () => {
+            try {
+                // In a real app, fetch these stats from your API
+                // For now, use mocked data
+                setUserStats({
+                    total: mockDashboardData.stats.users.total,
+                    growth: mockDashboardData.stats.users.growth,
+                    customers: Math.round(mockDashboardData.stats.users.total * 0.85),
+                    sellers: Math.round(mockDashboardData.stats.users.total * 0.12),
+                    admins: Math.round(mockDashboardData.stats.users.total * 0.03)
+                });
+            } catch (error) {
+                console.error('Error fetching user stats:', error);
+            }
+        };
+        
+        fetchUserStats();
+    }, []);
     
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -238,6 +267,45 @@ function AdminUsers() {
                     Add New User
                 </Button>
             </Box>
+            
+            {/* Add User Stats */}
+            {userStats && (
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <StatCard 
+                            title="Total Users" 
+                            value={userStats.total} 
+                            icon={<AllUsersIcon />} 
+                            color="primary"
+                            percentChange={userStats.growth}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <StatCard 
+                            title="Customers" 
+                            value={userStats.customers} 
+                            icon={<CustomerIcon />} 
+                            color="info"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <StatCard 
+                            title="Sellers" 
+                            value={userStats.sellers} 
+                            icon={<SellerIcon />} 
+                            color="warning"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <StatCard 
+                            title="Admins" 
+                            value={userStats.admins} 
+                            icon={<AdminIcon />} 
+                            color="success"
+                        />
+                    </Grid>
+                </Grid>
+            )}
             
             {/* Tabs */}
             <Paper

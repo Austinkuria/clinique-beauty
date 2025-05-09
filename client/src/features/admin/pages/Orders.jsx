@@ -50,6 +50,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import OrderFulfillmentChart from '../components/charts/OrderFulfillmentChart';
+import { mockDashboardData } from '../../../data/mockDashboardData';
 
 // Mock data (replace with actual API calls)
 const mockOrders = [
@@ -137,6 +139,7 @@ function AdminOrders() {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [actionDialogOpen, setActionDialogOpen] = useState(false);
     const [actionType, setActionType] = useState('');
+    const [fulfillmentData, setFulfillmentData] = useState(null);
     
     useEffect(() => {
         const fetchOrders = async () => {
@@ -149,6 +152,8 @@ function AdminOrders() {
                 // For now, we'll use mock data with a loading simulation
                 setTimeout(() => {
                     setOrders(mockOrders);
+                    // Also set fulfillment data from our mock dashboard data
+                    setFulfillmentData(mockDashboardData.fulfillmentData);
                     setLoading(false);
                 }, 1000);
             } catch (error) {
@@ -319,6 +324,22 @@ function AdminOrders() {
         <Box>
             <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>Orders</Typography>
             
+            {/* Add Order Fulfillment Overview */}
+            {fulfillmentData && (
+                <Paper
+                    elevation={theme === 'dark' ? 3 : 1}
+                    sx={{
+                        p: 3,
+                        mb: 4,
+                        bgcolor: colorValues.bgPaper,
+                        borderRadius: 2
+                    }}
+                >
+                    <Typography variant="h6" sx={{ mb: 2 }}>Order Fulfillment Overview</Typography>
+                    <OrderFulfillmentChart fulfillmentData={fulfillmentData} />
+                </Paper>
+            )}
+            
             {/* Filters and Search */}
             <Paper
                 elevation={theme === 'dark' ? 3 : 1}
@@ -329,58 +350,58 @@ function AdminOrders() {
                     borderRadius: 2
                 }}
             >
-                <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={3}>
-                        <TextField
-                            fullWidth
-                            variant="outlined"
-                            placeholder="Search orders..."
-                            value={search}
-                            onChange={handleSearchChange}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon />
-                                    </InputAdornment>
-                                ),
-                            }}
-                        />
-                    </Grid>
-                    <Grid item xs={12} md={2}>
-                        <FormControl fullWidth>
-                            <InputLabel id="status-filter-label">Status</InputLabel>
-                            <Select
-                                labelId="status-filter-label"
-                                value={filterStatus}
-                                onChange={handleStatusFilterChange}
-                                label="Status"
-                            >
-                                {statuses.map((status, index) => (
-                                    <MenuItem key={index} value={status}>
-                                        {status || 'All Statuses'}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={12} md={2}>
-                        <FormControl fullWidth>
-                            <InputLabel id="payment-status-filter-label">Payment</InputLabel>
-                            <Select
-                                labelId="payment-status-filter-label"
-                                value={filterPaymentStatus}
-                                onChange={handlePaymentStatusFilterChange}
-                                label="Payment"
-                            >
-                                {paymentStatuses.map((status, index) => (
-                                    <MenuItem key={index} value={status}>
-                                        {status || 'All Payment Statuses'}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} md={3}>
+                            <TextField
+                                fullWidth
+                                variant="outlined"
+                                placeholder="Search orders..."
+                                value={search}
+                                onChange={handleSearchChange}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={2}>
+                            <FormControl fullWidth>
+                                <InputLabel id="status-filter-label">Status</InputLabel>
+                                <Select
+                                    labelId="status-filter-label"
+                                    value={filterStatus}
+                                    onChange={handleStatusFilterChange}
+                                    label="Status"
+                                >
+                                    {statuses.map((status, index) => (
+                                        <MenuItem key={index} value={status}>
+                                            {status || 'All Statuses'}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={2}>
+                            <FormControl fullWidth>
+                                <InputLabel id="payment-status-filter-label">Payment</InputLabel>
+                                <Select
+                                    labelId="payment-status-filter-label"
+                                    value={filterPaymentStatus}
+                                    onChange={handlePaymentStatusFilterChange}
+                                    label="Payment"
+                                >
+                                    {paymentStatuses.map((status, index) => (
+                                        <MenuItem key={index} value={status}>
+                                            {status || 'All Payment Statuses'}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
                         <Grid item xs={12} md={2}>
                             <DatePicker
                                 label="From Date"
@@ -399,18 +420,19 @@ function AdminOrders() {
                                 inputFormat="MM/dd/yyyy"
                             />
                         </Grid>
-                    </LocalizationProvider>
-                    <Grid item xs={12} md={1}>
-                        <Button
-                            variant="outlined"
-                            startIcon={<ClearIcon />}
-                            onClick={handleClearFilters}
-                            sx={{ width: '100%', height: '100%' }}
-                        >
-                            Clear
-                        </Button>
+                        <Grid item xs={12} md={1}>
+                            <Button
+                                variant="outlined"
+                                startIcon={<ClearIcon />}
+                                onClick={handleClearFilters}
+                                fullWidth
+                                sx={{ height: '100%', minHeight: '56px' }}
+                            >
+                                Clear
+                            </Button>
+                        </Grid>
                     </Grid>
-                </Grid>
+                </LocalizationProvider>
             </Paper>
             
             {/* Orders Table */}
