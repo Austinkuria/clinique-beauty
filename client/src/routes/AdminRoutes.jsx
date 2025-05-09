@@ -21,7 +21,7 @@ const AdminGuard = ({ children }) => {
     if (!loading && !isAdmin) {
       console.log("Access denied: User is not an admin");
       toast.error('Access denied. Admin privileges required.');
-      navigate('/admin/setup', { replace: true });
+      navigate('/admin-setup', { replace: true });
     }
   }, [isAdmin, loading, navigate, location]);
 

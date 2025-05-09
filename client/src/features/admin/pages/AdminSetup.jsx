@@ -95,6 +95,7 @@ function AdminSetup() {
     }
   }, [user, navigate, isLoaded, contextIsAdmin, checkAdminStatus]);
   
+  // Improve the handleSubmit function to provide more feedback
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -188,8 +189,10 @@ function AdminSetup() {
         setSuccess(true);
         if (roleUpdateSuccess) {
           toast.success('Admin privileges granted successfully!');
+          console.log("Admin dashboard access granted. You now have full admin capabilities.");
         } else {
           toast.success('Admin setup completed (role update may need reload)');
+          console.log("Partial admin access granted. Some features may require a refresh.");
         }
         
         // Store admin status in localStorage as a fallback

@@ -1,4 +1,127 @@
+import { useState, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+
+// Base API client for authenticated requests
+export const useAdminApi = () => {  // Changed from 'useApi' to 'useAdminApi'
+  const { getToken } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Helper function for authenticated API calls
+  const fetchWithAuth = useCallback(async (endpoint, options = {}) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const token = await getToken();
+      const response = await fetch(endpoint, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          ...options.headers
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `API error: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      setError(err.message || 'An error occurred');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
+
+  // Admin Dashboard API
+  const getDashboardData = useCallback(async () => {
+    return fetchWithAuth('/api/admin/dashboard');
+  }, [fetchWithAuth]);
+
+  // Users API
+  const getUsers = useCallback(async (filters = {}) => {
+    const queryParams = new URLSearchParams(filters).toString();
+    return fetchWithAuth(`/api/admin/users?${queryParams}`);
+  }, [fetchWithAuth]);
+  
+  const getUserDetails = useCallback(async (userId) => {
+    return fetchWithAuth(`/api/admin/users/${userId}`);
+  }, [fetchWithAuth]);
+  
+  const updateUserRole = useCallback(async (userId, role) => {
+    return fetchWithAuth(`/api/admin/users/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role })
+    });
+  }, [fetchWithAuth]);
+
+  // Products API
+  const getProducts = useCallback(async (filters = {}) => {
+    const queryParams = new URLSearchParams(filters).toString();
+    return fetchWithAuth(`/api/admin/products?${queryParams}`);
+  }, [fetchWithAuth]);
+  
+  const createProduct = useCallback(async (productData) => {
+    return fetchWithAuth('/api/admin/products', {
+      method: 'POST',
+      body: JSON.stringify(productData)
+    });
+  }, [fetchWithAuth]);
+  
+  const updateProduct = useCallback(async (productId, productData) => {
+    return fetchWithAuth(`/api/admin/products/${productId}`, {
+      method: 'PUT',
+      body: JSON.stringify(productData)
+    });
+  }, [fetchWithAuth]);
+  
+  const deleteProduct = useCallback(async (productId) => {
+    return fetchWithAuth(`/api/admin/products/${productId}`, {
+      method: 'DELETE'
+    });
+  }, [fetchWithAuth]);
+
+  // Orders API
+  const getOrders = useCallback(async (filters = {}) => {
+    const queryParams = new URLSearchParams(filters).toString();
+    return fetchWithAuth(`/api/admin/orders?${queryParams}`);
+  }, [fetchWithAuth]);
+  
+  const getOrderDetails = useCallback(async (orderId) => {
+    return fetchWithAuth(`/api/admin/orders/${orderId}`);
+  }, [fetchWithAuth]);
+  
+  const updateOrderStatus = useCallback(async (orderId, status) => {
+    return fetchWithAuth(`/api/admin/orders/${orderId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+  }, [fetchWithAuth]);
+
+  return {
+    loading,
+    error,
+    // Dashboard
+    getDashboardData,
+    // Users
+    getUsers,
+    getUserDetails,
+    updateUserRole,
+    // Products
+    getProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    // Orders
+    getOrders,
+    getOrderDetails,
+    updateOrderStatus,
+  };
+};
 
 // Base URL for your API - Use the Supabase Functions URL + function name
 const SUPABASE_FUNCTIONS_BASE = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
