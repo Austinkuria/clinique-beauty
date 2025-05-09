@@ -32,7 +32,8 @@ import {
     Storefront as StoreIcon, // Changed to Storefront to avoid duplicate imports
     Notifications as NotificationsIcon,
     ChevronLeft as ChevronLeftIcon,
-    Logout as LogoutIcon
+    Logout as LogoutIcon,
+    Insights as InsightsIcon
 } from '@mui/icons-material';
 import { UserButton, useUser, useAuth } from '@clerk/clerk-react';
 import { ThemeContext } from '../../../context/ThemeContext';
@@ -84,6 +85,14 @@ function AdminLayout() {
         { name: 'Products', icon: <ProductsIcon />, path: '/admin/products' },
         { name: 'Orders', icon: <OrdersIcon />, path: '/admin/orders' },
         { name: 'Users', icon: <UsersIcon />, path: '/admin/users' },
+        { name: 'Analytics', icon: <InsightsIcon />, 
+          subItems: [
+            { name: 'Revenue', path: '/admin/analytics/revenue' },
+            { name: 'Products', path: '/admin/analytics/products' },
+            { name: 'Customers', path: '/admin/analytics/customers' },
+            { name: 'Geographical', path: '/admin/analytics/geographical' },
+          ]
+        },
         { name: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' },
     ];
     

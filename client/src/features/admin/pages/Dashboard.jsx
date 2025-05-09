@@ -8,14 +8,22 @@ import {
     Select,
     MenuItem,
     InputLabel,
-    CircularProgress
+    CircularProgress,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow
 } from '@mui/material';
 import {
     AttachMoney as RevenueIcon,
     ShoppingCart as OrdersIcon,
     People as UsersIcon,
     Inventory as ProductsIcon,
-    Assignment as FulfillmentIcon
+    Assignment as FulfillmentIcon,
+    TrendingUp as TrendingUpIcon,
+    TrendingDown as TrendingDownIcon
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
@@ -42,6 +50,7 @@ import StatCard from '../components/charts/StatCard';
 import OrderFulfillmentChart from '../components/charts/OrderFulfillmentChart';
 import GeographicalChart from '../components/charts/GeographicalChart';
 import RecentOrdersList from '../components/charts/RecentOrdersList';
+import TopProductsTable from '../components/charts/TopProductsTable';
 
 // Colors for charts
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
@@ -285,8 +294,7 @@ function AdminDashboard() {
                         }}
                     >
                         <Typography variant="h6" sx={{ mb: 2 }}>Top Performing Products</Typography>
-                        {/* Product table content remains the same */}
-                        {/* ... existing code ... */}
+                        <TopProductsTable products={topProducts} />
                     </Paper>
                 </Grid>
                 
@@ -306,7 +314,12 @@ function AdminDashboard() {
                     </Paper>
                 </Grid>
             </Grid>
-            
+*User Management*
+   - Complete user directory with filtering and search
+   - User profile editing and permission management
+   - Customer verification and account status controls
+   - Activity logs and session monitoring
+   - User segmentation for marketing campaign            
             {/* Geographical Sales Analysis */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12}>

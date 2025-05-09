@@ -24,6 +24,11 @@ import AdminUsers from './features/admin/pages/Users';
 import AdminSettings from './features/admin/pages/Settings';
 import AdminSetup from './features/admin/pages/AdminSetup';
 import AdminGuard from './components/AdminGuard';
+import RevenueAnalytics from './features/admin/pages/analytics/RevenueAnalytics';
+import ProductAnalytics from './features/admin/pages/analytics/ProductAnalytics';
+import CustomerAnalytics from './features/admin/pages/analytics/CustomerAnalytics';
+import GeographicalAnalytics from './features/admin/pages/analytics/GeographicalAnalytics';
+import { useTheme } from '@mui/material/styles';
 
 // Lazy-load these components for better performance
 const Login = React.lazy(() => import('./features/auth/Login.jsx'));
@@ -100,6 +105,11 @@ export const router = createBrowserRouter([
                     { path: 'orders', element: <AdminOrders /> },
                     { path: 'users', element: <AdminUsers /> },
                     { path: 'settings', element: <AdminSettings /> },
+                    // New Analytics Routes
+                    { path: 'analytics/revenue', element: <RevenueAnalytics /> },
+                    { path: 'analytics/products', element: <ProductAnalytics /> },
+                    { path: 'analytics/customers', element: <CustomerAnalytics /> },
+                    { path: 'analytics/geographical', element: <GeographicalAnalytics /> },
                 ]
             },
             // Add other routes that *don't* need MainLayout here
