@@ -1,67 +1,80 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/clerk-react';
-import { toast } from 'react-hot-toast';
 
-// Create context
-export const AdminContext = createContext({
-  isAdmin: false,
-  checkAdminStatus: () => {},
-  loading: true
-});
+// Create the context
+const AdminContext = createContext();
 
+// Provider component
 export const AdminProvider = ({ children }) => {
-  const { user, isLoaded } = useUser();
+  // Always define all state hooks, regardless of conditions
+  const { user, isSignedIn, isLoaded } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // Function to check admin status from all possible sources
-  const checkAdminStatus = () => {
-    if (!isLoaded || !user) {
-      setLoading(false);
+  
+  // Use a callback for consistency in hook ordering
+  const checkAdminStatus = useCallback(() => {
+    if (!user || !isLoaded) {
       return false;
     }
-
-    console.log("Checking admin status. User metadata:", {
-      publicMetadata: user.publicMetadata,
-      unsafeMetadata: user.unsafeMetadata,
-      hasOrgs: user.organizations?.length > 0
-    });
-
-    // 1. Check Clerk metadata (multiple possible locations)
-    const hasAdminRoleInMetadata = 
-      (user.unsafeMetadata && user.unsafeMetadata.role === 'admin') || 
-      (user.publicMetadata && user.publicMetadata.role === 'admin') ||
-      (user.privateMetadata && user.privateMetadata.role === 'admin') ||
-      (user.organizations && 
-        user.organizations.length > 0 && 
-        user.organizations[0].publicMetadata && 
-        user.organizations[0].publicMetadata.memberRole === 'admin');
-      
-    // 2. Check localStorage fallback 
-    const hasAdminRoleInLocalStorage = localStorage.getItem('userIsAdmin') === 'true';
-      
-    // Set admin status based on either source
-    const adminStatus = hasAdminRoleInMetadata || hasAdminRoleInLocalStorage;
-    console.log(`Admin check result: ${adminStatus} (metadata: ${hasAdminRoleInMetadata}, localStorage: ${hasAdminRoleInLocalStorage})`);
     
-    setIsAdmin(adminStatus);
-    setLoading(false);
-    return adminStatus;
-  };
-
-  // Check admin status when user or isLoaded changes
-  useEffect(() => {
-    checkAdminStatus();
+    // Check all possible locations where admin role might be stored
+    const hasAdminRole = 
+      (user.unsafeMetadata?.role === 'admin') ||
+      (user.privateMetadata?.role === 'admin') ||
+      (user.publicMetadata?.role === 'admin') ||
+      (user.organizations?.length > 0 && user.organizations[0].publicMetadata?.memberRole === 'admin') ||
+      (localStorage.getItem('userIsAdmin') === 'true');
+      
+    console.log("Admin status check result:", hasAdminRole);
+    return hasAdminRole;
   }, [user, isLoaded]);
+  
+  // Effect to update admin status when user changes
+  useEffect(() => {
+    const updateAdminStatus = () => {
+      setLoading(true);
+      
+      if (!isLoaded) {
+        setLoading(true);
+        return;
+      }
+      
+      if (!isSignedIn || !user) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+      
+      // Check if the user has admin role in any of the metadata locations
+      const adminStatus = checkAdminStatus();
+      setIsAdmin(adminStatus);
+      setLoading(false);
+    };
 
+    updateAdminStatus();
+  }, [user, isSignedIn, isLoaded, checkAdminStatus]);
+  
+  // Value object - create it outside of conditional blocks
+  const contextValue = {
+    isAdmin,
+    loading,
+    checkAdminStatus
+  };
+  
   return (
-    <AdminContext.Provider value={{ isAdmin, checkAdminStatus, loading }}>
+    <AdminContext.Provider value={contextValue}>
       {children}
     </AdminContext.Provider>
   );
 };
 
 // Custom hook to use the admin context
-export const useAdmin = () => useContext(AdminContext);
+export const useAdmin = () => {
+  const context = useContext(AdminContext);
+  if (context === undefined) {
+    throw new Error('useAdmin must be used within an AdminProvider');
+  }
+  return context;
+};
 
-export default AdminProvider;
+export default AdminContext;

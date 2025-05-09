@@ -38,8 +38,8 @@ export const useAdminApi = () => {  // Changed from 'useApi' to 'useAdminApi'
   }, [getToken]);
 
   // Admin Dashboard API
-  const getDashboardData = useCallback(async () => {
-    return fetchWithAuth('/api/admin/dashboard');
+  const getDashboardData = useCallback(async (timeRange = 'monthly') => {
+    return fetchWithAuth(`/api/admin/dashboard?timeRange=${timeRange}`);
   }, [fetchWithAuth]);
 
   // Users API
@@ -832,6 +832,9 @@ const updateUserRole = async (userId, role, token) => {
 
 // ... (other methods like getWishlist, addToWishlist, etc. - set requiresAuth accordingly) ...
 
+// Import the centralized mock data
+import mockDashboardData from '../data/mockDashboardData';
+
 export const api = {
     getProducts,
     getProductById,
@@ -845,7 +848,39 @@ export const api = {
     formatCartItem,
     // ... other existing methods
     updateUserRole,
-    syncUser
+    syncUser,
+    // Add or update the dashboard data method
+    getDashboardData: async (timeRange = 'monthly') => {
+        try {
+            const endpoint = `/admin/dashboard?timeRange=${timeRange}`;
+            return await _request('GET', endpoint, null, true);
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            
+            // In development, return mock data to keep the app working
+            if (import.meta.env.DEV) {
+                console.log('DEV MODE: Returning simulated dashboard data');
+                
+                // Try fetching from local server first
+                try {
+                    const response = await fetch(`http://localhost:5000/api/admin/dashboard?timeRange=${timeRange}`);
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (serverError) {
+                    console.warn('Failed to fetch from local server:', serverError);
+                }
+                
+                // Fall back to imported mock data
+                return {
+                    success: true,
+                    data: mockDashboardData
+                };
+            }
+            
+            throw error;
+        }
+    }
 };
 
 // Hook to use the API client instance
