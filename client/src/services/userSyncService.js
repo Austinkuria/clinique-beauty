@@ -11,24 +11,47 @@ import { api } from '../api/apiClient';
 export async function syncUserToSupabase(user, getToken) {
     try {
         // Wait for the token to be available
-        await getToken();
+        const token = await getToken();
         
         if (!user) {
             console.error("Cannot sync user: No user provided");
             return { success: false, message: "No user provided" };
         }
 
-        // Map Clerk user data to our user model
+        // Enhanced user data to include role information
         const userData = {
             clerkId: user.id,
             email: user.primaryEmailAddress?.emailAddress,
             name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-            avatarUrl: user.imageUrl
+            avatarUrl: user.imageUrl,
+            // Include role from metadata to ensure it syncs to Supabase
+            role: user.unsafeMetadata?.role || null
         };
 
         console.log("Syncing user data:", userData);
         
-        // Call the API to sync with our database
+        // Force synchronization with direct API call first for reliability
+        try {
+            console.log("Attempting direct API call to ensure user exists in database");
+            const response = await fetch(`${getApiBaseUrl()}/users/sync`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(userData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log("Direct user sync successful:", result);
+                return result;
+            }
+        } catch (directError) {
+            console.warn("Direct sync failed, falling back to standard API:", directError);
+        }
+        
+        // Fall back to standard API if direct call fails
         const response = await api.syncUser(userData);
         
         // Log sync result

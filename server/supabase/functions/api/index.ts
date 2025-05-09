@@ -993,33 +993,7 @@ serve(async (req: Request) => {
         }
 
         // --- USER ROUTES ---
-        // If the user has an admin role in Clerk metadata, ensure it's synced to the database
-        if (existingUser) {
-            // Check for admin role in metadata
-            const hasAdminRole = 
-                (metadata?.role === 'admin') || 
-                (metadata?.unsafeMetadata?.role === 'admin') ||
-                (metadata?.privateMetadata?.role === 'admin');
-                
-            if (hasAdminRole) {
-                console.log(`[Route Handler POST /api/users/sync] User ${clerkId} has admin role in metadata, syncing to database`);
-                
-                // Use our new RPC function to sync the role
-                const { data: syncResult, error: syncError } = await supabase.rpc(
-                    'sync_clerk_role_to_database',
-                    { 
-                        p_clerk_id: clerkId,
-                        p_metadata: metadata || {} 
-                    }
-                );
-                
-                if (syncError) {
-                    console.warn('[Route Handler POST /api/users/sync] Error syncing role:', syncError);
-                } else if (syncResult) {
-                    console.log('[Route Handler POST /api/users/sync] Successfully synced admin role to database');
-                }
-            }
-        }
+        
         if (req.method === 'POST' && route[0] === 'users' && route[1] === 'sync') {
             console.log('[Route Handler] Matched POST /api/users/sync');
 
@@ -1031,7 +1005,7 @@ serve(async (req: Request) => {
             }
 
             try {
-                const { clerkId, email, name, avatarUrl } = await req.json();
+                const { clerkId, email, name, avatarUrl, role } = await req.json();
                 if (!clerkId || !email || !name) { 
                     return new Response(JSON.stringify({ message: 'Missing required user data' }), { headers, status: 400 });
                 }
@@ -1041,6 +1015,7 @@ serve(async (req: Request) => {
                 // Extract token metadata to check for admin role
                 const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
                 let adminRoleDetected = false;
+                let metadata = {};
                 
                 if (token) {
                     try {
@@ -1053,6 +1028,9 @@ serve(async (req: Request) => {
                                     base64UrlToUint8Array(payloadBase64)
                                 )
                             );
+                            
+                            // Store full metadata for potential use with the RPC function
+                            metadata = payload;
                             
                             // Enhanced logging to debug token content
                             console.log('[Token Debug] Token payload keys:', Object.keys(payload));
@@ -1073,6 +1051,8 @@ serve(async (req: Request) => {
                                 publicMetadata?.role === 'admin' ||
                                 // Check direct properties too
                                 payload?.role === 'admin' ||
+                                // Also check explicitly passed role
+                                role === 'admin' ||
                                 // Check organization membership roles
                                 (payload?.org_metadata && 
                                  Array.isArray(payload.org_metadata) && 
@@ -1100,22 +1080,53 @@ serve(async (req: Request) => {
                     throw findError;
                 }
                 
-                let result;
-                
-                if (existingUser) {
+                // Now that existingUser is defined, we can safely use it
+                if (existingUser && adminRoleDetected) {
                     // If admin role detected in token but user doesn't have admin role in DB
-                    if (adminRoleDetected && existingUser.role !== 'admin') {
+                    if (existingUser.role !== 'admin') {
                         console.log(`[Route Handler POST /api/users/sync] User ${clerkId} has admin role in token but not in DB. Updating...`);
                         
-                        // Use the database function to update role safely
-                        await supabase.rpc('update_user_role', {
-                            p_clerk_id: clerkId,
-                            p_role: 'admin'
-                        });
-                        
-                        console.log(`[Route Handler POST /api/users/sync] User role updated to admin`);
+                        // First try the RPC function
+                        try {
+                            const { data: syncResult, error: syncError } = await supabase.rpc(
+                                'sync_clerk_role_to_database',
+                                { 
+                                    p_clerk_id: clerkId,
+                                    p_metadata: metadata
+                                }
+                            );
+                            
+                            if (syncError) {
+                                console.warn('[Route Handler POST /api/users/sync] Error syncing role via RPC:', syncError);
+                                // Fallback to direct update
+                                await supabase.rpc('update_user_role', {
+                                    p_clerk_id: clerkId,
+                                    p_role: 'admin'
+                                });
+                            } else if (syncResult) {
+                                console.log('[Route Handler POST /api/users/sync] Successfully synced admin role to database via RPC');
+                            }
+                        } catch (rpcError) {
+                            console.error('[Route Handler POST /api/users/sync] Error with RPC functions:', rpcError);
+                            // Fallback to direct update as last resort
+                            const { error: directUpdateError } = await supabase
+                                .from('user_profiles')
+                                .update({ role: 'admin' })
+                                .eq('clerk_id', clerkId);
+                                
+                            if (directUpdateError) {
+                                console.error('[Route Handler POST /api/users/sync] Direct role update failed:', directUpdateError);
+                            } else {
+                                console.log('[Route Handler POST /api/users/sync] Direct role update succeeded');
+                            }
+                        }
                     }
+                }
                 
+                let result;
+                
+                // Rest of the function remains mostly unchanged
+                if (existingUser) {
                     // Update existing user
                     const { data, error: updateError } = await supabase
                         .from('user_profiles')
@@ -1124,7 +1135,7 @@ serve(async (req: Request) => {
                             name,
                             avatar_url: avatarUrl,
                             // Important: Don't override admin role if it was set
-                            role: adminRoleDetected ? 'admin' : undefined,
+                            role: adminRoleDetected ? 'admin' : role || undefined,
                             updated_at: new Date().toISOString()
                         })
                         .eq('clerk_id', clerkId)
@@ -1147,7 +1158,7 @@ serve(async (req: Request) => {
                             email,
                             name,
                             avatar_url: avatarUrl,
-                            role: 'customer' // Default role
+                            role: adminRoleDetected ? 'admin' : (role || 'customer') // Use detected role, explicit role, or default
                         })
                         .select()
                         .single();
