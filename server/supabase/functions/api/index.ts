@@ -1040,25 +1040,41 @@ serve(async (req: Request) => {
                             const privateMetadata = payload.private_metadata || {};
                             const publicMetadata = payload.public_metadata || {};
                             
-                            console.log('[Token Debug] unsafeMetadata:', unsafeMetadata);
-                            console.log('[Token Debug] privateMetadata:', privateMetadata);
-                            console.log('[Token Debug] publicMetadata:', publicMetadata);
+                            // Log the actual values for debugging
+                            console.log('[Token Debug] Role in payload:', payload.role);
+                            console.log('[Token Debug] Role in unsafeMetadata:', unsafeMetadata.role);
+                            console.log('[Token Debug] Role in privateMetadata:', privateMetadata.role);
+                            console.log('[Token Debug] Role in publicMetadata:', publicMetadata.role);
+                            console.log('[Token Debug] Explicit role parameter:', role);
                             
-                            // More comprehensive role check
+                            // Check raw string values too - sometimes the role values are strings
+                            const isAdmin = (val) => {
+                                if (!val) return false;
+                                if (typeof val === 'string') {
+                                    return val.toLowerCase() === 'admin';
+                                }
+                                return val === 'admin';
+                            };
+                            
+                            // More comprehensive role check with more debugging
                             adminRoleDetected = 
-                                unsafeMetadata?.role === 'admin' || 
-                                privateMetadata?.role === 'admin' ||
-                                publicMetadata?.role === 'admin' ||
+                                isAdmin(unsafeMetadata.role) || 
+                                isAdmin(privateMetadata.role) ||
+                                isAdmin(publicMetadata.role) ||
                                 // Check direct properties too
-                                payload?.role === 'admin' ||
+                                isAdmin(payload.role) ||
                                 // Also check explicitly passed role
-                                role === 'admin' ||
+                                isAdmin(role) ||
+                                // Check for nested objects differently
+                                (typeof unsafeMetadata === 'object' && unsafeMetadata !== null && isAdmin(unsafeMetadata.role)) ||
+                                (typeof privateMetadata === 'object' && privateMetadata !== null && isAdmin(privateMetadata.role)) ||
+                                (typeof publicMetadata === 'object' && publicMetadata !== null && isAdmin(publicMetadata.role)) ||
                                 // Check organization membership roles
-                                (payload?.org_metadata && 
+                                (payload.org_metadata && 
                                  Array.isArray(payload.org_metadata) && 
                                  payload.org_metadata.some(org => 
-                                    org?.public_metadata?.memberRole === 'admin' || 
-                                    org?.role === 'admin'
+                                    (org?.public_metadata && isAdmin(org.public_metadata.memberRole)) || 
+                                    isAdmin(org?.role)
                                  ));
                                 
                             console.log(`[Route Handler POST /api/users/sync] Admin role detected in token: ${adminRoleDetected}`);
@@ -1067,7 +1083,7 @@ serve(async (req: Request) => {
                         console.warn('[Route Handler POST /api/users/sync] Error parsing token metadata:', metadataError);
                     }
                 }
-                
+
                 // Check if user already exists
                 const { data: existingUser, error: findError } = await supabase
                     .from('user_profiles')

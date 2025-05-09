@@ -18,17 +18,21 @@ export async function syncUserToSupabase(user, getToken) {
             return { success: false, message: "No user provided" };
         }
 
-        // Enhanced user data to include role information
+        // Enhanced user data to include role information from all possible metadata locations
         const userData = {
             clerkId: user.id,
             email: user.primaryEmailAddress?.emailAddress,
             name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
             avatarUrl: user.imageUrl,
-            // Include role from metadata to ensure it syncs to Supabase
-            role: user.unsafeMetadata?.role || null
+            // Check all possible metadata locations for role
+            role: user.unsafeMetadata?.role || 
+                  user.privateMetadata?.role || 
+                  user.publicMetadata?.role ||
+                  (user.organizations?.length > 0 && 
+                   user.organizations[0].publicMetadata?.memberRole === 'admin' ? 'admin' : null)
         };
 
-        console.log("Syncing user data:", userData);
+        console.log("Syncing user data with role:", userData.role);
         
         // Force synchronization with direct API call first for reliability
         try {
