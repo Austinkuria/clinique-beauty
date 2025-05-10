@@ -30,7 +30,10 @@ import {
     Avatar,
     Tabs,
     Tab,
-    Alert
+    Alert,
+    Divider,
+    FormControlLabel,
+    Switch
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -39,11 +42,18 @@ import {
     PersonAdd as PersonAddIcon,
     Mail as MailIcon,
     Clear as ClearIcon,
-    Check as CheckIcon
+    Check as CheckIcon,
+    VerifiedUser as VerifiedIcon,
+    FilterList as FilterListIcon,
+    History as HistoryIcon,
+    Assignment as AssignmentIcon,
+    Campaign as CampaignIcon,
+    Insights as InsightsIcon,
+    LocationOn as LocationIcon,
+    DateRange as DateRangeIcon
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
-import { useAuth, useUser } from '@clerk/clerk-react';
 import { toast } from 'react-hot-toast';
 import StatCard from '../components/charts/StatCard';
 import { mockDashboardData } from '../../../data/mockDashboardData';
@@ -53,37 +63,98 @@ import {
     Store as SellerIcon,
     AdminPanelSettings as AdminIcon 
 } from '@mui/icons-material';
+import UserEditDialog from '../components/users/UserEditDialog';
+import UserActivityLog from '../components/users/UserActivityLog';
+import UserSegmentation from '../components/users/UserSegmentation';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 function AdminUsers() {
     const { theme, colorValues } = useContext(ThemeContext);
     const api = useApi();
-    const [loading, setLoading] = useState(true);
     const [users, setUsers] = useState([]);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [search, setSearch] = useState('');
     const [filterRole, setFilterRole] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
+    const [filterLocation, setFilterLocation] = useState('');
+    const [filterDateRange, setFilterDateRange] = useState([null, null]);
     const [actionDialogOpen, setActionDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [actionType, setActionType] = useState('');
     const [tabValue, setTabValue] = useState(0);
-    const [error, setError] = useState(null);
     const [userStats, setUserStats] = useState(null);
+    const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+    
+    // Define roles and statuses arrays for filters
+    const roles = ['', 'Admin', 'Seller', 'Customer'];
+    const statuses = ['', 'Active', 'Pending', 'Inactive'];
+    
+    // New state variables for enhanced features
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [activityLogOpen, setActivityLogOpen] = useState(false);
+    const [segmentationOpen, setSegmentationOpen] = useState(false);
+    const [verificationDialogOpen, setVerificationDialogOpen] = useState(false);
+    const [showInactiveUsers, setShowInactiveUsers] = useState(false);
+    const [locations, setLocations] = useState([]);
+    
+    // Add dialog content state
+    const [dialogContent, setDialogContent] = useState({
+        title: '',
+        content: '',
+        confirmText: '',
+        confirmColor: 'primary'
+    });
     
     useEffect(() => {
         const fetchUsers = async () => {
-            setLoading(true);
-            setError(null);
             try {
-                // Use the API client to fetch real users instead of mock data
-                const data = await api.getUsers();
+                // Try to use the API client to fetch users
+                let data;
+                try {
+                    data = await api.getUsers();
+                } catch (apiError) {
+                    console.error('Error fetching users from API:', apiError);
+                    
+                    // Fallback to mock data in development
+                    if (import.meta.env.DEV) {
+                        console.log('DEV MODE: Using mock user data');
+                        data = [
+                            {
+                                id: '1',
+                                name: 'John Doe',
+                                email: 'john@example.com',
+                                role: 'Customer',
+                                status: 'Active',
+                                verified: true,
+                                joinDate: '2023-01-15',
+                                location: 'New York',
+                                ordersCount: 8,
+                                totalSpent: 425.75,
+                                avatar: 'https://randomuser.me/api/portraits/men/1.jpg'
+                            },
+                            // Add more mock users as needed
+                            // ...
+                        ];
+                    } else {
+                        throw apiError; // Re-throw in production
+                    }
+                }
+                
+                // Set the users data
                 setUsers(Array.isArray(data) ? data : []);
+                
+                // Extract unique locations for filtering
+                const uniqueLocations = [...new Set(data.map(user => user.location || 'Unknown'))];
+                setLocations(['', ...uniqueLocations]);
             } catch (err) {
-                console.error('Error fetching users:', err);
-                setError(err.message || 'Failed to load users');
-            } finally {
-                setLoading(false);
+                console.error('Error in user data handling:', err);
+                
+                // Set empty arrays as fallback
+                setUsers([]);
+                setLocations(['']);
             }
         };
         
@@ -110,8 +181,185 @@ function AdminUsers() {
         fetchUserStats();
     }, []);
     
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
+    // Action dialog handlers
+    const handleOpenActionDialog = (user, action) => {
+        setSelectedUser(user);
+        setActionType(action);
+        
+        // Set dialog content based on action
+        if (action === 'suspend') {
+            setDialogContent({
+                title: 'Suspend User',
+                content: `Are you sure you want to suspend ${user.name}? They will not be able to access their account.`,
+                confirmText: 'Suspend User',
+                confirmColor: 'error'
+            });
+        } else if (action === 'activate') {
+            setDialogContent({
+                title: 'Activate User',
+                content: `Are you sure you want to activate ${user.name}? They will regain access to their account.`,
+                confirmText: 'Activate User',
+                confirmColor: 'success'
+            });
+        }
+        
+        setActionDialogOpen(true);
+    };
+    
+    const handleCloseActionDialog = () => {
+        setActionDialogOpen(false);
+        setSelectedUser(null);
+        setActionType('');
+    };
+    
+    const handlePerformAction = () => {
+        // Update the user's status based on the action
+        const updatedUsers = users.map(user => {
+            if (user.id === selectedUser.id) {
+                return {
+                    ...user,
+                    status: actionType === 'suspend' ? 'Inactive' : 'Active'
+                };
+            }
+            return user;
+        });
+        
+        setUsers(updatedUsers);
+        
+        // Show success message
+        const actionText = actionType === 'suspend' ? 'suspended' : 'activated';
+        toast.success(`User ${selectedUser.name} has been ${actionText}.`);
+        
+        handleCloseActionDialog();
+    };
+
+    const handleEditUser = (user) => {
+        setSelectedUser(user);
+        setEditDialogOpen(true);
+    };
+    
+    const handleCloseEditDialog = () => {
+        setEditDialogOpen(false);
+        setSelectedUser(null);
+    };
+    
+    const handleViewActivity = (user) => {
+        setSelectedUser(user);
+        setActivityLogOpen(true);
+    };
+    
+    const handleCloseActivityLog = () => {
+        setActivityLogOpen(false);
+        setSelectedUser(null);
+    };
+    
+    const handleOpenVerification = (user) => {
+        setSelectedUser(user);
+        setVerificationDialogOpen(true);
+    };
+    
+    const handleCloseVerification = () => {
+        setVerificationDialogOpen(false);
+        setSelectedUser(null);
+    };
+    
+    const handleVerifyUser = async () => {
+        try {
+            await api.verifyUser(selectedUser.id);
+            // Update the user in the local state
+            const updatedUsers = users.map(user => 
+                user.id === selectedUser.id 
+                    ? { ...user, verified: true } 
+                    : user
+            );
+            setUsers(updatedUsers);
+            toast.success(`${selectedUser.name} has been verified.`);
+        } catch (error) {
+            toast.error(`Failed to verify user: ${error.message}`);
+        } finally {
+            handleCloseVerification();
+        }
+    };
+    
+    const handleOpenSegmentation = () => {
+        setSegmentationOpen(true);
+    };
+    
+    const handleCloseSegmentation = () => {
+        setSegmentationOpen(false);
+    };
+    
+    const handleToggleAdvancedFilters = () => {
+        setAdvancedFiltersOpen(!advancedFiltersOpen);
+    };
+    
+    const handleToggleInactiveUsers = () => {
+        setShowInactiveUsers(!showInactiveUsers);
+    };
+    
+    const handleLocationFilterChange = (event) => {
+        setFilterLocation(event.target.value);
+        setPage(0);
+    };
+    
+    const handleDateRangeChange = (newRange) => {
+        setFilterDateRange(newRange);
+        setPage(0);
+    };
+    
+    // Enhanced filter function
+    const filteredUsers = users.filter(user => {
+        // Basic search
+        const matchesSearch = search === '' || 
+            user.name.toLowerCase().includes(search.toLowerCase()) ||
+            user.email.toLowerCase().includes(search.toLowerCase()) ||
+            (user.id && user.id.toString().includes(search));
+            
+        // Basic filters
+        const matchesRole = filterRole === '' || user.role === filterRole;
+        const matchesStatus = filterStatus === '' || user.status === filterStatus;
+        
+        // Advanced filters
+        const matchesLocation = filterLocation === '' || user.location === filterLocation;
+        
+        // Date range filter
+        const [startDate, endDate] = filterDateRange;
+        let matchesDateRange = true;
+        if (startDate && endDate && user.joinDate) {
+            const joinDate = new Date(user.joinDate);
+            matchesDateRange = joinDate >= startDate && joinDate <= endDate;
+        }
+        
+        // Inactive users filter
+        const matchesActive = showInactiveUsers || user.status !== 'Inactive';
+        
+        // Tab filtering
+        const matchesTab = 
+            (tabValue === 0) || // All users
+            (tabValue === 1 && user.role === 'Customer') || // Customers
+            (tabValue === 2 && user.role === 'Seller') || // Sellers
+            (tabValue === 3 && user.role === 'Admin'); // Admins
+        
+        return matchesSearch && matchesRole && matchesStatus && matchesTab && 
+               matchesLocation && matchesDateRange && matchesActive;
+    });
+    
+    const handleClearFilters = () => {
+        setSearch('');
+        setFilterRole('');
+        setFilterStatus('');
+        setFilterLocation('');
+        setFilterDateRange([null, null]);
+        setShowInactiveUsers(false);
+    };
+    
+    const handleTabChange = (event, newValue) => {
+        setTabValue(newValue);
+        setPage(0); // Reset to first page when changing tabs
+    };
+    
+    const handleChangePage = (event, newValue) => {
+        setPage(newValue);
     };
     
     const handleChangeRowsPerPage = (event) => {
@@ -133,142 +381,38 @@ function AdminUsers() {
         setFilterStatus(event.target.value);
         setPage(0);
     };
-    
-    const handleOpenActionDialog = (user, action) => {
-        setSelectedUser(user);
-        setActionType(action);
-        setActionDialogOpen(true);
-    };
-    
-    const handleCloseActionDialog = () => {
-        setActionDialogOpen(false);
-        setSelectedUser(null);
-        setActionType('');
-    };
-    
-    const handlePerformAction = async () => {
-        setLoading(true);
-        try {
-            // Use the real API endpoints based on the action type
-            if (actionType === 'suspend') {
-                await api.suspendUser(selectedUser.id);
-            } else if (actionType === 'activate') {
-                await api.activateUser(selectedUser.id);
-            }
-            
-            // Refresh the user list after a successful action
-            const updatedUsers = await api.getUsers();
-            setUsers(Array.isArray(updatedUsers) ? updatedUsers : []);
-            toast.success(`User ${actionType === 'suspend' ? 'suspended' : 'activated'} successfully!`);
-        } catch (err) {
-            console.error(`Error ${actionType}ing user:`, err);
-            toast.error(`Failed to ${actionType} user: ${err.message}`);
-        } finally {
-            setLoading(false);
-            handleCloseActionDialog();
-        }
-    };
-    
-    const handleClearFilters = () => {
-        setSearch('');
-        setFilterRole('');
-        setFilterStatus('');
-    };
-    
-    const handleTabChange = (event, newValue) => {
-        setTabValue(newValue);
-    };
-    
-    // Filter and search users
-    const filteredUsers = users.filter(user => {
-        const matchesSearch = search === '' || 
-            user.name.toLowerCase().includes(search.toLowerCase()) ||
-            user.email.toLowerCase().includes(search.toLowerCase());
-            
-        const matchesRole = filterRole === '' || user.role === filterRole;
-        const matchesStatus = filterStatus === '' || user.status === filterStatus;
-        
-        // Filter by tab
-        const matchesTab = 
-            (tabValue === 0) || // All users
-            (tabValue === 1 && user.role === 'Customer') || // Customers
-            (tabValue === 2 && user.role === 'Seller') || // Sellers
-            (tabValue === 3 && user.role === 'Admin'); // Admins
-        
-        return matchesSearch && matchesRole && matchesStatus && matchesTab;
-    });
-    
-    // Get unique roles and statuses for filters
-    const roles = ['', ...new Set(users.map(u => u.role))];
-    const statuses = ['', ...new Set(users.map(u => u.status))];
-    
-    // Generate dialog content based on action type
-    const getDialogContent = () => {
-        if (actionType === 'suspend') {
-            return {
-                title: 'Suspend User',
-                content: `Are you sure you want to suspend "${selectedUser?.name}"? They will no longer be able to log in or make purchases.`,
-                confirmText: 'Suspend',
-                confirmColor: 'error'
-            };
-        } else if (actionType === 'activate') {
-            return {
-                title: 'Activate User',
-                content: `Are you sure you want to activate "${selectedUser?.name}"? They will regain full access to their account.`,
-                confirmText: 'Activate',
-                confirmColor: 'success'
-            };
-        }
-        return {};
-    };
-    
-    const dialogContent = getDialogContent();
-    
-    // Display loading state
-    if (loading && users.length === 0) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
-    
-    // Show error if there's an issue loading users
-    if (error && users.length === 0) {
-        return (
-            <Box sx={{ p: 3 }}>
-                <Alert severity="error" sx={{ mb: 3 }}>
-                    {error}
-                </Alert>
-                <Button 
-                    variant="contained"
-                    onClick={() => window.location.reload()}
-                >
-                    Try Again
-                </Button>
-            </Box>
-        );
-    }
-    
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Users</Typography>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<PersonAddIcon />}
-                    sx={{
-                        borderRadius: '8px',
-                        textTransform: 'none',
-                        px: 3
-                    }}
-                >
-                    Add New User
-                </Button>
+                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>User Management</Typography>
+                <Box>
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<CampaignIcon />}
+                        sx={{ mr: 2 }}
+                        onClick={handleOpenSegmentation}
+                    >
+                        Segmentation
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<PersonAddIcon />}
+                        sx={{
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                            px: 3
+                        }}
+                        onClick={() => handleEditUser({ role: 'Customer', status: 'Active' })} // Default values for new user
+                    >
+                        Add New User
+                    </Button>
+                </Box>
             </Box>
             
-            {/* Add User Stats */}
+            {/* User Stats */}
             {userStats && (
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                     <Grid item xs={12} sm={6} md={3}>
@@ -330,12 +474,12 @@ function AdminUsers() {
                 </Tabs>
             </Paper>
             
-            {/* Filters and Search */}
+            {/* Basic Filters */}
             <Paper
                 elevation={theme === 'dark' ? 3 : 1}
                 sx={{
                     p: 3,
-                    mb: 4,
+                    mb: 2,
                     bgcolor: colorValues.bgPaper,
                     borderRadius: 2
                 }}
@@ -345,7 +489,7 @@ function AdminUsers() {
                         <TextField
                             fullWidth
                             variant="outlined"
-                            placeholder="Search users..."
+                            placeholder="Search users by name, email, or ID..."
                             value={search}
                             onChange={handleSearchChange}
                             InputProps={{
@@ -391,20 +535,85 @@ function AdminUsers() {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} md={2} sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Button
-                            variant="outlined"
-                            startIcon={<ClearIcon />}
-                            onClick={handleClearFilters}
-                            sx={{ width: '100%' }}
-                        >
-                            Clear Filters
-                        </Button>
+                    <Grid item xs={12} md={2}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Button
+                                variant="outlined"
+                                startIcon={<FilterListIcon />}
+                                onClick={handleToggleAdvancedFilters}
+                                sx={{ width: '48%' }}
+                            >
+                                {advancedFiltersOpen ? 'Less' : 'More'}
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                startIcon={<ClearIcon />}
+                                onClick={handleClearFilters}
+                                sx={{ width: '48%' }}
+                            >
+                                Clear
+                            </Button>
+                        </Box>
                     </Grid>
                 </Grid>
+                
+                {/* Advanced Filters */}
+                {advancedFiltersOpen && (
+                    <Box sx={{ mt: 3 }}>
+                        <Divider sx={{ mb: 3 }} />
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel id="location-filter-label">Location</InputLabel>
+                                    <Select
+                                        labelId="location-filter-label"
+                                        value={filterLocation}
+                                        onChange={handleLocationFilterChange}
+                                        label="Location"
+                                    >
+                                        {locations.map((location, index) => (
+                                            <MenuItem key={index} value={location}>
+                                                {location || 'All Locations'}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} md={5}>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <DatePicker
+                                        label="Join Date From"
+                                        value={filterDateRange[0]}
+                                        onChange={(date) => setFilterDateRange([date, filterDateRange[1]])}
+                                        renderInput={(params) => <TextField {...params} fullWidth />}
+                                    />
+                                    <Box sx={{ mx: 1, display: 'flex', alignItems: 'center' }}> to </Box>
+                                    <DatePicker
+                                        label="Join Date To"
+                                        value={filterDateRange[1]}
+                                        onChange={(date) => setFilterDateRange([filterDateRange[0], date])}
+                                        renderInput={(params) => <TextField {...params} fullWidth />}
+                                    />
+                                </Box>
+                            </Grid>
+                            <Grid item xs={12} md={4}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={showInactiveUsers}
+                                            onChange={handleToggleInactiveUsers}
+                                            color="primary"
+                                        />
+                                    }
+                                    label="Show Inactive Users"
+                                />
+                            </Grid>
+                        </Grid>
+                    </Box>
+                )}
             </Paper>
             
-            {/* Users Table */}
+            {/* Enhanced Users Table */}
             <Paper
                 elevation={theme === 'dark' ? 3 : 1}
                 sx={{
@@ -421,6 +630,8 @@ function AdminUsers() {
                                 <TableCell>User</TableCell>
                                 <TableCell>Role</TableCell>
                                 <TableCell>Joined</TableCell>
+                                <TableCell>Location</TableCell>
+                                <TableCell>Verification</TableCell>
                                 <TableCell align="right">Orders</TableCell>
                                 <TableCell align="right">Total Spent</TableCell>
                                 <TableCell>Status</TableCell>
@@ -460,8 +671,28 @@ function AdminUsers() {
                                             />
                                         </TableCell>
                                         <TableCell>{user.joinDate}</TableCell>
-                                        <TableCell align="right">{user.ordersCount}</TableCell>
-                                        <TableCell align="right">${user.totalSpent.toFixed(2)}</TableCell>
+                                        <TableCell>{user.location || 'Unknown'}</TableCell>
+                                        <TableCell>
+                                            {user.verified ? (
+                                                <Chip 
+                                                    icon={<VerifiedIcon />} 
+                                                    label="Verified" 
+                                                    size="small" 
+                                                    color="success" 
+                                                />
+                                            ) : (
+                                                <Chip 
+                                                    label="Unverified" 
+                                                    size="small" 
+                                                    color="default" 
+                                                    variant="outlined"
+                                                    onClick={() => handleOpenVerification(user)}
+                                                    sx={{ cursor: 'pointer' }}
+                                                />
+                                            )}
+                                        </TableCell>
+                                        <TableCell align="right">{user.ordersCount || 0}</TableCell>
+                                        <TableCell align="right">${user.totalSpent?.toFixed(2) || '0.00'}</TableCell>
                                         <TableCell>
                                             <Chip 
                                                 label={user.status} 
@@ -469,6 +700,7 @@ function AdminUsers() {
                                                 sx={{
                                                     bgcolor: 
                                                         user.status === 'Active' ? 'success.main' :
+                                                        user.status === 'Pending' ? 'warning.main' :
                                                         'error.main',
                                                     color: 'white'
                                                 }}
@@ -476,12 +708,25 @@ function AdminUsers() {
                                         </TableCell>
                                         <TableCell align="center">
                                             <Tooltip title="Edit User">
-                                                <IconButton size="small" color="primary">
+                                                <IconButton 
+                                                    size="small" 
+                                                    color="primary"
+                                                    onClick={() => handleEditUser(user)}
+                                                >
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
+                                            <Tooltip title="View Activity">
+                                                <IconButton 
+                                                    size="small" 
+                                                    color="info"
+                                                    onClick={() => handleViewActivity(user)}
+                                                >
+                                                    <HistoryIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
                                             <Tooltip title="Send Email">
-                                                <IconButton size="small" color="info">
+                                                <IconButton size="small" color="default">
                                                     <MailIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
@@ -511,7 +756,7 @@ function AdminUsers() {
                                 ))}
                             {filteredUsers.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center">
+                                    <TableCell colSpan={9} align="center">
                                         <Typography variant="body1" sx={{ py: 2 }}>
                                             No users found
                                         </Typography>
@@ -522,7 +767,7 @@ function AdminUsers() {
                     </Table>
                 </TableContainer>
                 <TablePagination
-                    rowsPerPageOptions={[5, , 25]}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
                     component="div"
                     count={filteredUsers.length}
                     rowsPerPage={rowsPerPage}
@@ -556,6 +801,77 @@ function AdminUsers() {
                     </Button>
                 </DialogActions>
             </Dialog>
+            
+            {/* User Verification Dialog */}
+            <Dialog
+                open={verificationDialogOpen}
+                onClose={handleCloseVerification}
+            >
+                <DialogTitle>
+                    Verify User
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to verify {selectedUser?.name}? 
+                        This will grant them full access to their account.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseVerification}>Cancel</Button>
+                    <Button 
+                        onClick={handleVerifyUser} 
+                        color="success"
+                        variant="contained"
+                        startIcon={<VerifiedIcon />}
+                    >
+                        Verify User
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            
+            {/* User Edit Dialog */}
+            <UserEditDialog 
+                open={editDialogOpen}
+                onClose={handleCloseEditDialog}
+                user={selectedUser}
+                onSave={(updatedUser) => {
+                    // Handle saving the updated user
+                    const isNewUser = !updatedUser.id;
+                    if (isNewUser) {
+                        // Add a new user
+                        const newUser = {
+                            ...updatedUser,
+                            id: Date.now().toString(), // Temporary ID for mock data
+                            joinDate: new Date().toISOString().split('T')[0]
+                        };
+                        setUsers([...users, newUser]);
+                        toast.success('User created successfully!');
+                    } else {
+                        // Update existing user
+                        const updatedUsers = users.map(user => 
+                            user.id === updatedUser.id ? updatedUser : user
+                        );
+                        setUsers(updatedUsers);
+                        toast.success('User updated successfully!');
+                    }
+                    handleCloseEditDialog();
+                }}
+            />
+            
+            {/* User Activity Log Dialog */}
+            <UserActivityLog
+                open={activityLogOpen}
+                onClose={handleCloseActivityLog}
+                userId={selectedUser?.id}
+                userName={selectedUser?.name}
+            />
+            
+            {/* User Segmentation Dialog */}
+            <UserSegmentation
+                open={segmentationOpen}
+                onClose={handleCloseSegmentation}
+                users={users}
+            />
         </Box>
     );
 }

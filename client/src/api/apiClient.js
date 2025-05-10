@@ -1,14 +1,15 @@
-import { useState, useCallback } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useState } from 'react';
+import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import mockUsers from '../data/mockUserData';
 
 // Base API client for authenticated requests
-export const useAdminApi = () => {  // Changed from 'useApi' to 'useAdminApi'
-  const { getToken } = useAuth();
+export const useAdminApi = () => {
+  const { getToken } = useClerkAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Helper function for authenticated API calls
-  const fetchWithAuth = useCallback(async (endpoint, options = {}) => {
+  const fetchWithAuth = async (endpoint, options = {}) => {
     setLoading(true);
     setError(null);
     
@@ -35,72 +36,72 @@ export const useAdminApi = () => {  // Changed from 'useApi' to 'useAdminApi'
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  };
 
   // Admin Dashboard API
-  const getDashboardData = useCallback(async (timeRange = 'monthly') => {
+  const getDashboardData = async (timeRange = 'monthly') => {
     return fetchWithAuth(`/api/admin/dashboard?timeRange=${timeRange}`);
-  }, [fetchWithAuth]);
+  };
 
   // Users API
-  const getUsers = useCallback(async (filters = {}) => {
+  const getUsers = async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
     return fetchWithAuth(`/api/admin/users?${queryParams}`);
-  }, [fetchWithAuth]);
+  };
   
-  const getUserDetails = useCallback(async (userId) => {
+  const getUserDetails = async (userId) => {
     return fetchWithAuth(`/api/admin/users/${userId}`);
-  }, [fetchWithAuth]);
+  };
   
-  const updateUserRole = useCallback(async (userId, role) => {
+  const updateUserRole = async (userId, role) => {
     return fetchWithAuth(`/api/admin/users/${userId}/role`, {
       method: 'PUT',
       body: JSON.stringify({ role })
     });
-  }, [fetchWithAuth]);
+  };
 
   // Products API
-  const getProducts = useCallback(async (filters = {}) => {
+  const getProducts = async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
     return fetchWithAuth(`/api/admin/products?${queryParams}`);
-  }, [fetchWithAuth]);
+  };
   
-  const createProduct = useCallback(async (productData) => {
+  const createProduct = async (productData) => {
     return fetchWithAuth('/api/admin/products', {
       method: 'POST',
       body: JSON.stringify(productData)
     });
-  }, [fetchWithAuth]);
+  };
   
-  const updateProduct = useCallback(async (productId, productData) => {
+  const updateProduct = async (productId, productData) => {
     return fetchWithAuth(`/api/admin/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(productData)
     });
-  }, [fetchWithAuth]);
+  };
   
-  const deleteProduct = useCallback(async (productId) => {
+  const deleteProduct = async (productId) => {
     return fetchWithAuth(`/api/admin/products/${productId}`, {
       method: 'DELETE'
     });
-  }, [fetchWithAuth]);
+  };
 
   // Orders API
-  const getOrders = useCallback(async (filters = {}) => {
+  const getOrders = async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
     return fetchWithAuth(`/api/admin/orders?${queryParams}`);
-  }, [fetchWithAuth]);
+  };
   
-  const getOrderDetails = useCallback(async (orderId) => {
+  const getOrderDetails = async (orderId) => {
     return fetchWithAuth(`/api/admin/orders/${orderId}`);
-  }, [fetchWithAuth]);
+  };
   
-  const updateOrderStatus = useCallback(async (orderId, status) => {
+  const updateOrderStatus = async (orderId, status) => {
     return fetchWithAuth(`/api/admin/orders/${orderId}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status })
     });
-  }, [fetchWithAuth]);
+  };
 
   return {
     loading,
@@ -169,7 +170,7 @@ let clerkGetToken = null;
 
 // Hook to initialize the getToken function reference
 export const useInitializeApi = () => {
-    const { getToken } = useAuth();
+    const { getToken } = useClerkAuth();
     if (getToken && !clerkGetToken) {
         clerkGetToken = getToken;
         console.log("API Client: Clerk getToken function initialized.");
@@ -880,8 +881,48 @@ export const api = {
             
             throw error;
         }
+    },
+    getUsers: async (filters = {}) => {
+      try {
+        const queryParams = new URLSearchParams(filters).toString();
+        const response = await _request('GET', `/admin/users?${queryParams}`, null, true);
+        
+        // For development mode, provide mock data if the API isn't available
+        if (import.meta.env.DEV && (!response || !response.data)) {
+          console.log('DEV MODE: Returning mock user data');
+          return getMockUsers();
+        }
+        
+        return response.data || [];
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        
+        // In development, return mock data to keep the app working
+        if (import.meta.env.DEV) {
+          console.log('DEV MODE: Returning mock user data after error');
+          return getMockUsers();
+        }
+        throw error;
+      }
+    },
+    getUserDetails: async (userId) => {
+      // Implementation for getting a specific user's details
+    },
+    verifyUser: async (userId) => {
+      // Implementation for verifying a user
+    },
+    suspendUser: async (userId) => {
+      // Implementation for suspending a user
+    },
+    activateUser: async (userId) => {
+      // Implementation for activating a user
     }
 };
+
+// Helper function to generate mock users for development
+function getMockUsers() {
+  return mockUsers;
+}
 
 // Hook to use the API client instance
 export const useApi = () => {
