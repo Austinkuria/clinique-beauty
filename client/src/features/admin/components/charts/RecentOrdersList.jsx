@@ -6,8 +6,11 @@ import {
     ListItemText,
     Avatar,
     Typography,
-    Divider
+    Divider,
+    Box,
+    Chip
 } from '@mui/material';
+import { LocationOn as LocationIcon } from '@mui/icons-material';
 import { ThemeContext } from '../../../../context/ThemeContext';
 
 const RecentOrdersList = ({ orders, maxItems = 8 }) => {
@@ -39,13 +42,22 @@ const RecentOrdersList = ({ orders, maxItems = 8 }) => {
                                         variant="body2"
                                         sx={{
                                             color: 
-                                                order.status === 'Completed' ? 'success.main' :
+                                                order.status === 'Completed' || order.status === 'Delivered' ? 'success.main' :
                                                 order.status === 'Processing' ? 'info.main' : 
+                                                order.status === 'Shipped' ? 'primary.main' :
                                                 'warning.main'
                                         }}
                                     >
                                         {order.status}
                                     </Typography>
+                                    {order.location && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                                            <LocationIcon fontSize="small" color="action" sx={{ mr: 0.5, fontSize: '0.875rem' }}/>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {order.location}
+                                            </Typography>
+                                        </Box>
+                                    )}
                                 </>
                             }
                         />

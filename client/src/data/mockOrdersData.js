@@ -5,12 +5,14 @@
 export const mockOrders = [
     {
         id: 'ORD-1001',
-        customer: 'Emma Watson',
-        email: 'emma.watson@example.com',
+        customer: 'Wanjiku Kamau',
+        email: 'wanjiku.kamau@gmail.com',
         date: '2023-09-15',
         total: 89.99,
         status: 'Delivered',
         paymentStatus: 'Paid',
+        phone: '+254 712 345 678',
+        location: 'Nairobi, Kenya',
         items: [
             { id: 1, name: 'Moisturizing Cream', quantity: 1, price: 29.99 },
             { id: 2, name: 'Facial Cleanser', quantity: 2, price: 19.99 }
@@ -18,12 +20,14 @@ export const mockOrders = [
     },
     {
         id: 'ORD-1002',
-        customer: 'John Doe',
-        email: 'john.doe@example.com',
+        customer: 'Omondi Otieno',
+        email: 'omondi.otieno@yahoo.com',
         date: '2023-09-14',
         total: 124.50,
         status: 'Processing',
         paymentStatus: 'Paid',
+        phone: '+254 723 456 789',
+        location: 'Kisumu, Kenya',
         items: [
             { id: 3, name: 'Anti-Aging Serum', quantity: 1, price: 59.99 },
             { id: 4, name: 'Eye Cream', quantity: 1, price: 34.99 },
@@ -32,12 +36,14 @@ export const mockOrders = [
     },
     {
         id: 'ORD-1003',
-        customer: 'Alice Smith',
-        email: 'alice.smith@example.com',
+        customer: 'Njeri Mwangi',
+        email: 'njeri.mwangi@gmail.com',
         date: '2023-09-14',
         total: 76.25,
         status: 'Shipped',
         paymentStatus: 'Paid',
+        phone: '+254 735 567 890',
+        location: 'Mombasa, Kenya',
         items: [
             { id: 6, name: 'Body Lotion', quantity: 1, price: 24.99 },
             { id: 7, name: 'Shower Gel', quantity: 2, price: 18.99 }
@@ -45,12 +51,14 @@ export const mockOrders = [
     },
     {
         id: 'ORD-1004',
-        customer: 'Robert Brown',
-        email: 'robert.brown@example.com',
+        customer: 'Kimani Njoroge',
+        email: 'kimani.njoroge@outlook.com',
         date: '2023-09-13',
         total: 212.99,
         status: 'Processing',
         paymentStatus: 'Pending',
+        phone: '+254 701 234 567',
+        location: 'Nakuru, Kenya',
         items: [
             { id: 8, name: 'Premium Face Set', quantity: 1, price: 129.99 },
             { id: 9, name: 'Hair Treatment', quantity: 2, price: 41.50 }
@@ -58,12 +66,14 @@ export const mockOrders = [
     },
     {
         id: 'ORD-1005',
-        customer: 'Jane Cooper',
-        email: 'jane.cooper@example.com',
+        customer: 'Akinyi Ochieng',
+        email: 'akinyi.ochieng@gmail.com',
         date: '2023-09-12',
         total: 45.00,
         status: 'Cancelled',
         paymentStatus: 'Refunded',
+        phone: '+254 756 789 012',
+        location: 'Eldoret, Kenya',
         items: [
             { id: 10, name: 'Hand Cream', quantity: 3, price: 15.00 }
         ]
@@ -87,21 +97,21 @@ export const mockOrderHistory = {
             date: '2023-09-15T10:35:00', 
             status: 'Payment Received', 
             user: 'System', 
-            note: 'Payment confirmed via Credit Card'
+            note: 'Payment confirmed via M-Pesa'
         },
         { 
             id: 3, 
             date: '2023-09-15T14:20:00', 
             status: 'Processing', 
-            user: 'John Smith', 
+            user: 'David Mutua', 
             note: 'Order verified and sent to fulfillment'
         },
         { 
             id: 4, 
             date: '2023-09-16T09:15:00', 
             status: 'Shipped', 
-            user: 'Sarah Johnson', 
-            note: 'Order shipped via FedEx, tracking: FDX123456789'
+            user: 'Faith Mwende', 
+            note: 'Order shipped via Sendy, tracking: SENDY123456789'
         },
         {
             id: 5,
@@ -233,12 +243,106 @@ export const shippingCarriers = [
     { value: 'sendy', label: 'Sendy (Kenya)' },
     { value: 'g4s', label: 'G4S Kenya' },
     { value: 'wells', label: 'Wells Fargo Kenya' },
+    { value: 'posta', label: 'Posta Kenya' },
+    { value: 'glovo', label: 'Glovo Kenya' },
+    { value: 'pickup', label: 'Pick-up Mtaani' },
+    { value: 'jumia', label: 'Jumia Logistics' },
     { value: 'fedex', label: 'FedEx' },
     { value: 'dhl', label: 'DHL' },
     { value: 'ups', label: 'UPS' },
-    { value: 'posta', label: 'Posta Kenya' },
-    { value: 'usps', label: 'USPS' },
-    { value: 'aramex', label: 'Aramex' }
+    { value: 'aramex', label: 'Aramex' },
+    { value: 'usps', label: 'USPS' }
+];
+
+/**
+ * Mock returns data
+ */
+export const mockReturns = [
+    {
+        id: 'RET-001',
+        orderId: 'ORD-1001',
+        customer: 'Wanjiku Kamau',
+        reason: 'Wrong product shade',
+        status: 'Pending',
+        dateRequested: '2023-09-20',
+        phone: '+254 712 345 678',
+        location: 'Nairobi, Kenya',
+        items: [
+            { id: 1, name: 'Moisturizing Cream', quantity: 1, price: 29.99 }
+        ],
+        total: 29.99
+    },
+    {
+        id: 'RET-002',
+        orderId: 'ORD-1003',
+        customer: 'Njeri Mwangi',
+        reason: 'Damaged product',
+        status: 'Approved',
+        dateRequested: '2023-09-19',
+        phone: '+254 735 567 890',
+        location: 'Mombasa, Kenya',
+        items: [
+            { id: 7, name: 'Shower Gel', quantity: 1, price: 18.99 }
+        ],
+        total: 18.99
+    },
+    {
+        id: 'RET-003',
+        orderId: 'ORD-1002',
+        customer: 'Omondi Otieno',
+        reason: 'Changed mind',
+        status: 'Completed',
+        dateRequested: '2023-09-18',
+        dateProcessed: '2023-09-21',
+        phone: '+254 723 456 789',
+        location: 'Kisumu, Kenya',
+        items: [
+            { id: 4, name: 'Eye Cream', quantity: 1, price: 34.99 }
+        ],
+        total: 34.99,
+        refundAmount: 34.99
+    }
+];
+
+/**
+ * Mock order issues data
+ */
+export const mockIssues = [
+    {
+        id: 'ISS-001',
+        orderId: 'ORD-1001',
+        customer: 'Wanjiku Kamau',
+        type: 'Delivery Delay',
+        status: 'Open',
+        priority: 'Medium',
+        dateReported: '2023-09-21',
+        description: 'Package stuck in Westlands distribution center',
+        location: 'Nairobi, Kenya'
+    },
+    {
+        id: 'ISS-002',
+        orderId: 'ORD-1004',
+        customer: 'Kimani Njoroge',
+        type: 'Wrong Items',
+        status: 'In Progress',
+        priority: 'High',
+        dateReported: '2023-09-20',
+        description: 'Received dark shade instead of light shade of foundation',
+        location: 'Nakuru, Kenya'
+    },
+    {
+        id: 'ISS-003',
+        orderId: 'ORD-1003',
+        customer: 'Njeri Mwangi',
+        type: 'Payment Issue',
+        status: 'Resolved',
+        priority: 'Low',
+        dateReported: '2023-09-19',
+        dateResolved: '2023-09-20',
+        description: 'Double charged on M-Pesa',
+        resolution: 'Refund processed via M-Pesa',
+        location: 'Mombasa, Kenya'
+    }
 ];
 
 /**

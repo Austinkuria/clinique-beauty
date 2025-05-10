@@ -106,7 +106,7 @@ import { toast } from 'react-hot-toast';
 import OrderFulfillmentChart from '../components/charts/OrderFulfillmentChart';
 import { mockDashboardData } from '../../../data/mockDashboardData';
 // Import the mock orders data and order history
-import { mockOrders, getOrderHistory, shippingCarriers } from '../../../data/mockOrdersData';
+import { mockOrders, getOrderHistory, shippingCarriers, mockReturns, mockIssues } from '../../../data/mockOrdersData';
 
 // Tab panel component
 function TabPanel(props) {
@@ -192,83 +192,9 @@ function AdminOrders() {
                     // Get pending payment orders
                     setPendingPaymentOrders(mockOrders.filter(order => order.paymentStatus === 'Pending'));
                     
-                    // Mock returns data
-                    setReturnsData([
-                        {
-                            id: 'RET-001',
-                            orderId: 'ORD-1001',
-                            customer: 'Emma Watson',
-                            reason: 'Wrong size',
-                            status: 'Pending',
-                            dateRequested: '2023-09-20',
-                            items: [
-                                { id: 1, name: 'Moisturizing Cream', quantity: 1, price: 29.99 }
-                            ],
-                            total: 29.99
-                        },
-                        {
-                            id: 'RET-002',
-                            orderId: 'ORD-1003',
-                            customer: 'Alice Smith',
-                            reason: 'Damaged product',
-                            status: 'Approved',
-                            dateRequested: '2023-09-19',
-                            items: [
-                                { id: 7, name: 'Shower Gel', quantity: 1, price: 18.99 }
-                            ],
-                            total: 18.99
-                        },
-                        {
-                            id: 'RET-003',
-                            orderId: 'ORD-1002',
-                            customer: 'John Doe',
-                            reason: 'Changed mind',
-                            status: 'Completed',
-                            dateRequested: '2023-09-18',
-                            dateProcessed: '2023-09-21',
-                            items: [
-                                { id: 4, name: 'Eye Cream', quantity: 1, price: 34.99 }
-                            ],
-                            total: 34.99,
-                            refundAmount: 34.99
-                        }
-                    ]);
-                    
-                    // Mock issues data
-                    setIssuesData([
-                        {
-                            id: 'ISS-001',
-                            orderId: 'ORD-1001',
-                            customer: 'Emma Watson',
-                            type: 'Shipping Delay',
-                            status: 'Open',
-                            priority: 'Medium',
-                            dateReported: '2023-09-21',
-                            description: 'Order has not been received yet'
-                        },
-                        {
-                            id: 'ISS-002',
-                            orderId: 'ORD-1004',
-                            customer: 'Robert Brown',
-                            type: 'Wrong Items',
-                            status: 'In Progress',
-                            priority: 'High',
-                            dateReported: '2023-09-20',
-                            description: 'Received different products than ordered'
-                        },
-                        {
-                            id: 'ISS-003',
-                            orderId: 'ORD-1003',
-                            customer: 'Alice Smith',
-                            type: 'Payment Issue',
-                            status: 'Resolved',
-                            priority: 'Low',
-                            dateReported: '2023-09-19',
-                            dateResolved: '2023-09-20',
-                            description: 'Double charged for order',
-                            resolution: 'Refund issued for duplicate charge'
-                        }
-                    ]);
+                    // Set returns and issues data from mock data
+                    setReturnsData(mockReturns);
+                    setIssuesData(mockIssues);
                     
                     setLoading(false);
                 }, 1000);
