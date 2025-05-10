@@ -44,7 +44,13 @@ import {
     ListItemText,
     Divider,
     Snackbar,
-    Alert
+    Alert,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    RadioGroup,
+    Radio,
+    FormControlLabel
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -64,7 +70,14 @@ import {
     Notifications as NotificationIcon,
     Chat as ChatIcon,
     History as HistoryIcon,
-    Add as AddIcon
+    Add as AddIcon,
+    AttachMoney as AttachMoneyIcon,
+    VerifiedUser as VerifiedUserIcon,
+    CreditCard as CreditCardIcon,
+    LocalPrintshop as LocalPrintshopIcon,
+    QrCode as QrCodeIcon,
+    LocalShippingOutlined as TrackingIcon,
+    ContentCopy as CopyIcon
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
@@ -75,8 +88,8 @@ import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import OrderFulfillmentChart from '../components/charts/OrderFulfillmentChart';
 import { mockDashboardData } from '../../../data/mockDashboardData';
-// Import the mock orders data
-import { mockOrders } from '../../../data/mockOrdersData';
+// Import the mock orders data and order history
+import { mockOrders, getOrderHistory, shippingCarriers } from '../../../data/mockOrdersData';
 
 // Tab panel component
 function TabPanel(props) {
@@ -93,38 +106,6 @@ function TabPanel(props) {
         </div>
     );
 }
-
-// Mock order history data
-const getOrderHistory = (orderId) => [
-    { 
-        id: 1, 
-        date: '2023-09-15T10:30:00', 
-        status: 'Order Placed', 
-        user: 'Customer', 
-        note: 'Order placed by customer'
-    },
-    { 
-        id: 2, 
-        date: '2023-09-15T10:35:00', 
-        status: 'Payment Received', 
-        user: 'System', 
-        note: 'Payment confirmed via Credit Card'
-    },
-    { 
-        id: 3, 
-        date: '2023-09-15T14:20:00', 
-        status: 'Processing', 
-        user: 'John Smith', 
-        note: 'Order verified and sent to fulfillment'
-    },
-    { 
-        id: 4, 
-        date: '2023-09-16T09:15:00', 
-        status: 'Shipped', 
-        user: 'Sarah Johnson', 
-        note: 'Order shipped via FedEx, tracking: FDX123456789'
-    }
-];
 
 function AdminOrders() {
     const { theme, colorValues } = useContext(ThemeContext);
@@ -154,6 +135,14 @@ function AdminOrders() {
     const [newNote, setNewNote] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [detailsTabValue, setDetailsTabValue] = useState(0);
+    const [verifyPaymentDialog, setVerifyPaymentDialog] = useState(false);
+    const [reconciliationNote, setReconciliationNote] = useState('');
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+    const [shippingLabelDialog, setShippingLabelDialog] = useState(false);
+    const [selectedShippingCarrier, setSelectedShippingCarrier] = useState('fedex');
+    const [trackingNumber, setTrackingNumber] = useState('');
+    const [trackingUrl, setTrackingUrl] = useState('');
+    const [shippingDetailsExpanded, setShippingDetailsExpanded] = useState(false);
     
     useEffect(() => {
         const fetchOrders = async () => {
@@ -449,6 +438,157 @@ function AdminOrders() {
             case 'Cancelled': return -1;
             default: return 0;
         }
+    };
+    
+    // Payment verification handlers
+    const handleOpenPaymentVerification = (order) => {
+        setSelectedOrder(order);
+        setSelectedPaymentMethod(order.paymentMethod || 'creditCard');
+        setVerifyPaymentDialog(true);
+    };
+    
+    const handleClosePaymentVerification = () => {
+        setVerifyPaymentDialog(false);
+        setReconciliationNote('');
+    };
+    
+    const handleVerifyPayment = () => {
+        // In a real app, you would call your API to verify the payment
+        const updatedOrders = orders.map(order => {
+            if (order.id === selectedOrder.id) {
+                return {
+                    ...order,
+                    paymentStatus: 'Paid',
+                    paymentMethod: selectedPaymentMethod,
+                    paymentVerifiedAt: new Date().toISOString(),
+                    paymentNote: reconciliationNote
+                };
+            }
+            return order;
+        });
+        
+        setOrders(updatedOrders);
+        setPendingPaymentOrders(updatedOrders.filter(order => order.paymentStatus === 'Pending'));
+        
+        // Add to order history
+        const newHistoryItem = {
+            id: orderHistory.length + 1,
+            date: new Date().toISOString(),
+            status: 'Payment Verified',
+            user: 'Admin User',
+            note: reconciliationNote || 'Payment verified and reconciled'
+        };
+        
+        setOrderHistory([...orderHistory, newHistoryItem]);
+        setSnackbar({
+            open: true,
+            message: `Payment for order ${selectedOrder.id} has been verified`,
+            severity: 'success'
+        });
+        
+        handleClosePaymentVerification();
+    };
+    
+    // Shipping label handlers
+    const handleOpenShippingLabel = (order) => {
+        setSelectedOrder(order);
+        setTrackingNumber(order.trackingNumber || generateTrackingNumber());
+        setTrackingUrl(getTrackingUrl(selectedShippingCarrier, trackingNumber));
+        setShippingLabelDialog(true);
+    };
+    
+    const handleCloseShippingLabel = () => {
+        setShippingLabelDialog(false);
+    };
+    
+    const handleGenerateShippingLabel = () => {
+        // In a real app, you would call your API to generate a shipping label
+        const updatedOrders = orders.map(order => {
+            if (order.id === selectedOrder.id) {
+                return {
+                    ...order,
+                    status: 'Shipped',
+                    trackingNumber,
+                    shippingCarrier: selectedShippingCarrier,
+                    shippedAt: new Date().toISOString()
+                };
+            }
+            return order;
+        });
+        
+        setOrders(updatedOrders);
+        setProcessingOrders(updatedOrders.filter(order => order.status === 'Processing'));
+        
+        // Add to order history
+        const newHistoryItem = {
+            id: orderHistory.length + 1,
+            date: new Date().toISOString(),
+            status: 'Shipping Label Generated',
+            user: 'Admin User',
+            note: `Shipping label generated with ${selectedShippingCarrier.toUpperCase()}. Tracking: ${trackingNumber}`
+        };
+        
+        setOrderHistory([...orderHistory, newHistoryItem]);
+        setSnackbar({
+            open: true,
+            message: `Shipping label generated for order ${selectedOrder.id}`,
+            severity: 'success'
+        });
+        
+        handleCloseShippingLabel();
+    };
+    
+    const handleCarrierChange = (event) => {
+        const carrier = event.target.value;
+        setSelectedShippingCarrier(carrier);
+        setTrackingUrl(getTrackingUrl(carrier, trackingNumber));
+    };
+    
+    const handleShippingDetailsToggle = () => {
+        setShippingDetailsExpanded(!shippingDetailsExpanded);
+    };
+    
+    // Helper functions
+    const generateTrackingNumber = () => {
+        // This would be generated by a shipping API in a real app
+        const prefix = 
+            selectedShippingCarrier === 'fedex' ? 'FDX' :
+            selectedShippingCarrier === 'ups' ? 'UPS' : 
+            selectedShippingCarrier === 'usps' ? 'USPS' :
+            selectedShippingCarrier === 'sendy' ? 'SENDY' :
+            selectedShippingCarrier === 'g4s' ? 'G4SKE' :
+            selectedShippingCarrier === 'posta' ? 'PKENA' :
+            selectedShippingCarrier === 'wells' ? 'WFKEN' :
+            selectedShippingCarrier === 'aramex' ? 'ARMX' :
+            selectedShippingCarrier === 'dhl' ? 'DHL' : 'TRK';
+        const random = Math.floor(Math.random() * 10000000000).toString().padStart(10, '0');
+        return `${prefix}${random}`;
+    };
+    
+    const getTrackingUrl = (carrier, number) => {
+        if (!number) return '';
+        // These would be real tracking URLs in a production app
+        switch (carrier) {
+            case 'fedex': return `https://www.fedex.com/fedextrack/?trknbr=${number}`;
+            case 'ups': return `https://www.ups.com/track?tracknum=${number}`;
+            case 'usps': return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${number}`;
+            case 'dhl': return `https://www.dhl.com/us-en/home/tracking/tracking-parcel.html?submit=1&tracking-id=${number}`;
+            case 'sendy': return `https://www.sendyit.com/tracking?tracking_id=${number}`;
+            case 'g4s': return `https://www.g4s.com/en-ke/courier/track-and-trace?waybill=${number}`;
+            case 'posta': return `https://www.posta.co.ke/track-trace?tracking=${number}`;
+            case 'wells': return `https://wells.co.ke/tracking?awb=${number}`;
+            case 'aramex': return `https://www.aramex.com/track/results?ShipmentNumber=${number}`;
+            default: return '';
+        }
+    };
+    
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        setSnackbar({
+            open: true,
+            message: 'Copied to clipboard',
+            severity: 'success'
+        });
     };
     
     if (loading) {
@@ -753,7 +893,7 @@ function AdminOrders() {
                                                             <IconButton 
                                                                 size="small" 
                                                                 color="info"
-                                                                onClick={() => handleOpenActionDialog(order, 'ship')}
+                                                                onClick={() => handleOpenShippingLabel(order)}
                                                             >
                                                                 <ShippingIcon fontSize="small" />
                                                             </IconButton>
@@ -942,7 +1082,7 @@ function AdminOrders() {
                                                 </Button>
                                                 <Button
                                                     startIcon={<ShippingIcon />}
-                                                    onClick={() => handleOpenActionDialog(order, 'ship')}
+                                                    onClick={() => handleOpenShippingLabel(order)}
                                                 >
                                                     Ship
                                                 </Button>
@@ -1057,6 +1197,7 @@ function AdminOrders() {
                                                 <Button
                                                     startIcon={<CheckIcon />}
                                                     color="success"
+                                                    onClick={() => handleOpenPaymentVerification(order)}
                                                 >
                                                     Verify
                                                 </Button>
@@ -1374,6 +1515,261 @@ function AdminOrders() {
                 </DialogActions>
             </Dialog>
 
+            {/* Payment Verification Dialog */}
+            <Dialog
+                open={verifyPaymentDialog}
+                onClose={handleClosePaymentVerification}
+                maxWidth="md"
+                fullWidth
+            >
+                {selectedOrder && (
+                    <>
+                        <DialogTitle>
+                            Verify Payment for Order {selectedOrder.id}
+                        </DialogTitle>
+                        <DialogContent dividers>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Payment Information
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Order ID:</strong> {selectedOrder.id}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Customer:</strong> {selectedOrder.customer}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Amount:</strong> ${selectedOrder.total.toFixed(2)}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Date:</strong> {selectedOrder.date}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Payment Method
+                                    </Typography>
+                                    <RadioGroup
+                                        value={selectedPaymentMethod}
+                                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                                    >
+                                        <FormControlLabel 
+                                            value="creditCard" 
+                                            control={<Radio />} 
+                                            label={
+                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                    <CreditCardIcon sx={{ mr: 1 }} />
+                                                    <span>Credit Card</span>
+                                                </Box>
+                                            } 
+                                        />
+                                        <FormControlLabel 
+                                            value="bankTransfer" 
+                                            control={<Radio />} 
+                                            label={
+                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                    <AttachMoneyIcon sx={{ mr: 1 }} />
+                                                    <span>Bank Transfer</span>
+                                                </Box>
+                                            } 
+                                        />
+                                        <FormControlLabel 
+                                            value="paypal" 
+                                            control={<Radio />} 
+                                            label={
+                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                    <PaymentIcon sx={{ mr: 1 }} />
+                                                    <span>PayPal</span>
+                                                </Box>
+                                            } 
+                                        />
+                                    </RadioGroup>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Divider sx={{ my: 2 }} />
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Reconciliation Notes
+                                    </Typography>
+                                    <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={4}
+                                        placeholder="Add payment verification notes"
+                                        value={reconciliationNote}
+                                        onChange={(e) => setReconciliationNote(e.target.value)}
+                                    />
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleClosePaymentVerification}>Cancel</Button>
+                            <Button 
+                                onClick={handleVerifyPayment} 
+                                variant="contained" 
+                                color="success"
+                                startIcon={<VerifiedUserIcon />}
+                            >
+                                Verify Payment
+                            </Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+            
+            {/* Shipping Label Dialog */}
+            <Dialog
+                open={shippingLabelDialog}
+                onClose={handleCloseShippingLabel}
+                maxWidth="md"
+                fullWidth
+            >
+                {selectedOrder && (
+                    <>
+                        <DialogTitle>
+                            Generate Shipping Label for Order {selectedOrder.id}
+                        </DialogTitle>
+                        <DialogContent dividers>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Shipping Information
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Order ID:</strong> {selectedOrder.id}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Customer:</strong> {selectedOrder.customer}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Items:</strong> {selectedOrder.items.length} items
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Date:</strong> {selectedOrder.date}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Shipping Carrier
+                                    </Typography>
+                                    <RadioGroup
+                                        value={selectedShippingCarrier}
+                                        onChange={handleCarrierChange}
+                                    >
+                                        {shippingCarriers.map((carrier) => (
+                                            <FormControlLabel 
+                                                key={carrier.value}
+                                                value={carrier.value} 
+                                                control={<Radio />} 
+                                                label={carrier.label} 
+                                            />
+                                        ))}
+                                    </RadioGroup>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Divider sx={{ my: 2 }} />
+                                    <Button
+                                        variant="outlined"
+                                        onClick={handleShippingDetailsToggle}
+                                        endIcon={shippingDetailsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                        sx={{ mb: 2 }}
+                                    >
+                                        {shippingDetailsExpanded ? 'Hide Shipping Details' : 'Show Shipping Details'}
+                                    </Button>
+                                    <Collapse in={shippingDetailsExpanded}>
+                                        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+                                            <Typography variant="subtitle2" gutterBottom>
+                                                Shipping Address
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                {selectedOrder.customer}
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                123 Main Street
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                Apt 4B
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                New York, NY 10001
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                United States
+                                            </Typography>
+                                        </Paper>
+                                    </Collapse>
+                                    <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12}>
+                                                <Typography variant="subtitle2" gutterBottom>
+                                                    Tracking Information
+                                                </Typography>
+                                            </Grid>
+                                            <Grid item xs={12} md={8}>
+                                                <TextField
+                                                    fullWidth
+                                                    label="Tracking Number"
+                                                    value={trackingNumber}
+                                                    onChange={(e) => {
+                                                        setTrackingNumber(e.target.value);
+                                                        setTrackingUrl(getTrackingUrl(selectedShippingCarrier, e.target.value));
+                                                    }}
+                                                    InputProps={{
+                                                        endAdornment: (
+                                                            <InputAdornment position="end">
+                                                                <IconButton onClick={() => copyToClipboard(trackingNumber)}>
+                                                                    <CopyIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </InputAdornment>
+                                                        )
+                                                    }}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} md={4}>
+                                                <Button 
+                                                    fullWidth 
+                                                    variant="outlined"
+                                                    startIcon={<QrCodeIcon />}
+                                                    disabled={!trackingNumber}
+                                                >
+                                                    Show QR Code
+                                                </Button>
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                                {trackingUrl && (
+                                                    <Button
+                                                        variant="text"
+                                                        color="primary"
+                                                        startIcon={<TrackingIcon />}
+                                                        component="a"
+                                                        href={trackingUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                    >
+                                                        Track Package
+                                                    </Button>
+                                                )}
+                                            </Grid>
+                                        </Grid>
+                                    </Paper>
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCloseShippingLabel}>Cancel</Button>
+                            <Button 
+                                onClick={handleGenerateShippingLabel} 
+                                variant="contained" 
+                                color="primary"
+                                startIcon={<LocalPrintshopIcon />}
+                            >
+                                Generate Label & Ship
+                            </Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+            
             {/* Snackbar for notifications */}
             <Snackbar
                 open={snackbar.open}
