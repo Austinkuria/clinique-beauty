@@ -43,7 +43,7 @@ export const generateWeeklyData = () => {
 // Main mock data object
 export const mockDashboardData = {
   stats: {
-    revenue: { total: 156789.99, growth: 12.5 },
+    revenue: { total: 156789.99, growth: 12.5, currency: 'KSh' },
     orders: { total: 1256, growth: 8.2 },
     users: { total: 3254, growth: 5.1 },
     products: { total: 527, growth: -2.3 },
@@ -55,7 +55,7 @@ export const mockDashboardData = {
     daily: generateDailyData(),
     weekly: generateWeeklyData(),
     monthly: [
-      { month: 'Jan', revenue: 12000, transactions: 168, avgOrderValue: 71.43 },
+      { month: 'Jan', revenue: 12000, transactions: 168, avgOrderValue: 71.43, currency: 'KSh' },
       { month: 'Feb', revenue: 15000, transactions: 205, avgOrderValue: 73.17 },
       { month: 'Mar', revenue: 18000, transactions: 243, avgOrderValue: 74.07 },
       { month: 'Apr', revenue: 16000, transactions: 213, avgOrderValue: 75.12 },
@@ -69,7 +69,7 @@ export const mockDashboardData = {
       { month: 'Dec', revenue: 28000, transactions: 335, avgOrderValue: 83.58 }
     ],
     yearly: [
-      { year: '2019', revenue: 120000, growth: null },
+      { year: '2019', revenue: 120000, growth: null, currency: 'KSh' },
       { year: '2020', revenue: 150000, growth: 25.0 },
       { year: '2021', revenue: 180000, growth: 20.0 },
       { year: '2022', revenue: 210000, growth: 16.7 },
@@ -114,21 +114,28 @@ export const mockDashboardData = {
     { country: 'USA', sales: 1250, revenue: 87500, growth: 8.5, avgOrderValue: 70 },
     { country: 'Canada', sales: 520, revenue: 36400, growth: 6.2, avgOrderValue: 70 },
     { country: 'UK', sales: 480, revenue: 33600, growth: 7.8, avgOrderValue: 70 },
+    { country: 'Kenya', sales: 410, revenue: 28700, growth: 18.5, avgOrderValue: 70 },
     { country: 'Australia', sales: 320, revenue: 22400, growth: 5.4, avgOrderValue: 70 },
     { country: 'Germany', sales: 290, revenue: 20300, growth: 9.2, avgOrderValue: 70 },
+    { country: 'Nigeria', sales: 285, revenue: 19950, growth: 16.7, avgOrderValue: 70 },
     { country: 'France', sales: 275, revenue: 19250, growth: 4.7, avgOrderValue: 70 },
     { country: 'Japan', sales: 260, revenue: 18200, growth: 3.9, avgOrderValue: 70 },
     { country: 'South Korea', sales: 230, revenue: 16100, growth: 11.3, avgOrderValue: 70 },
+    { country: 'Ghana', sales: 195, revenue: 13650, growth: 14.8, avgOrderValue: 70 },
     { country: 'Brazil', sales: 180, revenue: 12600, growth: 15.8, avgOrderValue: 70 },
     { country: 'Mexico', sales: 175, revenue: 12250, growth: 12.2, avgOrderValue: 70 },
+    { country: 'Tanzania', sales: 170, revenue: 11900, growth: 13.6, avgOrderValue: 70 },
     { country: 'Italy', sales: 165, revenue: 11550, growth: 6.8, avgOrderValue: 70 },
     { country: 'Spain', sales: 152, revenue: 10640, growth: 5.3, avgOrderValue: 70 },
     { country: 'Netherlands', sales: 135, revenue: 9450, growth: 7.9, avgOrderValue: 70 },
+    { country: 'Uganda', sales: 130, revenue: 9100, growth: 12.5, avgOrderValue: 70 },
     { country: 'Sweden', sales: 128, revenue: 8960, growth: 8.4, avgOrderValue: 70 },
     { country: 'Singapore', sales: 115, revenue: 8050, growth: 9.7, avgOrderValue: 70 },
     { country: 'UAE', sales: 108, revenue: 7560, growth: 13.5, avgOrderValue: 70 },
+    { country: 'Rwanda', sales: 105, revenue: 7350, growth: 15.3, avgOrderValue: 70 },
     { country: 'India', sales: 95, revenue: 6650, growth: 17.2, avgOrderValue: 70 },
     { country: 'South Africa', sales: 85, revenue: 5950, growth: 10.8, avgOrderValue: 70 },
+    { country: 'Ethiopia', sales: 80, revenue: 5600, growth: 11.5, avgOrderValue: 70 },
     { country: 'New Zealand', sales: 78, revenue: 5460, growth: 6.5, avgOrderValue: 70 },
     { country: 'Argentina', sales: 65, revenue: 4550, growth: 8.9, avgOrderValue: 70 }
   ],
@@ -169,14 +176,16 @@ export const mockDashboardData = {
   
   // Recent orders with more details
   recentOrders: [
-    { id: 'ORD-1001', customer: 'Emma Watson', total: 89.99, status: 'Completed', date: '2023-09-15', items: 3, paymentMethod: 'Credit Card' },
-    { id: 'ORD-1002', customer: 'John Doe', total: 124.50, status: 'Processing', date: '2023-09-14', items: 4, paymentMethod: 'PayPal' },
-    { id: 'ORD-1003', customer: 'Alice Smith', total: 76.25, status: 'Shipped', date: '2023-09-14', items: 2, paymentMethod: 'Credit Card' },
-    { id: 'ORD-1004', customer: 'Robert Brown', total: 212.99, status: 'Processing', date: '2023-09-13', items: 6, paymentMethod: 'Credit Card' },
-    { id: 'ORD-1005', customer: 'Jane Cooper', total: 45.00, status: 'Completed', date: '2023-09-12', items: 1, paymentMethod: 'M-Pesa' },
-    { id: 'ORD-1006', customer: 'Michael Johnson', total: 156.75, status: 'Shipped', date: '2023-09-12', items: 3, paymentMethod: 'Credit Card' },
-    { id: 'ORD-1007', customer: 'Sarah Williams', total: 97.50, status: 'Completed', date: '2023-09-11', items: 2, paymentMethod: 'PayPal' },
-    { id: 'ORD-1008', customer: 'David Miller', total: 189.25, status: 'Delivered', date: '2023-09-10', items: 5, paymentMethod: 'Credit Card' }
+    { id: 'ORD-1001', customer: 'Wangari Muchiri', total: 89.99, status: 'Completed', date: '2023-09-15', items: 3, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1002', customer: 'John Kamau', total: 124.50, status: 'Processing', date: '2023-09-14', items: 4, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1003', customer: 'Amina Mohamed', total: 76.25, status: 'Shipped', date: '2023-09-14', items: 2, paymentMethod: 'Credit Card', currency: 'KSh' },
+    { id: 'ORD-1004', customer: 'Robert Ouko', total: 212.99, status: 'Processing', date: '2023-09-13', items: 6, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1005', customer: 'Jane Cooper', total: 45.00, status: 'Completed', date: '2023-09-12', items: 1, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1006', customer: 'Michael Otieno', total: 156.75, status: 'Shipped', date: '2023-09-12', items: 3, paymentMethod: 'Credit Card', currency: 'KSh' },
+    { id: 'ORD-1007', customer: 'Faith Njeri', total: 97.50, status: 'Completed', date: '2023-09-11', items: 2, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1008', customer: 'David Ndegwa', total: 189.25, status: 'Delivered', date: '2023-09-10', items: 5, paymentMethod: 'Credit Card', currency: 'KSh' },
+    { id: 'ORD-1009', customer: 'Lucy Wanjiku', total: 112.75, status: 'Completed', date: '2023-09-09', items: 3, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1010', customer: 'Emmanuel Osei', total: 78.50, status: 'Shipped', date: '2023-09-08', items: 2, paymentMethod: 'Mobile Money', currency: 'KSh' }
   ]
 };
 

@@ -200,43 +200,93 @@ function AdminDashboard() {
             </Grid>
             
             {/* Revenue & User Growth Charts */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid 
+                container 
+                spacing={3} 
+                sx={{ 
+                    mb: 4,
+                    alignItems: 'stretch'  // Ensure equal height
+                }}
+            >
                 {/* Revenue Overview Chart */}
-                <Grid item xs={12} md={8}>
+                <Grid 
+                    item 
+                    xs={12} 
+                    sm={12} 
+                    md={7} 
+                    lg={8} 
+                    sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        width: '100%' // Ensure full width of grid cell
+                    }}
+                >
                     <Paper
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
+                            width: '100%', // Ensure paper takes full width
                             height: '100%',
+                            minHeight: '500px',
                             bgcolor: colorValues.bgPaper,
-                            borderRadius: 2
+                            borderRadius: 2,
+                            position: 'relative',
+                            display: 'flex',
+                            flexDirection: 'column'
                         }}
                     >
-                        <Typography variant="h6" sx={{ mb: 2 }}>Revenue Overview</Typography>
-                        <Box sx={{ height: 320 }}>
+                        <Typography variant="h6" sx={{ mb: 3 }}>Revenue Overview</Typography>
+                        
+                        {/* Use flex-grow to fill available space */}
+                        <Box 
+                            sx={{ 
+                                flexGrow: 1,
+                                width: '100%', // Ensure box takes full width
+                                minHeight: '400px',
+                                position: 'relative'
+                            }}
+                        >
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart
                                     data={revenueData}
-                                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                                    margin={{ top: 20, right: 20, left: 0, bottom: 20 }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'} />
                                     <XAxis 
                                         dataKey={
                                             timeRange === 'daily' ? 'day' : 
                                             timeRange === 'weekly' ? 'week' : 
                                             timeRange === 'yearly' ? 'year' : 'month'
-                                        } 
+                                        }
+                                        tick={{ fill: colorValues.text }}
+                                        height={50}
+                                        tickMargin={10}
                                     />
-                                    <YAxis />
-                                    <RechartsTooltip formatter={(value) => [`$${value}`, 'Revenue']} />
-                                    <Legend />
+                                    <YAxis 
+                                        tick={{ fill: colorValues.text }} 
+                                        width={45}
+                                        tickFormatter={(value) => `$${value/1000}k`}
+                                        domain={['auto', 'auto']}
+                                        tickMargin={5}
+                                    />
+                                    <RechartsTooltip 
+                                        formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                                        contentStyle={{
+                                            backgroundColor: colorValues.bgPaper,
+                                            borderColor: colorValues.border,
+                                            borderRadius: '8px',
+                                            color: colorValues.text
+                                        }}
+                                    />
+                                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
                                     <Line 
                                         type="monotone" 
                                         dataKey="revenue" 
                                         stroke={colorValues.primary} 
-                                        activeDot={{ r: 8 }}
-                                        strokeWidth={2}
+                                        activeDot={{ r: 8, fill: colorValues.primary, stroke: colorValues.bgPaper }}
+                                        strokeWidth={3}
                                         name="Revenue"
+                                        dot={{ stroke: colorValues.primary, strokeWidth: 2, r: 5, fill: colorValues.bgPaper }}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
@@ -245,33 +295,77 @@ function AdminDashboard() {
                 </Grid>
                 
                 {/* User Growth Chart */}
-                <Grid item xs={12} md={4}>
+                <Grid 
+                    item 
+                    xs={12} 
+                    sm={12} 
+                    md={5} 
+                    lg={4} 
+                    sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        width: '100%' // Ensure full width of grid cell
+                    }}
+                >
                     <Paper
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
+                            width: '100%', // Ensure paper takes full width
                             height: '100%',
+                            minHeight: '500px',
                             bgcolor: colorValues.bgPaper,
-                            borderRadius: 2
+                            borderRadius: 2,
+                            position: 'relative',
+                            display: 'flex',
+                            flexDirection: 'column'
                         }}
                     >
-                        <Typography variant="h6" sx={{ mb: 2 }}>User Growth</Typography>
-                        <Box sx={{ height: 320 }}>
+                        <Typography variant="h6" sx={{ mb: 3 }}>User Growth</Typography>
+                        
+                        {/* Use flex-grow to fill available space */}
+                        <Box 
+                            sx={{ 
+                                flexGrow: 1,
+                                width: '100%', // Ensure box takes full width
+                                minHeight: '400px',
+                                position: 'relative'
+                            }}
+                        >
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart
                                     data={userGrowth}
-                                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                                    margin={{ top: 20, right: 20, left: 0, bottom: 20 }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" />
-                                    <YAxis />
-                                    <RechartsTooltip />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'} />
+                                    <XAxis 
+                                        dataKey="month" 
+                                        tick={{ fill: colorValues.text }}
+                                        height={50}
+                                        tickMargin={10}
+                                    />
+                                    <YAxis 
+                                        tick={{ fill: colorValues.text }}
+                                        width={40}
+                                        tickMargin={5}
+                                    />
+                                    <RechartsTooltip 
+                                        formatter={(value) => [value.toLocaleString(), 'Users']}
+                                        contentStyle={{
+                                            backgroundColor: colorValues.bgPaper,
+                                            borderColor: colorValues.border,
+                                            borderRadius: '8px',
+                                            color: colorValues.text
+                                        }}
+                                    />
                                     <Area 
                                         type="monotone" 
                                         dataKey="users" 
                                         stroke={colorValues.warning} 
+                                        strokeWidth={3}
                                         fill={`${colorValues.warning}50`}
                                         name="Total Users"
+                                        activeDot={{ r: 8, fill: colorValues.warning, stroke: colorValues.bgPaper }}
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -313,15 +407,9 @@ function AdminDashboard() {
                         <OrderFulfillmentChart fulfillmentData={fulfillmentData} />
                     </Paper>
                 </Grid>
-            </Grid>
-*User Management*
-   - Complete user directory with filtering and search
-   - User profile editing and permission management
-   - Customer verification and account status controls
-   - Activity logs and session monitoring
-   - User segmentation for marketing campaign            
+            </Grid>       
             {/* Geographical Sales Analysis */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid container spacing={3} sx={{ mb: 6 }}>
                 <Grid item xs={12}>
                     <Paper
                         elevation={theme === 'dark' ? 3 : 1}
@@ -337,7 +425,7 @@ function AdminDashboard() {
             </Grid>
             
             {/* Recent Orders */}
-            <Grid container spacing={3}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12}>
                     <Paper
                         elevation={theme === 'dark' ? 3 : 1}

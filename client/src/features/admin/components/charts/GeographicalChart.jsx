@@ -49,10 +49,10 @@ const GeographicalChart = ({ geographicalData }) => {
                 <Tab label="Revenue" />
             </Tabs>
             
-            <Box sx={{ height: 350 }}>
+            <Box sx={{ height: 400, overflow: 'auto' }}>
                 {geographyTab === 0 && (
-                    <TableContainer>
-                        <Table>
+                    <TableContainer sx={{ maxHeight: 350 }}>
+                        <Table stickyHeader>
                             <TableHead>
                                 <TableRow>
                                     <TableCell>Country</TableCell>
