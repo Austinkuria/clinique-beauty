@@ -2,18 +2,8 @@ import React, { useState, useContext } from 'react';
 import { Box, Typography, Rating, TextField, Button, List, ListItem, ListItemText, Divider, Paper, Link } from '@mui/material';
 import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/clerk-react";
 import { ThemeContext } from '../../../context/ThemeContext';
-
-// Mock reviews (replace with API call in a real app)
-const mockReviewsData = {
-    1: [
-        { id: 1, user: 'Alice', rating: 5, comment: 'Absolutely love this moisturizer! My skin feels so hydrated.' },
-        { id: 2, user: 'Bob', rating: 4, comment: 'Great product, works well for sensitive skin.' },
-    ],
-    5: [
-        { id: 3, user: 'Charlie', rating: 4, comment: 'Good foundation, provides nice coverage.' },
-    ],
-    // Add more mock reviews for other product IDs as needed
-};
+// Import mockReviewsData from the separate file
+import { mockReviewsData } from '../../../data/mockReviewsData';
 
 // Mock function to simulate checking purchase history
 // In a real app, this would involve an API call to your backend
