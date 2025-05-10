@@ -42,6 +42,7 @@ import {
 import { useApi } from '../../../../api/apiClient';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { toast } from 'react-hot-toast';
+import { mockSegments as initialMockSegments } from '../../../../data/mockSegmentsData';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -70,36 +71,9 @@ const UserSegmentation = ({ open, onClose, users }) => {
                 // In a real app, fetch from API
                 // const data = await api.getSavedSegments();
                 
-                // For now, use mock data
-                const mockSegments = [
-                    {
-                        id: 1,
-                        name: 'High Value Customers',
-                        conditions: [
-                            { field: 'totalSpent', operator: 'greaterThan', value: 500 }
-                        ],
-                        userCount: 24
-                    },
-                    {
-                        id: 2,
-                        name: 'Recent Customers',
-                        conditions: [
-                            { field: 'lastPurchase', operator: 'lessThan', value: '30days' }
-                        ],
-                        userCount: 56
-                    },
-                    {
-                        id: 3,
-                        name: 'Inactive Users',
-                        conditions: [
-                            { field: 'lastLogin', operator: 'greaterThan', value: '90days' }
-                        ],
-                        userCount: 18
-                    }
-                ];
-                
+                // Use the imported mock data
                 setTimeout(() => {
-                    setSavedSegments(mockSegments);
+                    setSavedSegments(initialMockSegments);
                     setLoading(false);
                 }, 800);
             } catch (error) {
