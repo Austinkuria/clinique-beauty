@@ -77,8 +77,25 @@ import {
     LocalPrintshop as LocalPrintshopIcon,
     QrCode as QrCodeIcon,
     LocalShippingOutlined as TrackingIcon,
-    ContentCopy as CopyIcon
+    ContentCopy as CopyIcon,
+    Assignment as AssignmentIcon,
+    MoneyOff as RefundIcon,
+    ReceiptLong as ReceiptIcon,
+    ReportProblem as ProblemIcon,
+    Support as SupportIcon,
+    Comment as CommentIcon,
+    QuestionAnswer as QuestionAnswerIcon,
+    PlaylistAddCheck as ResolutionIcon
 } from '@mui/icons-material';
+import { 
+    Timeline,
+    TimelineItem,
+    TimelineOppositeContent,
+    TimelineSeparator,
+    TimelineDot,
+    TimelineConnector,
+    TimelineContent 
+} from '@mui/lab';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -143,6 +160,17 @@ function AdminOrders() {
     const [trackingNumber, setTrackingNumber] = useState('');
     const [trackingUrl, setTrackingUrl] = useState('');
     const [shippingDetailsExpanded, setShippingDetailsExpanded] = useState(false);
+    const [returnsData, setReturnsData] = useState([]);
+    const [issuesData, setIssuesData] = useState([]);
+    const [selectedReturn, setSelectedReturn] = useState(null);
+    const [selectedIssue, setSelectedIssue] = useState(null);
+    const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+    const [issueDialogOpen, setIssueDialogOpen] = useState(false);
+    const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+    const [refundAmount, setRefundAmount] = useState('');
+    const [refundReason, setRefundReason] = useState('');
+    const [issueResolutionNote, setIssueResolutionNote] = useState('');
+    const [issueStatus, setIssueStatus] = useState('');
     
     useEffect(() => {
         const fetchOrders = async () => {
@@ -163,6 +191,84 @@ function AdminOrders() {
                     
                     // Get pending payment orders
                     setPendingPaymentOrders(mockOrders.filter(order => order.paymentStatus === 'Pending'));
+                    
+                    // Mock returns data
+                    setReturnsData([
+                        {
+                            id: 'RET-001',
+                            orderId: 'ORD-1001',
+                            customer: 'Emma Watson',
+                            reason: 'Wrong size',
+                            status: 'Pending',
+                            dateRequested: '2023-09-20',
+                            items: [
+                                { id: 1, name: 'Moisturizing Cream', quantity: 1, price: 29.99 }
+                            ],
+                            total: 29.99
+                        },
+                        {
+                            id: 'RET-002',
+                            orderId: 'ORD-1003',
+                            customer: 'Alice Smith',
+                            reason: 'Damaged product',
+                            status: 'Approved',
+                            dateRequested: '2023-09-19',
+                            items: [
+                                { id: 7, name: 'Shower Gel', quantity: 1, price: 18.99 }
+                            ],
+                            total: 18.99
+                        },
+                        {
+                            id: 'RET-003',
+                            orderId: 'ORD-1002',
+                            customer: 'John Doe',
+                            reason: 'Changed mind',
+                            status: 'Completed',
+                            dateRequested: '2023-09-18',
+                            dateProcessed: '2023-09-21',
+                            items: [
+                                { id: 4, name: 'Eye Cream', quantity: 1, price: 34.99 }
+                            ],
+                            total: 34.99,
+                            refundAmount: 34.99
+                        }
+                    ]);
+                    
+                    // Mock issues data
+                    setIssuesData([
+                        {
+                            id: 'ISS-001',
+                            orderId: 'ORD-1001',
+                            customer: 'Emma Watson',
+                            type: 'Shipping Delay',
+                            status: 'Open',
+                            priority: 'Medium',
+                            dateReported: '2023-09-21',
+                            description: 'Order has not been received yet'
+                        },
+                        {
+                            id: 'ISS-002',
+                            orderId: 'ORD-1004',
+                            customer: 'Robert Brown',
+                            type: 'Wrong Items',
+                            status: 'In Progress',
+                            priority: 'High',
+                            dateReported: '2023-09-20',
+                            description: 'Received different products than ordered'
+                        },
+                        {
+                            id: 'ISS-003',
+                            orderId: 'ORD-1003',
+                            customer: 'Alice Smith',
+                            type: 'Payment Issue',
+                            status: 'Resolved',
+                            priority: 'Low',
+                            dateReported: '2023-09-19',
+                            dateResolved: '2023-09-20',
+                            description: 'Double charged for order',
+                            resolution: 'Refund issued for duplicate charge'
+                        }
+                    ]);
                     
                     setLoading(false);
                 }, 1000);
@@ -591,6 +697,157 @@ function AdminOrders() {
         });
     };
     
+    // Returns and Issues handlers
+    const handleViewReturn = (returnItem) => {
+        setSelectedReturn(returnItem);
+        setReturnDialogOpen(true);
+    };
+    
+    const handleCloseReturnDialog = () => {
+        setReturnDialogOpen(false);
+        setSelectedReturn(null);
+    };
+    
+    const handleViewIssue = (issue) => {
+        setSelectedIssue(issue);
+        setIssueStatus(issue.status);
+        setIssueResolutionNote(issue.resolution || '');
+        setIssueDialogOpen(true);
+    };
+    
+    const handleCloseIssueDialog = () => {
+        setIssueDialogOpen(false);
+        setSelectedIssue(null);
+        setIssueResolutionNote('');
+    };
+    
+    const handleApproveReturn = (returnItem) => {
+        const updatedReturns = returnsData.map(item => {
+            if (item.id === returnItem.id) {
+                return { ...item, status: 'Approved' };
+            }
+            return item;
+        });
+        setReturnsData(updatedReturns);
+        setSnackbar({
+            open: true,
+            message: `Return ${returnItem.id} has been approved`,
+            severity: 'success'
+        });
+        setReturnDialogOpen(false);
+    };
+    
+    const handleDenyReturn = (returnItem) => {
+        const updatedReturns = returnsData.map(item => {
+            if (item.id === returnItem.id) {
+                return { ...item, status: 'Denied' };
+            }
+            return item;
+        });
+        setReturnsData(updatedReturns);
+        setSnackbar({
+            open: true,
+            message: `Return ${returnItem.id} has been denied`,
+            severity: 'warning'
+        });
+        setReturnDialogOpen(false);
+    };
+    
+    const handleRefundReturn = (returnItem) => {
+        setSelectedReturn(returnItem);
+        setRefundAmount(returnItem.total.toFixed(2));
+        setRefundDialogOpen(true);
+    };
+    
+    const handleCloseRefundDialog = () => {
+        setRefundDialogOpen(false);
+        setRefundAmount('');
+        setRefundReason('');
+    };
+    
+    const handleProcessRefund = () => {
+        if (!refundAmount || parseFloat(refundAmount) <= 0) {
+            setSnackbar({
+                open: true,
+                message: 'Please enter a valid refund amount',
+                severity: 'error'
+            });
+            return;
+        }
+        
+        const updatedReturns = returnsData.map(item => {
+            if (item.id === selectedReturn.id) {
+                return { 
+                    ...item, 
+                    status: 'Completed', 
+                    refundAmount: parseFloat(refundAmount),
+                    dateProcessed: format(new Date(), 'yyyy-MM-dd')
+                };
+            }
+            return item;
+        });
+        
+        setReturnsData(updatedReturns);
+        setSnackbar({
+            open: true,
+            message: `Refund of $${refundAmount} processed for ${selectedReturn.id}`,
+            severity: 'success'
+        });
+        
+        handleCloseRefundDialog();
+    };
+    
+    const handleResolveIssue = () => {
+        const updatedIssues = issuesData.map(item => {
+            if (item.id === selectedIssue.id) {
+                return { 
+                    ...item, 
+                    status: issueStatus,
+                    resolution: issueResolutionNote,
+                    dateResolved: issueStatus === 'Resolved' ? format(new Date(), 'yyyy-MM-dd') : item.dateResolved
+                };
+            }
+            return item;
+        });
+        
+        setIssuesData(updatedIssues);
+        setSnackbar({
+            open: true,
+            message: `Issue ${selectedIssue.id} has been updated`,
+            severity: 'success'
+        });
+        
+        handleCloseIssueDialog();
+    };
+    
+    const getReturnStatusChipColor = (status) => {
+        switch (status) {
+            case 'Pending': return 'warning';
+            case 'Approved': return 'info';
+            case 'Completed': return 'success';
+            case 'Denied': return 'error';
+            default: return 'default';
+        }
+    };
+    
+    const getIssueStatusChipColor = (status) => {
+        switch (status) {
+            case 'Open': return 'error';
+            case 'In Progress': return 'warning';
+            case 'Resolved': return 'success';
+            default: return 'default';
+        }
+    };
+    
+    const getIssuePriorityChipColor = (priority) => {
+        switch (priority) {
+            case 'High': return 'error';
+            case 'Medium': return 'warning';
+            case 'Low': return 'info';
+            default: return 'default';
+        }
+    };
+    
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -633,6 +890,20 @@ function AdminOrders() {
                         label={
                             <Badge badgeContent={pendingPaymentOrders.length} color="error">
                                 Pending Payment
+                            </Badge>
+                        }
+                    />
+                    <Tab 
+                        label={
+                            <Badge badgeContent={returnsData.filter(r => r.status === 'Pending').length} color="primary">
+                                Returns & Refunds
+                            </Badge>
+                        }
+                    />
+                    <Tab 
+                        label={
+                            <Badge badgeContent={issuesData.filter(i => i.status !== 'Resolved').length} color="error">
+                                Order Issues
                             </Badge>
                         }
                     />
@@ -1227,6 +1498,259 @@ function AdminOrders() {
                 </Paper>
             </TabPanel>
             
+            {/* Returns & Refunds Tab */}
+            <TabPanel value={tabValue} index={3}>
+                <Paper
+                    elevation={theme === 'dark' ? 3 : 1}
+                    sx={{
+                        p: 3,
+                        mb: 4,
+                        bgcolor: colorValues.bgPaper,
+                        borderRadius: 2
+                    }}
+                >
+                    <Typography variant="h6" gutterBottom>Returns & Refunds</Typography>
+                    
+                    <Box sx={{ mb: 3 }}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Card variant="outlined" sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
+                                    <CardContent>
+                                        <Typography variant="h5" gutterBottom>
+                                            {returnsData.filter(r => r.status === 'Pending').length}
+                                        </Typography>
+                                        <Typography variant="body2">Pending Returns</Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                                    <CardContent>
+                                        <Typography variant="h5" gutterBottom>
+                                            {returnsData.filter(r => r.status === 'Completed').length}
+                                        </Typography>
+                                        <Typography variant="body2">Completed Returns</Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Card variant="outlined" sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+                                    <CardContent>
+                                        <Typography variant="h5" gutterBottom>
+                                            {returnsData.filter(r => r.status === 'Approved').length}
+                                        </Typography>
+                                        <Typography variant="body2">Approved Returns</Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Card variant="outlined" sx={{ bgcolor: 'error.light', color: 'error.contrastText' }}>
+                                    <CardContent>
+                                        <Typography variant="h5" gutterBottom>
+                                            {returnsData.filter(r => r.status === 'Denied').length}
+                                        </Typography>
+                                        <Typography variant="body2">Denied Returns</Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        </Grid>
+                    </Box>
+                    
+                    <TableContainer>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Return ID</TableCell>
+                                    <TableCell>Order ID</TableCell>
+                                    <TableCell>Customer</TableCell>
+                                    <TableCell>Date Requested</TableCell>
+                                    <TableCell>Reason</TableCell>
+                                    <TableCell align="right">Amount</TableCell>
+                                    <TableCell>Status</TableCell>
+                                    <TableCell align="center">Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {returnsData.map((returnItem) => (
+                                    <TableRow key={returnItem.id} hover>
+                                        <TableCell>{returnItem.id}</TableCell>
+                                        <TableCell>{returnItem.orderId}</TableCell>
+                                        <TableCell>{returnItem.customer}</TableCell>
+                                        <TableCell>{returnItem.dateRequested}</TableCell>
+                                        <TableCell>{returnItem.reason}</TableCell>
+                                        <TableCell align="right">${returnItem.total.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={returnItem.status} 
+                                                color={getReturnStatusChipColor(returnItem.status)}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <ButtonGroup variant="outlined" size="small">
+                                                <Button
+                                                    startIcon={<VisibilityIcon />}
+                                                    onClick={() => handleViewReturn(returnItem)}
+                                                >
+                                                    View
+                                                </Button>
+                                                {returnItem.status === 'Pending' && (
+                                                    <Button
+                                                        startIcon={<CheckIcon />}
+                                                        color="success"
+                                                        onClick={() => handleApproveReturn(returnItem)}
+                                                    >
+                                                        Approve
+                                                    </Button>
+                                                )}
+                                                {returnItem.status === 'Approved' && (
+                                                    <Button
+                                                        startIcon={<AttachMoneyIcon />}
+                                                        color="primary"
+                                                        onClick={() => handleRefundReturn(returnItem)}
+                                                    >
+                                                        Process Refund
+                                                    </Button>
+                                                )}
+                                            </ButtonGroup>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {returnsData.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={8} align="center">
+                                            <Typography variant="body1" sx={{ py: 2 }}>
+                                                No returns found
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Paper>
+            </TabPanel>
+            
+            {/* Order Issues Tab */}
+            <TabPanel value={tabValue} index={4}>
+                <Paper
+                    elevation={theme === 'dark' ? 3 : 1}
+                    sx={{
+                        p: 3,
+                        mb: 4,
+                        bgcolor: colorValues.bgPaper,
+                        borderRadius: 2
+                    }}
+                >
+                    <Typography variant="h6" gutterBottom>Order Issues</Typography>
+                    
+                    <Box sx={{ mb: 3 }}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <Card variant="outlined" sx={{ bgcolor: 'error.light', color: 'error.contrastText' }}>
+                                    <CardContent>
+                                        <Typography variant="h5" gutterBottom>
+                                            {issuesData.filter(i => i.status === 'Open').length}
+                                        </Typography>
+                                        <Typography variant="body2">Open Issues</Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <Card variant="outlined" sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
+                                    <CardContent>
+                                        <Typography variant="h5" gutterBottom>
+                                            {issuesData.filter(i => i.status === 'In Progress').length}
+                                        </Typography>
+                                        <Typography variant="body2">In Progress</Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={4}>
+                                <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+                                    <CardContent>
+                                        <Typography variant="h5" gutterBottom>
+                                            {issuesData.filter(i => i.status === 'Resolved').length}
+                                        </Typography>
+                                        <Typography variant="body2">Resolved</Typography>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        </Grid>
+                    </Box>
+                    
+                    <TableContainer>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Issue ID</TableCell>
+                                    <TableCell>Order ID</TableCell>
+                                    <TableCell>Customer</TableCell>
+                                    <TableCell>Type</TableCell>
+                                    <TableCell>Reported</TableCell>
+                                    <TableCell>Priority</TableCell>
+                                    <TableCell>Status</TableCell>
+                                    <TableCell align="center">Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {issuesData.map((issue) => (
+                                    <TableRow key={issue.id} hover>
+                                        <TableCell>{issue.id}</TableCell>
+                                        <TableCell>{issue.orderId}</TableCell>
+                                        <TableCell>{issue.customer}</TableCell>
+                                        <TableCell>{issue.type}</TableCell>
+                                        <TableCell>{issue.dateReported}</TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={issue.priority} 
+                                                color={getIssuePriorityChipColor(issue.priority)}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip 
+                                                label={issue.status} 
+                                                color={getIssueStatusChipColor(issue.status)}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <ButtonGroup variant="outlined" size="small">
+                                                <Button
+                                                    startIcon={<VisibilityIcon />}
+                                                    onClick={() => handleViewIssue(issue)}
+                                                >
+                                                    View
+                                                </Button>
+                                                {issue.status !== 'Resolved' && (
+                                                    <Button
+                                                        startIcon={<ResolutionIcon />}
+                                                        color="primary"
+                                                        onClick={() => handleViewIssue(issue)}
+                                                    >
+                                                        Resolve
+                                                    </Button>
+                                                )}
+                                            </ButtonGroup>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {issuesData.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={8} align="center">
+                                            <Typography variant="body1" sx={{ py: 2 }}>
+                                                No issues found
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Paper>
+            </TabPanel>
+            
             {/* View Order Dialog */}
             <Dialog
                 open={viewOrderDialog}
@@ -1768,6 +2292,352 @@ function AdminOrders() {
                         </DialogActions>
                     </>
                 )}
+            </Dialog>
+            
+            {/* Return Detail Dialog */}
+            <Dialog
+                open={returnDialogOpen}
+                onClose={handleCloseReturnDialog}
+                maxWidth="md"
+                fullWidth
+            >
+                {selectedReturn && (
+                    <>
+                        <DialogTitle>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="h6">
+                                    Return {selectedReturn.id}
+                                </Typography>
+                                <Chip 
+                                    label={selectedReturn.status} 
+                                    color={getReturnStatusChipColor(selectedReturn.status)}
+                                />
+                            </Box>
+                        </DialogTitle>
+                        <DialogContent dividers>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Return Information
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Order ID:</strong> {selectedReturn.orderId}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Customer:</strong> {selectedReturn.customer}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Date Requested:</strong> {selectedReturn.dateRequested}
+                                    </Typography>
+                                    {selectedReturn.dateProcessed && (
+                                        <Typography variant="body2">
+                                            <strong>Date Processed:</strong> {selectedReturn.dateProcessed}
+                                        </Typography>
+                                    )}
+                                    <Typography variant="body2">
+                                        <strong>Reason:</strong> {selectedReturn.reason}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Financial Summary
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Items Total:</strong> ${selectedReturn.total.toFixed(2)}
+                                    </Typography>
+                                    {selectedReturn.refundAmount && (
+                                        <Typography variant="body2">
+                                            <strong>Refund Amount:</strong> ${selectedReturn.refundAmount.toFixed(2)}
+                                        </Typography>
+                                    )}
+                                </Grid>
+                                
+                                <Grid item xs={12}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Return Items
+                                    </Typography>
+                                    <Table size="small">
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Product</TableCell>
+                                                <TableCell align="right">Quantity</TableCell>
+                                                <TableCell align="right">Price</TableCell>
+                                                <TableCell align="right">Subtotal</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {selectedReturn.items.map((item) => (
+                                                <TableRow key={item.id}>
+                                                    <TableCell>{item.name}</TableCell>
+                                                    <TableCell align="right">{item.quantity}</TableCell>
+                                                    <TableCell align="right">${item.price.toFixed(2)}</TableCell>
+                                                    <TableCell align="right">
+                                                        ${(item.price * item.quantity).toFixed(2)}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            <TableRow>
+                                                <TableCell colSpan={3} align="right" sx={{ fontWeight: 'bold' }}>
+                                                    Total:
+                                                </TableCell>
+                                                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                                                    ${selectedReturn.total.toFixed(2)}
+                                                </TableCell>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </Grid>
+                                
+                                {selectedReturn.status === 'Pending' && (
+                                    <Grid item xs={12}>
+                                        <Paper variant="outlined" sx={{ p: 2, mt: 2, bgcolor: 'background.default' }}>
+                                            <Typography variant="subtitle2" gutterBottom>
+                                                Return Approval Decision
+                                            </Typography>
+                                            <Typography variant="body2" paragraph>
+                                                Please review the return request and decide whether to approve or deny it.
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                                                <Button
+                                                    variant="outlined"
+                                                    color="error"
+                                                    onClick={() => handleDenyReturn(selectedReturn)}
+                                                >
+                                                    Deny Return
+                                                </Button>
+                                                <Button
+                                                    variant="contained"
+                                                    color="success"
+                                                    onClick={() => handleApproveReturn(selectedReturn)}
+                                                >
+                                                    Approve Return
+                                                </Button>
+                                            </Box>
+                                        </Paper>
+                                    </Grid>
+                                )}
+                                
+                                {selectedReturn.status === 'Approved' && (
+                                    <Grid item xs={12}>
+                                        <Paper variant="outlined" sx={{ p: 2, mt: 2, bgcolor: 'background.default' }}>
+                                            <Typography variant="subtitle2" gutterBottom>
+                                                Process Refund
+                                            </Typography>
+                                            <Typography variant="body2" paragraph>
+                                                Return has been approved. Process the refund when items have been received.
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    onClick={() => handleRefundReturn(selectedReturn)}
+                                                    startIcon={<RefundIcon />}
+                                                >
+                                                    Process Refund
+                                                </Button>
+                                            </Box>
+                                        </Paper>
+                                    </Grid>
+                                )}
+                            </Grid>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCloseReturnDialog}>Close</Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+            
+            {/* Issue Detail Dialog */}
+            <Dialog
+                open={issueDialogOpen}
+                onClose={handleCloseIssueDialog}
+                maxWidth="md"
+                fullWidth
+            >
+                {selectedIssue && (
+                    <>
+                        <DialogTitle>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="h6">
+                                    Issue {selectedIssue.id}
+                                </Typography>
+                                <Chip 
+                                    label={selectedIssue.status} 
+                                    color={getIssueStatusChipColor(selectedIssue.status)}
+                                />
+                            </Box>
+                        </DialogTitle>
+                        <DialogContent dividers>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Issue Information
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Order ID:</strong> {selectedIssue.orderId}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Customer:</strong> {selectedIssue.customer}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Type:</strong> {selectedIssue.type}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Priority:</strong> {selectedIssue.priority}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Date Reported:</strong> {selectedIssue.dateReported}
+                                    </Typography>
+                                    {selectedIssue.dateResolved && (
+                                        <Typography variant="body2">
+                                            <strong>Date Resolved:</strong> {selectedIssue.dateResolved}
+                                        </Typography>
+                                    )}
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <Card variant="outlined" sx={{ height: '100%' }}>
+                                        <CardContent>
+                                            <Typography variant="subtitle1" gutterBottom>
+                                                Issue Description
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                {selectedIssue.description}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                                
+                                <Grid item xs={12}>
+                                    <Divider sx={{ my: 2 }} />
+                                    <Typography variant="subtitle1" gutterBottom>
+                                        Resolution Process
+                                    </Typography>
+                                    
+                                    <FormControl fullWidth sx={{ mb: 2 }}>
+                                        <InputLabel id="issue-status-label">Status</InputLabel>
+                                        <Select
+                                            labelId="issue-status-label"
+                                            value={issueStatus}
+                                            onChange={(e) => setIssueStatus(e.target.value)}
+                                            label="Status"
+                                            disabled={selectedIssue.status === 'Resolved'}
+                                        >
+                                            <MenuItem value="Open">Open</MenuItem>
+                                            <MenuItem value="In Progress">In Progress</MenuItem>
+                                            <MenuItem value="Resolved">Resolved</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                    
+                                    <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={4}
+                                        label="Resolution Notes"
+                                        value={issueResolutionNote}
+                                        onChange={(e) => setIssueResolutionNote(e.target.value)}
+                                        placeholder="Enter details about how this issue was resolved or next steps"
+                                        disabled={selectedIssue.status === 'Resolved'}
+                                        sx={{ mb: 2 }}
+                                    />
+                                    
+                                    {selectedIssue.status === 'Resolved' && selectedIssue.resolution && (
+                                        <Paper variant="outlined" sx={{ p: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
+                                            <Typography variant="subtitle2" gutterBottom>
+                                                Resolution Details
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                {selectedIssue.resolution}
+                                            </Typography>
+                                        </Paper>
+                                    )}
+                                </Grid>
+                                
+                                <Grid item xs={12}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                                        <Button
+                                            startIcon={<SupportIcon />}
+                                            variant="outlined"
+                                        >
+                                            Contact Customer
+                                        </Button>
+                                        
+                                        {selectedIssue.status !== 'Resolved' && (
+                                            <Button
+                                                startIcon={<ReturnIcon />}
+                                                variant="outlined"
+                                                color="primary"
+                                            >
+                                                Create Return
+                                            </Button>
+                                        )}
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCloseIssueDialog}>Cancel</Button>
+                            {selectedIssue.status !== 'Resolved' && (
+                                <Button 
+                                    onClick={handleResolveIssue} 
+                                    variant="contained" 
+                                    color="primary"
+                                    disabled={!issueResolutionNote.trim() && issueStatus === 'Resolved'}
+                                >
+                                    Save Changes
+                                </Button>
+                            )}
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
+            
+            {/* Refund Dialog */}
+            <Dialog
+                open={refundDialogOpen}
+                onClose={handleCloseRefundDialog}
+            >
+                <DialogTitle>
+                    Process Refund for {selectedReturn?.id}
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        Enter the refund amount and reason for the return.
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Refund Amount"
+                        type="number"
+                        fullWidth
+                        value={refundAmount}
+                        onChange={(e) => setRefundAmount(e.target.value)}
+                        sx={{ mb: 2 }}
+                        InputProps={{
+                            startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                        }}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Refund Reason"
+                        type="text"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={refundReason}
+                        onChange={(e) => setRefundReason(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseRefundDialog}>Cancel</Button>
+                    <Button 
+                        onClick={handleProcessRefund} 
+                        color="primary"
+                        variant="contained"
+                    >
+                        Process Refund
+                    </Button>
+                </DialogActions>
             </Dialog>
             
             {/* Snackbar for notifications */}
