@@ -101,6 +101,8 @@ const Suppliers = () => {
   const [formErrors, setFormErrors] = useState({});
   const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
   const [allOrderHistory, setAllOrderHistory] = useState([]);
+  // Add state to track which supplier to create an order for from history
+  const [createOrderFromHistory, setCreateOrderFromHistory] = useState(false);
   
   useEffect(() => {
     // Apply search filter whenever suppliers list or search query changes
@@ -322,6 +324,30 @@ const Suppliers = () => {
   const closeOrderHistory = () => {
     setOrderHistoryOpen(false);
   };
+  
+  // Add function to handle creating a new order from order history
+  const handleCreateNewOrderFromHistory = () => {
+    closeOrderHistory();
+    
+    // Find any preferred supplier, or the first one if none are preferred
+    const preferredSupplier = suppliersList.find(s => s.preferred) || suppliersList[0];
+    
+    if (preferredSupplier) {
+      setReorderSupplier(preferredSupplier);
+      setSelectedProducts([]);
+      setCreateOrderFromHistory(true); // Flag that we're coming from order history
+      setReorderDialogOpen(true);
+    } else {
+      toast.error('No suppliers available to create an order');
+    }
+  };
+  
+  // Modify the useEffect to reset the flag when reorderDialogOpen changes
+  useEffect(() => {
+    if (!reorderDialogOpen) {
+      setCreateOrderFromHistory(false);
+    }
+  }, [reorderDialogOpen]);
   
   return (
     <Box sx={{ p: 3 }}>
@@ -702,10 +728,17 @@ const Suppliers = () => {
       >
         <DialogTitle>
           Create Purchase Order - {reorderSupplier?.name}
+          {createOrderFromHistory && " (New Order)"}
         </DialogTitle>
         <DialogContent dividers>
           {reorderSupplier && (
             <>
+              {createOrderFromHistory && (
+                <Alert severity="info" sx={{ mb: 3 }}>
+                  Creating a new order with {reorderSupplier.name}. Select products to include in this purchase order.
+                </Alert>
+              )}
+              
               <Box mb={3}>
                 <Typography variant="subtitle1" gutterBottom>
                   Supplier Details
@@ -802,7 +835,7 @@ const Suppliers = () => {
             disabled={selectedProducts.length === 0}
             startIcon={<ShoppingCartIcon />}
           >
-            Create Order
+            {createOrderFromHistory ? "Create New Order" : "Create Order"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -876,10 +909,7 @@ const Suppliers = () => {
           <Button 
             variant="outlined" 
             startIcon={<ShoppingCartIcon />}
-            onClick={() => {
-              closeOrderHistory();
-              // Open a new order dialog if needed
-            }}
+            onClick={handleCreateNewOrderFromHistory}
           >
             Create New Order
           </Button>
