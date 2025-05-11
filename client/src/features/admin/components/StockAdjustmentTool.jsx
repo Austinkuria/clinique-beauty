@@ -3,7 +3,7 @@ import {
   Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Button, FormControl, InputLabel, Select, MenuItem,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Grid, Autocomplete, Alert, Collapse
+  Paper, Grid, Autocomplete, Alert, Collapse, InputAdornment
 } from '@mui/material';
 import { 
   Add as AddIcon, 
@@ -94,6 +94,20 @@ const StockAdjustmentTool = ({ open, onClose, onSave }) => {
   const [customReason, setCustomReason] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [historyData, setHistoryData] = useState(mockAdjustmentHistory);
+  const [quantityError, setQuantityError] = useState('');
+  
+  // Handle quantity change with validation
+  const handleQuantityChange = (e) => {
+    const value = e.target.value;
+    
+    // Validate: only allow positive integers
+    if (value === '' || /^[0-9]\d*$/.test(value)) {
+      setQuantity(value);
+      setQuantityError('');
+    } else {
+      setQuantityError('Please enter a valid positive number');
+    }
+  };
   
   const handleSubmit = () => {
     if (!selectedProduct || !quantity || !reason) {
@@ -103,7 +117,7 @@ const StockAdjustmentTool = ({ open, onClose, onSave }) => {
     
     // Validation: Quantity cannot be zero
     if (parseInt(quantity) === 0) {
-      toast.error('Quantity cannot be zero');
+      setQuantityError('Quantity cannot be zero');
       return;
     }
     
@@ -113,7 +127,7 @@ const StockAdjustmentTool = ({ open, onClose, onSave }) => {
                             -Math.abs(parseInt(quantity)) : Math.abs(parseInt(quantity));
                             
     if (selectedProduct.currentStock + effectiveQuantity < 0) {
-      toast.error(`Adjustment would result in negative stock (${selectedProduct.currentStock + effectiveQuantity})`);
+      setQuantityError(`Adjustment would result in negative stock (${selectedProduct.currentStock + effectiveQuantity})`);
       return;
     }
     
@@ -152,6 +166,7 @@ const StockAdjustmentTool = ({ open, onClose, onSave }) => {
     setReason('');
     setNotes('');
     setCustomReason('');
+    setQuantityError('');
   };
   
   const handleClose = () => {
@@ -269,18 +284,26 @@ const StockAdjustmentTool = ({ open, onClose, onSave }) => {
             <TextField
               id="quantity"
               label="Quantity *"
-              type="number"
+              type="text"
               fullWidth
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              InputProps={{
-                startAdornment: adjustmentType === STOCK_MOVEMENT_TYPES.RETURN ? <AddIcon /> : <RemoveIcon />,
-              }}
-              helperText={
-                selectedProduct ? 
+              onChange={handleQuantityChange}
+              error={!!quantityError}
+              helperText={quantityError || (selectedProduct ? 
                 `Current stock: ${selectedProduct.currentStock} units` : 
-                "Select a product to see current stock"
-              }
+                "Select a product to see current stock")}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    {adjustmentType === STOCK_MOVEMENT_TYPES.RETURN ? <AddIcon /> : <RemoveIcon />}
+                  </InputAdornment>
+                ),
+                inputProps: { 
+                  inputMode: 'numeric', 
+                  pattern: '[0-9]*',
+                  min: 1
+                }
+              }}
             />
           </Grid>
           
@@ -351,6 +374,7 @@ const StockAdjustmentTool = ({ open, onClose, onSave }) => {
           color="primary" 
           onClick={handleSubmit}
           startIcon={<CheckIcon />}
+          disabled={!selectedProduct || !quantity || !reason || !!quantityError}
         >
           Submit Adjustment
         </Button>
