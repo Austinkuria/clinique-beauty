@@ -23,6 +23,7 @@ import AdminOrders from './features/admin/pages/Orders';
 import AdminUsers from './features/admin/pages/Users';
 import AdminSettings from './features/admin/pages/Settings';
 import AdminSetup from './features/admin/pages/AdminSetup';
+import AdminInventory from './features/admin/pages/Inventory';
 import AdminGuard from './components/AdminGuard';
 import RevenueAnalytics from './features/admin/pages/analytics/RevenueAnalytics';
 import ProductAnalytics from './features/admin/pages/analytics/ProductAnalytics';
@@ -87,7 +88,6 @@ export const router = createBrowserRouter([
                     // Checkout routes
                     { path: '/checkout', element: <RequireAuth><CheckoutPage /></RequireAuth> },
                     { path: '/checkout/confirmation', element: <RequireAuth><CheckoutConfirmation /></RequireAuth> },
-                    // ... other routes needing MainLayout ...
                 ]
             },
             // Admin Setup Route (protected but doesn't require admin role)
@@ -105,6 +105,7 @@ export const router = createBrowserRouter([
                     { path: 'orders', element: <AdminOrders /> },
                     { path: 'users', element: <AdminUsers /> },
                     { path: 'settings', element: <AdminSettings /> },
+                    {path : 'inventory', element: <AdminInventory />},
                     // New Analytics Routes
                     { path: 'analytics/revenue', element: <RevenueAnalytics /> },
                     { path: 'analytics/products', element: <ProductAnalytics /> },
