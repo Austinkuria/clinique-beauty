@@ -61,12 +61,24 @@ const generateForecastData = (productId = null) => {
   
   // Generate 6 months of forecast
   const forecast = [];
+  
+  // Use trendLabels to determine starting month index
+  // Find the current month in trendLabels
+  const currentMonthName = new Date().toLocaleString('default', { month: 'short' });
+  let startMonthIndex = trendLabels.findIndex(label => label.startsWith(currentMonthName));
+  if (startMonthIndex === -1) startMonthIndex = currentMonth; // fallback to numeric month if not found
+  
   for (let i = 0; i < 6; i++) {
-    const forecastMonth = (currentMonth + i) % 12;
+    // Calculate which month we're forecasting based on trendLabels order
+    const forecastMonthIndex = (startMonthIndex + i) % 12; 
     const forecastYear = currentYear + Math.floor((currentMonth + i) / 12);
     
-    // Use seasonality from inventory trends
-    const seasonalFactor = seasonalityFactors[forecastMonth];
+    // Get the month label from trendLabels when possible
+    const monthLabel = trendLabels[forecastMonthIndex % trendLabels.length].split(' ')[0]; // Extract just the month name
+    const monthDisplay = `${monthLabel} ${forecastYear}`;
+    
+    // Use seasonality from inventory trends based on the month's position in the trendLabels
+    const seasonalFactor = seasonalityFactors[forecastMonthIndex % seasonalityFactors.length];
     
     // Apply trend adjustment
     const trendAdjustment = Math.pow(1 + avgMonthlyChange, i);
@@ -80,13 +92,14 @@ const generateForecastData = (productId = null) => {
     const variance = Math.round(baseForecast * 0.05 * (Math.random() - 0.5));
     
     forecast.push({
-      month: new Date(forecastYear, forecastMonth, 1).toLocaleString('default', { month: 'short', year: 'numeric' }),
+      month: monthDisplay,
       expected: baseForecast + variance,
       optimistic: optimisticForecast + variance,
       pessimistic: pessimisticForecast + variance,
       stockNeeded: Math.round((baseForecast + variance) * 1.2), // 20% buffer
       confidence: Math.round(85 - (i * 5)), // Confidence decreases over time
-      trend: trendDirection
+      trend: trendDirection,
+      seasonalFactor: seasonalFactor.toFixed(2) // Include the seasonal factor for reference
     });
   }
   
@@ -124,9 +137,9 @@ const InventoryForecast = () => {
       setProductForecast([]);
     }
     
-    // Format historical data from inventoryTrends
-    const historicalData = inventoryTrends.labels.map((month, index) => ({
-      month,
+    // Format historical data from inventoryTrends - use trendLabels for month names
+    const historicalData = inventoryTrends.labels.map((monthLabel, index) => ({
+      month: monthLabel,
       stockLevel: inventoryTrends.stockLevels[index],
       stockValue: inventoryTrends.stockValue[index],
       lowStockIncidents: inventoryTrends.lowStockIncidents[index]
@@ -444,6 +457,7 @@ const InventoryForecast = () => {
                   <TableCell align="right">Conservative</TableCell>
                   <TableCell align="right">Optimistic</TableCell>
                   <TableCell align="right">Recommended Stock</TableCell>
+                  <TableCell align="right">Seasonal Factor</TableCell>
                   <TableCell align="right">Confidence</TableCell>
                 </TableRow>
               </TableHead>
@@ -455,6 +469,14 @@ const InventoryForecast = () => {
                     <TableCell align="right">{month.pessimistic} units</TableCell>
                     <TableCell align="right">{month.optimistic} units</TableCell>
                     <TableCell align="right">{month.stockNeeded} units</TableCell>
+                    <TableCell align="right">
+                      <Chip 
+                        label={month.seasonalFactor}
+                        color={parseFloat(month.seasonalFactor) > 1.1 ? 'success' : 
+                               parseFloat(month.seasonalFactor) < 0.9 ? 'warning' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
                     <TableCell align="right">
                       <Chip 
                         label={`${month.confidence}%`}
@@ -473,7 +495,8 @@ const InventoryForecast = () => {
           <Alert severity="info">
             <Typography variant="subtitle2">About the Forecast Model</Typography>
             <Typography variant="body2">
-              This forecast is based on historical sales data, seasonality patterns, and growth trends.
+              This forecast is based on historical sales data from {inventoryTrends.labels[0]} to {inventoryTrends.labels[inventoryTrends.labels.length-1]}.
+              The model incorporates seasonality patterns (seasonal factor) and growth trends from actual inventory data.
               Confidence levels decrease for months further in the future.
               For optimal inventory planning, focus on the next 3 months where confidence is highest.
             </Typography>

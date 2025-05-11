@@ -23,6 +23,7 @@ import AdminUsers from './features/admin/pages/Users';
 import AdminSettings from './features/admin/pages/Settings';
 import AdminSetup from './features/admin/pages/AdminSetup';
 import AdminInventory from './features/admin/pages/Inventory';
+import Suppliers from './features/admin/pages/Suppliers'; // Add this import
 import AdminGuard from './components/AdminGuard';
 import RevenueAnalytics from './features/admin/pages/analytics/RevenueAnalytics';
 import ProductAnalytics from './features/admin/pages/analytics/ProductAnalytics';
@@ -106,6 +107,7 @@ export const router = createBrowserRouter([
                     { path: 'users', element: <AdminUsers /> },
                     { path: 'settings', element: <AdminSettings /> },
                     { path: 'inventory', element: <AdminInventory />},
+                    { path: 'suppliers', element: <Suppliers />}, // Add this route
                     // Analytics Routes
                     { path: 'analytics/revenue', element: <RevenueAnalytics /> },
                     { path: 'analytics/products', element: <ProductAnalytics /> },

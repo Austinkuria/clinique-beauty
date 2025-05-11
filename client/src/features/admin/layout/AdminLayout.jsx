@@ -30,6 +30,7 @@ import {
     Settings as SettingsIcon,
     Store as SellersIcon,
     Storefront as StoreIcon, // Changed to Storefront to avoid duplicate imports
+    Business as BusinessIcon, // Add this for supplier icon
     Notifications as NotificationsIcon,
     ChevronLeft as ChevronLeftIcon,
     Logout as LogoutIcon,
@@ -86,6 +87,7 @@ function AdminLayout() {
         { name: 'Orders', icon: <OrdersIcon />, path: '/admin/orders' },
         { name: 'Users', icon: <UsersIcon />, path: '/admin/users' },
         {name: 'Inventory', icon: <StoreIcon />, path: '/admin/inventory'},
+        { name: 'Suppliers', icon: <BusinessIcon />, path: '/admin/suppliers'}, // Add this menu item
         { name: 'Analytics', icon: <InsightsIcon />, 
           subItems: [
             { name: 'Revenue', path: '/admin/analytics/revenue' },

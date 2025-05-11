@@ -22,6 +22,9 @@ import { toast } from 'react-hot-toast';
 import { useTheme } from '@mui/material/styles';
 import { stockMovements, lowStockAlerts, stockSettings } from '../../../data/mockInventoryData';
 import StockAdjustmentTool from '../components/StockAdjustmentTool';
+import AddStockForm from '../components/AddStockForm';
+import ProcessReturnForm from '../components/ProcessReturnForm';
+import AuditLog from '../components/AuditLog';
 
 // TabPanel component for tab content
 function TabPanel(props) {
@@ -52,6 +55,9 @@ const Inventory = () => {
   const [movements, setMovements] = useState([]);
   const [notificationCount, setNotificationCount] = useState(0);
   const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false);
+  const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [auditLogOpen, setAuditLogOpen] = useState(false);
 
   // Load initial data
   useEffect(() => {
@@ -135,6 +141,48 @@ const Inventory = () => {
     setMovements(prev => [adjustment, ...prev]);
     // Close the dialog
     setAdjustmentDialogOpen(false);
+  };
+
+  // Add these new handlers for the add stock form
+  const openAddStockDialog = () => {
+    setAddStockDialogOpen(true);
+  };
+
+  const closeAddStockDialog = () => {
+    setAddStockDialogOpen(false);
+  };
+
+  const handleAddStockSave = (stockMovement) => {
+    // In a real app, this would update the database
+    // For now, we'll just update our local state
+    setMovements(prev => [stockMovement, ...prev]);
+    // Close the dialog
+    setAddStockDialogOpen(false);
+  };
+
+  // Add these new handlers for the returns form
+  const openReturnDialog = () => {
+    setReturnDialogOpen(true);
+  };
+
+  const closeReturnDialog = () => {
+    setReturnDialogOpen(false);
+  };
+
+  const handleReturnSave = (returnMovement) => {
+    // In a real app, this would update the database
+    // For now, we'll just update our local state
+    setMovements(prev => [returnMovement, ...prev]);
+    // Close the dialog
+    setReturnDialogOpen(false);
+  };
+
+  const openAuditLog = () => {
+    setAuditLogOpen(true);
+  };
+
+  const closeAuditLog = () => {
+    setAuditLogOpen(false);
   };
 
   // Get status color
@@ -306,6 +354,7 @@ const Inventory = () => {
             color="primary" 
             startIcon={<AddIcon />}
             sx={{ mr: 1 }}
+            onClick={openAddStockDialog}
           >
             Add Stock
           </Button>
@@ -313,6 +362,7 @@ const Inventory = () => {
             variant="outlined"
             startIcon={<ReturnIcon />}
             sx={{ mr: 1 }}
+            onClick={openReturnDialog}
           >
             Process Return
           </Button>
@@ -320,9 +370,17 @@ const Inventory = () => {
             variant="outlined"
             startIcon={<RemoveIcon />}
             color="secondary"
+            sx={{ mr: 1 }}
             onClick={openAdjustmentDialog}
           >
             Adjust Stock
+          </Button>
+          <Button 
+            variant="outlined"
+            startIcon={<HistoryIcon />}
+            onClick={openAuditLog}
+          >
+            Audit Log
           </Button>
         </Box>
       </Box>
@@ -477,10 +535,28 @@ const Inventory = () => {
         </Card>
       </TabPanel>
       
+      {/* Add all dialogs */}
       <StockAdjustmentTool 
         open={adjustmentDialogOpen}
         onClose={closeAdjustmentDialog}
         onSave={handleAdjustmentSave}
+      />
+      
+      <AddStockForm
+        open={addStockDialogOpen}
+        onClose={closeAddStockDialog}
+        onSave={handleAddStockSave}
+      />
+      
+      <ProcessReturnForm
+        open={returnDialogOpen}
+        onClose={closeReturnDialog}
+        onSave={handleReturnSave}
+      />
+      
+      <AuditLog
+        open={auditLogOpen}
+        onClose={closeAuditLog}
       />
     </Box>
   );
