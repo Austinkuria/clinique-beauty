@@ -14,8 +14,8 @@ import Makeup from './features/products/pages/Makeup';
 import Fragrance from './features/products/pages/Fragrance';
 import HairProducts from './features/products/pages/HairProducts';
 import ProductDetail from './features/products/ProductDetail';
-import CheckoutPage from './features/checkout/Checkout.jsx'; // Import the Checkout component
-import CheckoutConfirmation from './features/checkout/CheckoutConfirmation.jsx'; // Import the confirmation component
+import CheckoutPage from './features/checkout/Checkout.jsx'; 
+import CheckoutConfirmation from './features/checkout/CheckoutConfirmation.jsx'; 
 import AdminLayout from './features/admin/layout/AdminLayout';
 import AdminDashboard from './features/admin/pages/Dashboard';
 import AdminProducts from './features/admin/pages/Products';
@@ -29,6 +29,7 @@ import RevenueAnalytics from './features/admin/pages/analytics/RevenueAnalytics'
 import ProductAnalytics from './features/admin/pages/analytics/ProductAnalytics';
 import CustomerAnalytics from './features/admin/pages/analytics/CustomerAnalytics';
 import GeographicalAnalytics from './features/admin/pages/analytics/GeographicalAnalytics';
+import StockAlertsReport from './features/admin/pages/analytics/StockAlertsReport';
 import { useTheme } from '@mui/material/styles';
 
 // Lazy-load these components for better performance
@@ -43,7 +44,7 @@ export const router = createBrowserRouter([
         element: <App />,
         errorElement: <RouteErrorElement />,
         children: [
-            // Auth routes might live here, outside MainLayout
+            // Auth routes
             {
                 path: '/auth/login',
                 element: <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>,
@@ -56,7 +57,6 @@ export const router = createBrowserRouter([
                 path: '/auth/login/factor-two',
                 element: <ClerkVerification type="factorTwo" />
             },
-            // Add the missing SSO callback route for login
             {
                 path: '/auth/login/sso-callback',
                 element: <ClerkVerification type="ssoCallback" />,
@@ -105,16 +105,15 @@ export const router = createBrowserRouter([
                     { path: 'orders', element: <AdminOrders /> },
                     { path: 'users', element: <AdminUsers /> },
                     { path: 'settings', element: <AdminSettings /> },
-                    {path : 'inventory', element: <AdminInventory />},
-                    // New Analytics Routes
+                    { path: 'inventory', element: <AdminInventory />},
+                    // Analytics Routes
                     { path: 'analytics/revenue', element: <RevenueAnalytics /> },
                     { path: 'analytics/products', element: <ProductAnalytics /> },
                     { path: 'analytics/customers', element: <CustomerAnalytics /> },
                     { path: 'analytics/geographical', element: <GeographicalAnalytics /> },
+                    { path: 'analytics/stock-alerts', element: <StockAlertsReport /> },
                 ]
             },
-            // Add other routes that *don't* need MainLayout here
-            // e.g., { path: '/admin', element: <AdminLayout />, children: [...] }
         ]
     }
 ]);
