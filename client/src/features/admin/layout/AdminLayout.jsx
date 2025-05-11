@@ -85,6 +85,7 @@ function AdminLayout() {
         { name: 'Products', icon: <ProductsIcon />, path: '/admin/products' },
         { name: 'Orders', icon: <OrdersIcon />, path: '/admin/orders' },
         { name: 'Users', icon: <UsersIcon />, path: '/admin/users' },
+        {name: 'Inventory', icon: <StoreIcon />, path: '/admin/inventory'},
         { name: 'Analytics', icon: <InsightsIcon />, 
           subItems: [
             { name: 'Revenue', path: '/admin/analytics/revenue' },
