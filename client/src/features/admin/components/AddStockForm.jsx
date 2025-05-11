@@ -11,29 +11,25 @@ import {
   Store as StoreIcon
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
-import { STOCK_MOVEMENT_TYPES } from '../../../data/mockInventoryData';
+import { STOCK_MOVEMENT_TYPES, products, suppliers } from '../../../data/mockInventoryData';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format } from 'date-fns';
 
-// Mock products for the form
-const mockProducts = [
-  { id: 1, name: 'Moisturizing Cream', sku: 'SKN-001', currentStock: 45 },
-  { id: 2, name: 'Anti-Aging Serum', sku: 'SKN-002', currentStock: 32 },
-  { id: 3, name: 'Citrus Perfume', sku: 'FRG-001', currentStock: 12 },
-  { id: 4, name: 'Hair Repair Mask', sku: 'HAR-001', currentStock: 8 },
-  { id: 5, name: 'Shower Gel', sku: 'BDY-001', currentStock: 36 },
-  { id: 6, name: 'Day Cream SPF 30', sku: 'SKN-003', currentStock: 22 },
-];
+// Transform products data for the form
+const formattedProducts = products.map(product => ({
+  id: product.id,
+  name: product.name,
+  sku: `SKU-${product.id.toString().padStart(3, '0')}`,
+  currentStock: product.stockLevel
+}));
 
-// Mock suppliers
-const mockSuppliers = [
-  { id: 'SUP-001', name: 'Kenya Cosmetics Ltd.' },
-  { id: 'SUP-002', name: 'Nairobi Fragrances' },
-  { id: 'SUP-003', name: 'Skin Protectors Ltd' },
-  { id: 'SUP-004', name: 'Hair Care Kenya' },
-];
+// Transform suppliers data for the form
+const formattedSuppliers = suppliers.map(supplier => ({
+  id: supplier.id,
+  name: supplier.name
+}));
 
 const AddStockForm = ({ open, onClose, onSave }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -134,7 +130,7 @@ const AddStockForm = ({ open, onClose, onSave }) => {
           <Grid item xs={12} md={6}>
             <Autocomplete
               id="product-select"
-              options={mockProducts}
+              options={formattedProducts}
               getOptionLabel={(option) => `${option.name} (SKU: ${option.sku})`}
               value={selectedProduct}
               onChange={(event, newValue) => {
@@ -181,7 +177,7 @@ const AddStockForm = ({ open, onClose, onSave }) => {
           <Grid item xs={12} md={6}>
             <Autocomplete
               id="supplier-select"
-              options={mockSuppliers}
+              options={formattedSuppliers}
               getOptionLabel={(option) => option.name}
               value={supplier}
               onChange={(event, newValue) => {

@@ -254,10 +254,74 @@ export const stockSettings = {
   }
 };
 
+// Add products data for supplier management
+export const products = [
+  { id: 1, name: 'Moisturizing Cream', category: 'Skincare', stockLevel: 45, safetyStock: 20 },
+  { id: 2, name: 'Anti-Aging Serum', category: 'Skincare', stockLevel: 32, safetyStock: 15 },
+  { id: 3, name: 'Citrus Perfume', category: 'Fragrance', stockLevel: 12, safetyStock: 10 },
+  { id: 4, name: 'Hair Repair Mask', category: 'Hair Care', stockLevel: 8, safetyStock: 12 },
+  { id: 5, name: 'Shower Gel', category: 'Body Care', stockLevel: 36, safetyStock: 18 },
+  { id: 6, name: 'Day Cream SPF 30', category: 'Skincare', stockLevel: 22, safetyStock: 15 },
+  { id: 7, name: 'Body Butter', category: 'Body Care', stockLevel: 28, safetyStock: 14 },
+  { id: 8, name: 'Face Mask', category: 'Skincare', stockLevel: 18, safetyStock: 10 },
+  { id: 9, name: 'Night Repair Serum', category: 'Skincare', stockLevel: 15, safetyStock: 8 },
+  { id: 10, name: 'Lip Balm', category: 'Skincare', stockLevel: 40, safetyStock: 25 },
+];
+
+// Add adjustment history data for audit logs
+export const adjustmentHistory = [
+  { 
+    id: 'ADJ-001', 
+    date: '2023-10-10 09:15', 
+    productId: 1, 
+    productName: 'Moisturizing Cream', 
+    type: STOCK_MOVEMENT_TYPES.ADJUSTMENT, 
+    quantity: 5, 
+    reason: 'Found additional stock during inventory count', 
+    user: 'David Mutua', 
+    notes: 'Verified by store manager'
+  },
+  { 
+    id: 'ADJ-002', 
+    date: '2023-10-09 14:30', 
+    productId: 3, 
+    productName: 'Citrus Perfume', 
+    type: STOCK_MOVEMENT_TYPES.DAMAGED, 
+    quantity: -2, 
+    reason: 'Damaged in storage', 
+    user: 'Njeri Mwangi', 
+    notes: 'Items properly disposed'
+  },
+  { 
+    id: 'ADJ-003', 
+    date: '2023-10-08 11:45', 
+    productId: 4, 
+    productName: 'Hair Repair Mask', 
+    type: STOCK_MOVEMENT_TYPES.ADJUSTMENT, 
+    quantity: -3, 
+    reason: 'Inventory count mismatch', 
+    user: 'James Kamau', 
+    notes: 'Will investigate discrepancy'
+  },
+  { 
+    id: 'ADJ-004', 
+    date: '2023-10-07 16:20', 
+    productId: 2, 
+    productName: 'Anti-Aging Serum', 
+    type: STOCK_MOVEMENT_TYPES.RETURN, 
+    quantity: 1, 
+    reason: 'Customer return - unopened', 
+    user: 'Faith Mwende', 
+    notes: 'Item inspected and returned to inventory'
+  }
+];
+
 export default {
   stockMovements,
   lowStockAlerts,
   inventoryTrends,
   suppliers,
-  stockSettings
+  stockSettings,
+  products,
+  adjustmentHistory
 };

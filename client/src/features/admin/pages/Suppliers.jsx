@@ -25,7 +25,7 @@ import {
   History as HistoryIcon
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
-import { suppliers } from '../../../data/mockInventoryData';
+import { suppliers, products } from '../../../data/mockInventoryData';
 import { format } from 'date-fns';
 
 // Tab panel component
@@ -70,20 +70,6 @@ const generatePurchaseHistory = (supplierId) => {
   // Sort by date (most recent first)
   return history.sort((a, b) => new Date(b.date) - new Date(a.date));
 };
-
-// Mock products with categories
-const mockProducts = [
-  { id: 1, name: 'Moisturizing Cream', category: 'Skincare' },
-  { id: 2, name: 'Anti-Aging Serum', category: 'Skincare' },
-  { id: 3, name: 'Citrus Perfume', category: 'Fragrance' },
-  { id: 4, name: 'Hair Repair Mask', category: 'Hair Care' },
-  { id: 5, name: 'Shower Gel', category: 'Body Care' },
-  { id: 6, name: 'Day Cream SPF 30', category: 'Skincare' },
-  { id: 7, name: 'Body Butter', category: 'Body Care' },
-  { id: 8, name: 'Face Mask', category: 'Skincare' },
-  { id: 9, name: 'Night Repair Serum', category: 'Skincare' },
-  { id: 10, name: 'Lip Balm', category: 'Skincare' }
-];
 
 const Suppliers = () => {
   const [suppliersList, setSuppliersList] = useState(suppliers);
@@ -291,7 +277,7 @@ const Suppliers = () => {
     console.log('Order created:', {
       orderNumber,
       supplier: reorderSupplier,
-      products: selectedProducts.map(id => mockProducts.find(p => p.id === id)),
+      products: selectedProducts.map(id => products.find(p => p.id === id)),
       date: new Date().toISOString(),
       status: 'pending'
     });
@@ -300,7 +286,7 @@ const Suppliers = () => {
   // Get product names based on IDs
   const getProductNames = (productIds) => {
     return productIds
-      .map(id => mockProducts.find(p => p.id === id)?.name)
+      .map(id => products.find(p => p.id === id)?.name)
       .filter(name => name) // Remove undefined
       .join(', ');
   };
@@ -686,7 +672,7 @@ const Suppliers = () => {
                 </Typography>
                 
                 <Grid container spacing={1}>
-                  {mockProducts.map((product) => (
+                  {products.map((product) => (
                     <Grid item xs={12} sm={6} md={4} key={product.id}>
                       <FormControlLabel
                         control={
@@ -780,7 +766,7 @@ const Suppliers = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {mockProducts
+                    {products
                       .filter(product => (reorderSupplier.products || []).includes(product.id))
                       .map((product) => {
                         const deliveryDate = new Date();

@@ -12,65 +12,15 @@ import {
   History as HistoryIcon
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
-import { STOCK_MOVEMENT_TYPES } from '../../../data/mockInventoryData';
+import { STOCK_MOVEMENT_TYPES, products, adjustmentHistory } from '../../../data/mockInventoryData';
 
-// Mock products for the adjustment tool
-const mockProducts = [
-  { id: 1, name: 'Moisturizing Cream', sku: 'SKN-001', currentStock: 45 },
-  { id: 2, name: 'Anti-Aging Serum', sku: 'SKN-002', currentStock: 32 },
-  { id: 3, name: 'Citrus Perfume', sku: 'FRG-001', currentStock: 12 },
-  { id: 4, name: 'Hair Repair Mask', sku: 'HAR-001', currentStock: 8 },
-  { id: 5, name: 'Shower Gel', sku: 'BDY-001', currentStock: 36 },
-  { id: 6, name: 'Day Cream SPF 30', sku: 'SKN-003', currentStock: 22 },
-];
-
-// Mock adjustment history for the audit log
-const mockAdjustmentHistory = [
-  { 
-    id: 'ADJ-001', 
-    date: '2023-10-10 09:15', 
-    productId: 1, 
-    productName: 'Moisturizing Cream', 
-    type: STOCK_MOVEMENT_TYPES.ADJUSTMENT, 
-    quantity: 5, 
-    reason: 'Found additional stock during inventory count', 
-    user: 'David Mutua', 
-    notes: 'Verified by store manager'
-  },
-  { 
-    id: 'ADJ-002', 
-    date: '2023-10-09 14:30', 
-    productId: 3, 
-    productName: 'Citrus Perfume', 
-    type: STOCK_MOVEMENT_TYPES.DAMAGED, 
-    quantity: -2, 
-    reason: 'Damaged in storage', 
-    user: 'Njeri Mwangi', 
-    notes: 'Items properly disposed'
-  },
-  { 
-    id: 'ADJ-003', 
-    date: '2023-10-08 11:45', 
-    productId: 4, 
-    productName: 'Hair Repair Mask', 
-    type: STOCK_MOVEMENT_TYPES.ADJUSTMENT, 
-    quantity: -3, 
-    reason: 'Inventory count mismatch', 
-    user: 'James Kamau', 
-    notes: 'Will investigate discrepancy'
-  },
-  { 
-    id: 'ADJ-004', 
-    date: '2023-10-07 16:20', 
-    productId: 2, 
-    productName: 'Anti-Aging Serum', 
-    type: STOCK_MOVEMENT_TYPES.RETURN, 
-    quantity: 1, 
-    reason: 'Customer return - unopened', 
-    user: 'Faith Mwende', 
-    notes: 'Item inspected and returned to inventory'
-  }
-];
+// Transform products data for the adjustment tool
+const formattedProducts = products.map(product => ({
+  id: product.id,
+  name: product.name,
+  sku: `SKU-${product.id.toString().padStart(3, '0')}`,
+  currentStock: product.stockLevel
+}));
 
 const reasonOptions = [
   'Inventory count adjustment',
@@ -93,7 +43,7 @@ const StockAdjustmentTool = ({ open, onClose, onSave }) => {
   const [notes, setNotes] = useState('');
   const [customReason, setCustomReason] = useState('');
   const [showHistory, setShowHistory] = useState(false);
-  const [historyData, setHistoryData] = useState(mockAdjustmentHistory);
+  const [historyData, setHistoryData] = useState(adjustmentHistory);
   const [quantityError, setQuantityError] = useState('');
   
   // Handle quantity change with validation
@@ -251,7 +201,7 @@ const StockAdjustmentTool = ({ open, onClose, onSave }) => {
           <Grid item xs={12} md={6}>
             <Autocomplete
               id="product-select"
-              options={mockProducts}
+              options={formattedProducts}
               getOptionLabel={(option) => `${option.name} (SKU: ${option.sku})`}
               value={selectedProduct}
               onChange={(event, newValue) => {
