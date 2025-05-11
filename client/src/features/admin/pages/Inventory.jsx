@@ -21,6 +21,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { useTheme } from '@mui/material/styles';
 import { stockMovements, lowStockAlerts, stockSettings } from '../../../data/mockInventoryData';
+import StockAdjustmentTool from '../components/StockAdjustmentTool';
 
 // TabPanel component for tab content
 function TabPanel(props) {
@@ -50,6 +51,7 @@ const Inventory = () => {
   const [alerts, setAlerts] = useState([]);
   const [movements, setMovements] = useState([]);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false);
 
   // Load initial data
   useEffect(() => {
@@ -117,6 +119,22 @@ const Inventory = () => {
 
   const orderProduct = (productName) => {
     toast.success(`Reorder request sent for ${productName}`);
+  };
+
+  const openAdjustmentDialog = () => {
+    setAdjustmentDialogOpen(true);
+  };
+
+  const closeAdjustmentDialog = () => {
+    setAdjustmentDialogOpen(false);
+  };
+
+  const handleAdjustmentSave = (adjustment) => {
+    // In a real app, this would update the database
+    // For now, we'll just update our local state
+    setMovements(prev => [adjustment, ...prev]);
+    // Close the dialog
+    setAdjustmentDialogOpen(false);
   };
 
   // Get status color
@@ -294,8 +312,17 @@ const Inventory = () => {
           <Button 
             variant="outlined"
             startIcon={<ReturnIcon />}
+            sx={{ mr: 1 }}
           >
             Process Return
+          </Button>
+          <Button 
+            variant="outlined"
+            startIcon={<RemoveIcon />}
+            color="secondary"
+            onClick={openAdjustmentDialog}
+          >
+            Adjust Stock
           </Button>
         </Box>
       </Box>
@@ -449,6 +476,12 @@ const Inventory = () => {
           </CardContent>
         </Card>
       </TabPanel>
+      
+      <StockAdjustmentTool 
+        open={adjustmentDialogOpen}
+        onClose={closeAdjustmentDialog}
+        onSave={handleAdjustmentSave}
+      />
     </Box>
   );
 };

@@ -92,6 +92,8 @@ function AdminLayout() {
             { name: 'Products', path: '/admin/analytics/products' },
             { name: 'Customers', path: '/admin/analytics/customers' },
             { name: 'Geographical', path: '/admin/analytics/geographical' },
+            { name: 'Stock Alerts', path: '/admin/analytics/stock-alerts' },
+            { name: 'Inventory Forecast', path: '/admin/analytics/inventory-forecast' },
           ]
         },
         { name: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' },

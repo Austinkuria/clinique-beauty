@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
-import { createBrowserRouter, RouterProvider, useNavigate } from 'react-router-dom';
-import { useUser, useAuth } from '@clerk/clerk-react';
+import React from 'react';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { CircularProgress, Box, Typography } from '@mui/material';
 import { toast } from 'react-hot-toast';
 import App from './App.jsx';
@@ -30,6 +29,7 @@ import ProductAnalytics from './features/admin/pages/analytics/ProductAnalytics'
 import CustomerAnalytics from './features/admin/pages/analytics/CustomerAnalytics';
 import GeographicalAnalytics from './features/admin/pages/analytics/GeographicalAnalytics';
 import StockAlertsReport from './features/admin/pages/analytics/StockAlertsReport';
+import InventoryForecast from './features/admin/pages/analytics/InventoryForecast';
 import { useTheme } from '@mui/material/styles';
 
 // Lazy-load these components for better performance
@@ -112,6 +112,7 @@ export const router = createBrowserRouter([
                     { path: 'analytics/customers', element: <CustomerAnalytics /> },
                     { path: 'analytics/geographical', element: <GeographicalAnalytics /> },
                     { path: 'analytics/stock-alerts', element: <StockAlertsReport /> },
+                    { path: 'analytics/inventory-forecast', element: <InventoryForecast /> },
                 ]
             },
         ]
