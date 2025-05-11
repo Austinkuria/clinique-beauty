@@ -97,6 +97,10 @@ const Suppliers = () => {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [filteredSuppliers, setFilteredSuppliers] = useState(suppliersList);
   const [searchQuery, setSearchQuery] = useState('');
+  // Add new states for form validation and order history
+  const [formErrors, setFormErrors] = useState({});
+  const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
+  const [allOrderHistory, setAllOrderHistory] = useState([]);
   
   useEffect(() => {
     // Apply search filter whenever suppliers list or search query changes
@@ -110,6 +114,23 @@ const Suppliers = () => {
     } else {
       setFilteredSuppliers(suppliersList);
     }
+    
+    // Generate all order history
+    const generateAllOrderHistory = () => {
+      let history = [];
+      suppliers.forEach(supplier => {
+        const supplierHistory = generatePurchaseHistory(supplier.id).map(order => ({
+          ...order,
+          supplier: supplier.name
+        }));
+        history = [...history, ...supplierHistory];
+      });
+      
+      // Sort by date (most recent first)
+      return history.sort((a, b) => new Date(b.date) - new Date(a.date));
+    };
+    
+    setAllOrderHistory(generateAllOrderHistory());
   }, [suppliersList, searchQuery]);
   
   const handleOpenDialog = (supplier = null, tab = 0) => {
@@ -146,9 +167,30 @@ const Suppliers = () => {
     setDialogTab(0);
   };
   
+  const validateSupplierForm = () => {
+    const errors = {};
+    
+    if (!currentSupplier.name.trim()) {
+      errors.name = 'Supplier name is required';
+    }
+    
+    if (!currentSupplier.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(currentSupplier.email)) {
+      errors.email = 'Email is invalid';
+    }
+    
+    if (currentSupplier.leadTime && (isNaN(currentSupplier.leadTime) || parseInt(currentSupplier.leadTime) < 1)) {
+      errors.leadTime = 'Lead time must be a positive number';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+  
   const handleSaveSupplier = () => {
-    if (!currentSupplier.name || !currentSupplier.email) {
-      toast.error('Name and email are required fields');
+    if (!validateSupplierForm()) {
+      toast.error('Please correct the errors in the form');
       return;
     }
     
@@ -182,6 +224,14 @@ const Suppliers = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    
+    // Clear validation error when user types
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
   };
   
   const handleProductSelect = (productId) => {
@@ -264,6 +314,15 @@ const Suppliers = () => {
     }
   };
   
+  // Add function to open order history dialog
+  const openOrderHistory = () => {
+    setOrderHistoryOpen(true);
+  };
+  
+  const closeOrderHistory = () => {
+    setOrderHistoryOpen(false);
+  };
+  
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -275,7 +334,7 @@ const Suppliers = () => {
             variant="outlined" 
             startIcon={<HistoryIcon />} 
             sx={{ mr: 1 }}
-            onClick={() => {/* Open purchase history */}}
+            onClick={openOrderHistory}
           >
             Order History
           </Button>
@@ -471,6 +530,8 @@ const Suppliers = () => {
                       name="name"
                       value={currentSupplier.name}
                       onChange={handleInputChange}
+                      error={!!formErrors.name}
+                      helperText={formErrors.name}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -491,6 +552,8 @@ const Suppliers = () => {
                       type="email"
                       value={currentSupplier.email}
                       onChange={handleInputChange}
+                      error={!!formErrors.email}
+                      helperText={formErrors.email}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -522,7 +585,8 @@ const Suppliers = () => {
                       InputProps={{ inputProps: { min: 1 } }}
                       value={currentSupplier.leadTime || 7}
                       onChange={handleInputChange}
-                      helperText="Average time to receive orders"
+                      helperText={formErrors.leadTime || "Average time to receive orders"}
+                      error={!!formErrors.leadTime}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -739,6 +803,85 @@ const Suppliers = () => {
             startIcon={<ShoppingCartIcon />}
           >
             Create Order
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Order History Dialog */}
+      <Dialog
+        open={orderHistoryOpen}
+        onClose={closeOrderHistory}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center">
+            <HistoryIcon sx={{ mr: 1 }} />
+            <Typography variant="h6">Purchase Order History</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <TableContainer sx={{ maxHeight: '70vh' }}>
+            <Table stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Order #</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Supplier</TableCell>
+                  <TableCell>Items</TableCell>
+                  <TableCell align="right">Total Amount</TableCell>
+                  <TableCell align="center">Status</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {allOrderHistory.map((order) => (
+                  <TableRow key={order.id} hover>
+                    <TableCell>{order.id}</TableCell>
+                    <TableCell>{order.date}</TableCell>
+                    <TableCell>{order.supplier}</TableCell>
+                    <TableCell>{order.items}</TableCell>
+                    <TableCell align="right">KES {order.total.toLocaleString()}</TableCell>
+                    <TableCell align="center">
+                      <Chip 
+                        label={order.status} 
+                        size="small" 
+                        color={getStatusColor(order.status)}
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="View Details">
+                        <IconButton size="small" color="primary">
+                          <InfoIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {allOrderHistory.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                      <Typography variant="body1">
+                        No order history found.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeOrderHistory}>Close</Button>
+          <Button 
+            variant="outlined" 
+            startIcon={<ShoppingCartIcon />}
+            onClick={() => {
+              closeOrderHistory();
+              // Open a new order dialog if needed
+            }}
+          >
+            Create New Order
           </Button>
         </DialogActions>
       </Dialog>
