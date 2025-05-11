@@ -75,7 +75,7 @@ A full-stack e-commerce application built with the PERN stack (PostgreSQL, Expre
         # Add Clerk Publishable Key if using Clerk
         # VITE_CLERK_PUBLISHABLE_KEY="pk_test_..."
         # Base URL for your backend API
-        VITE_API_BASE_URL="http://localhost:5000/api" # Adjust port/path as needed
+        VITE_API_BASE_URL="http://localhost:5000/api"
         ```
         *(Replace placeholders with your actual credentials, keys, and URLs)*
 
