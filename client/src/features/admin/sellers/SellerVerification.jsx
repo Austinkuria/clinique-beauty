@@ -1,10 +1,38 @@
 import React, { useState } from 'react';
-import { Card, Button, Badge, Form, Modal, Spinner, Alert } from 'react-bootstrap';
+import {
+  Typography,
+  Box,
+  Card,
+  CardContent,
+  CardActions,
+  Button,
+  Chip,
+  TextField,
+  Modal,
+  CircularProgress,
+  Alert,
+  Grid,
+  Divider,
+  Link
+} from '@mui/material';
 import { sellerApi } from '../../../data/sellerApi';
+
+const modalStyle = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 800,
+  bgcolor: 'background.paper',
+  boxShadow: 24,
+  p: 4,
+  maxHeight: '90vh',
+  overflow: 'auto'
+};
 
 const SellerVerification = ({ requests, loading, onVerificationComplete }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [open, setOpen] = useState(false);
   const [verificationNotes, setVerificationNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
@@ -12,11 +40,11 @@ const SellerVerification = ({ requests, loading, onVerificationComplete }) => {
   const handleReview = (request) => {
     setSelectedRequest(request);
     setVerificationNotes('');
-    setShowModal(true);
+    setOpen(true);
   };
 
   const handleClose = () => {
-    setShowModal(false);
+    setOpen(false);
     setSelectedRequest(null);
     setError(null);
   };
@@ -45,123 +73,137 @@ const SellerVerification = ({ requests, loading, onVerificationComplete }) => {
   };
 
   if (loading) {
-    return <div className="text-center p-5"><Spinner animation="border" /></div>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <div>
-      <h2>Seller Verification Requests</h2>
+    <Box>
+      <Typography variant="h4" gutterBottom>Seller Verification Requests</Typography>
       
       {requests.length === 0 ? (
-        <Alert variant="info">No pending verification requests</Alert>
+        <Alert severity="info">No pending verification requests</Alert>
       ) : (
-        <div className="verification-list">
+        <Box>
           {requests.map(request => (
-            <Card key={request.id} className="mb-3">
-              <Card.Body>
-                <Card.Title>{request.businessName}</Card.Title>
-                <Card.Subtitle className="mb-2 text-muted">
+            <Card key={request.id} sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6">{request.businessName}</Typography>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                   Submitted by: {request.contactName}
-                </Card.Subtitle>
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div>
-                    <Badge bg="info">Submitted: {new Date(request.submittedAt).toLocaleDateString()}</Badge>
-                  </div>
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Chip 
+                    label={`Submitted: ${new Date(request.submittedAt).toLocaleDateString()}`} 
+                    color="info"
+                    size="small"
+                  />
                   <Button 
-                    variant="primary" 
+                    variant="contained" 
                     onClick={() => handleReview(request)}
                   >
                     Review Application
                   </Button>
-                </div>
-                <Card.Text>
-                  <strong>Contact Email:</strong> {request.email}<br />
-                  <strong>Contact Phone:</strong> {request.phone}<br />
-                  <strong>Business Type:</strong> {request.businessType}
-                </Card.Text>
-              </Card.Body>
+                </Box>
+                <Box>
+                  <Typography variant="body2"><strong>Contact Email:</strong> {request.email}</Typography>
+                  <Typography variant="body2"><strong>Contact Phone:</strong> {request.phone}</Typography>
+                  <Typography variant="body2"><strong>Business Type:</strong> {request.businessType}</Typography>
+                </Box>
+              </CardContent>
             </Card>
           ))}
-        </div>
+        </Box>
       )}
 
       {/* Verification Review Modal */}
-      <Modal show={showModal} onHide={handleClose} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Seller Verification Review</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {error && <Alert variant="danger">{error}</Alert>}
+      <Modal open={open} onClose={handleClose}>
+        <Box sx={modalStyle}>
+          <Typography variant="h5" component="h2" gutterBottom>
+            Seller Verification Review
+          </Typography>
+          
+          {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
           
           {selectedRequest && (
             <>
-              <h5>{selectedRequest.businessName}</h5>
-              <p className="text-muted">Application ID: {selectedRequest.id}</p>
+              <Typography variant="h6">{selectedRequest.businessName}</Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Application ID: {selectedRequest.id}
+              </Typography>
               
-              <hr />
+              <Divider sx={{ my: 2 }} />
               
-              <div className="mb-4">
-                <h6>Business Information</h6>
-                <p><strong>Type:</strong> {selectedRequest.businessType}</p>
-                <p><strong>Address:</strong> {selectedRequest.address}</p>
-                <p><strong>Registration Number:</strong> {selectedRequest.registrationNumber}</p>
-                <p><strong>Tax ID:</strong> {selectedRequest.taxId}</p>
-              </div>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" gutterBottom>Business Information</Typography>
+                <Typography variant="body2"><strong>Type:</strong> {selectedRequest.businessType}</Typography>
+                <Typography variant="body2"><strong>Address:</strong> {selectedRequest.address}</Typography>
+                <Typography variant="body2"><strong>Registration Number:</strong> {selectedRequest.registrationNumber}</Typography>
+                <Typography variant="body2"><strong>Tax ID:</strong> {selectedRequest.taxId}</Typography>
+              </Box>
               
-              <div className="mb-4">
-                <h6>Contact Information</h6>
-                <p><strong>Name:</strong> {selectedRequest.contactName}</p>
-                <p><strong>Email:</strong> {selectedRequest.email}</p>
-                <p><strong>Phone:</strong> {selectedRequest.phone}</p>
-              </div>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" gutterBottom>Contact Information</Typography>
+                <Typography variant="body2"><strong>Name:</strong> {selectedRequest.contactName}</Typography>
+                <Typography variant="body2"><strong>Email:</strong> {selectedRequest.email}</Typography>
+                <Typography variant="body2"><strong>Phone:</strong> {selectedRequest.phone}</Typography>
+              </Box>
               
-              <div className="mb-4">
-                <h6>Documents</h6>
-                <div className="d-flex flex-wrap">
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" gutterBottom>Documents</Typography>
+                <Grid container spacing={2}>
                   {selectedRequest.documents.map((doc, index) => (
-                    <div key={index} className="document-preview me-3 mb-3">
-                      <a href={doc.url} target="_blank" rel="noreferrer">
+                    <Grid item key={index}>
+                      <Link href={doc.url} target="_blank" rel="noreferrer">
                         {doc.type} Document
-                      </a>
-                    </div>
+                      </Link>
+                    </Grid>
                   ))}
-                </div>
-              </div>
+                </Grid>
+              </Box>
               
-              <Form.Group className="mb-3">
-                <Form.Label>Verification Notes</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  value={verificationNotes}
-                  onChange={e => setVerificationNotes(e.target.value)}
-                  placeholder="Add notes about this verification review..."
-                />
-              </Form.Group>
+              <TextField
+                label="Verification Notes"
+                multiline
+                rows={3}
+                value={verificationNotes}
+                onChange={e => setVerificationNotes(e.target.value)}
+                placeholder="Add notes about this verification review..."
+                fullWidth
+                sx={{ mb: 3 }}
+              />
+              
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                <Button onClick={handleClose} disabled={processing}>
+                  Cancel
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  color="error" 
+                  onClick={() => handleUpdateStatus('rejected')}
+                  disabled={processing}
+                  startIcon={processing && <CircularProgress size={20} />}
+                >
+                  Reject
+                </Button>
+                <Button 
+                  variant="contained" 
+                  color="success" 
+                  onClick={() => handleUpdateStatus('approved')}
+                  disabled={processing}
+                  startIcon={processing && <CircularProgress size={20} />}
+                >
+                  Approve
+                </Button>
+              </Box>
             </>
           )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose} disabled={processing}>
-            Cancel
-          </Button>
-          <Button 
-            variant="danger" 
-            onClick={() => handleUpdateStatus('rejected')}
-            disabled={processing}
-          >
-            {processing ? <Spinner animation="border" size="sm" /> : 'Reject'}
-          </Button>
-          <Button 
-            variant="success" 
-            onClick={() => handleUpdateStatus('approved')}
-            disabled={processing}
-          >
-            {processing ? <Spinner animation="border" size="sm" /> : 'Approve'}
-          </Button>
-        </Modal.Footer>
+        </Box>
       </Modal>
-    </div>
+    </Box>
   );
 };
 

@@ -1,9 +1,29 @@
 import React, { useState } from 'react';
-import { Form, Button, Card, Alert, Row, Col, Spinner } from 'react-bootstrap';
-import { sellerApi } from '../../../data/sellerApi';
+import {
+  Typography,
+  Box,
+  Paper,
+  Stepper,
+  Step,
+  StepLabel,
+  Button,
+  TextField,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  CircularProgress,
+  FormControlLabel,
+  Checkbox,
+  List,
+  ListItem,
+  ListItemText
+} from '@mui/material';
 
 const SellerOnboarding = () => {
-  const [step, setStep] = useState(1);
+  const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -45,8 +65,8 @@ const SellerOnboarding = () => {
     }
   };
 
-  const nextStep = () => setStep(prev => prev + 1);
-  const prevStep = () => setStep(prev => prev - 1);
+  const handleNext = () => setActiveStep((prev) => prev + 1);
+  const handleBack = () => setActiveStep((prev) => prev - 1);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -101,7 +121,7 @@ const SellerOnboarding = () => {
       });
       
       // Go back to first step
-      setStep(1);
+      setActiveStep(0);
       
     } catch (err) {
       setError('Failed to submit seller application. Please try again.');
@@ -111,337 +131,293 @@ const SellerOnboarding = () => {
     }
   };
 
-  const renderStep = () => {
-    switch(step) {
-      case 1:
+  const steps = ['Business Information', 'Contact Details', 'Payment Information'];
+
+  const getStepContent = (step) => {
+    switch (step) {
+      case 0:
         return (
-          <Card>
-            <Card.Header>
-              <h4>Business Information</h4>
-            </Card.Header>
-            <Card.Body>
-              <Form.Group className="mb-3">
-                <Form.Label>Business Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="businessName"
-                  value={formData.businessName}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Business Type</Form.Label>
-                <Form.Select
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Business Name"
+                name="businessName"
+                value={formData.businessName}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth required>
+                <InputLabel>Business Type</InputLabel>
+                <Select
                   name="businessType"
                   value={formData.businessType}
                   onChange={handleChange}
-                  required
+                  label="Business Type"
                 >
-                  <option value="">Select type...</option>
-                  <option value="Individual">Individual</option>
-                  <option value="LLC">LLC</option>
-                  <option value="Corporation">Corporation</option>
-                  <option value="Partnership">Partnership</option>
-                </Form.Select>
-              </Form.Group>
-              
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Registration Number</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="registrationNumber"
-                      value={formData.registrationNumber}
-                      onChange={handleChange}
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Tax ID</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="taxId"
-                      value={formData.taxId}
-                      onChange={handleChange}
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Address</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-              
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>City</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>State/Province</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-              
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Postal/ZIP Code</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="zip"
-                      value={formData.zip}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Country</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="country"
-                      value={formData.country}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-            </Card.Body>
-            <Card.Footer className="d-flex justify-content-end">
-              <Button variant="primary" onClick={nextStep}>
-                Next
-              </Button>
-            </Card.Footer>
-          </Card>
+                  <MenuItem value="">Select type...</MenuItem>
+                  <MenuItem value="Individual">Individual</MenuItem>
+                  <MenuItem value="LLC">LLC</MenuItem>
+                  <MenuItem value="Corporation">Corporation</MenuItem>
+                  <MenuItem value="Partnership">Partnership</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Registration Number"
+                name="registrationNumber"
+                value={formData.registrationNumber}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Tax ID"
+                name="taxId"
+                value={formData.taxId}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="City"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="State/Province"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Postal/ZIP Code"
+                name="zip"
+                value={formData.zip}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Country"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+          </Grid>
         );
-        
-      case 2:
+      case 1:
         return (
-          <Card>
-            <Card.Header>
-              <h4>Contact Information</h4>
-            </Card.Header>
-            <Card.Body>
-              <Form.Group className="mb-3">
-                <Form.Label>Contact Person Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="contactName"
-                  value={formData.contactName}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Email</Form.Label>
-                <Form.Control
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Phone Number</Form.Label>
-                <Form.Control
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Upload Documents</Form.Label>
-                <Form.Control
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Contact Person Name"
+                name="contactName"
+                value={formData.contactName}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Phone Number"
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Button
+                variant="contained"
+                component="label"
+              >
+                Upload Documents
+                <input
                   type="file"
                   multiple
+                  hidden
+                  onChange={handleChange}
                   name="documents"
-                  onChange={handleChange}
                 />
-                <Form.Text className="text-muted">
-                  Please upload business registration, ID proof, and other relevant documents.
-                </Form.Text>
-              </Form.Group>
-              
-              {formData.documents.length > 0 && (
-                <div className="mb-3">
-                  <p><strong>Selected Documents:</strong></p>
-                  <ul>
-                    {formData.documents.map((file, index) => (
-                      <li key={index}>{file.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </Card.Body>
-            <Card.Footer className="d-flex justify-content-between">
-              <Button variant="secondary" onClick={prevStep}>
-                Back
               </Button>
-              <Button variant="primary" onClick={nextStep}>
-                Next
-              </Button>
-            </Card.Footer>
-          </Card>
+              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                Please upload business registration, ID proof, and other relevant documents.
+              </Typography>
+            </Grid>
+            {formData.documents.length > 0 && (
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom>Selected Documents:</Typography>
+                <List dense>
+                  {formData.documents.map((file, index) => (
+                    <ListItem key={index}>
+                      <ListItemText primary={file.name} />
+                    </ListItem>
+                  ))}
+                </List>
+              </Grid>
+            )}
+          </Grid>
         );
-        
-      case 3:
+      case 2:
         return (
-          <Card>
-            <Card.Header>
-              <h4>Payment Information</h4>
-            </Card.Header>
-            <Card.Body>
-              <Form.Group className="mb-3">
-                <Form.Label>Bank Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="bankName"
-                  value={formData.bankName}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Account Holder Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="accountHolder"
-                  value={formData.accountHolder}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-              
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Account Number</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="accountNumber"
-                      value={formData.accountNumber}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Routing Number</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="routingNumber"
-                      value={formData.routingNumber}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-              
-              <Form.Group className="mb-3">
-                <Form.Check
-                  type="checkbox"
-                  name="termsAccepted"
-                  checked={formData.termsAccepted}
-                  onChange={handleChange}
-                  label="I accept the terms and conditions for seller registration"
-                  required
-                />
-              </Form.Group>
-            </Card.Body>
-            <Card.Footer className="d-flex justify-content-between">
-              <Button variant="secondary" onClick={prevStep}>
-                Back
-              </Button>
-              <Button 
-                variant="success" 
-                type="submit" 
-                disabled={loading || !formData.termsAccepted}
-                onClick={handleSubmit}
-              >
-                {loading ? (
-                  <>
-                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />{' '}
-                    Processing...
-                  </>
-                ) : 'Submit Application'}
-              </Button>
-            </Card.Footer>
-          </Card>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Bank Name"
+                name="bankName"
+                value={formData.bankName}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Account Holder Name"
+                name="accountHolder"
+                value={formData.accountHolder}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Account Number"
+                name="accountNumber"
+                value={formData.accountNumber}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Routing Number"
+                name="routingNumber"
+                value={formData.routingNumber}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="termsAccepted"
+                    checked={formData.termsAccepted}
+                    onChange={handleChange}
+                  />
+                }
+                label="I accept the terms and conditions for seller registration"
+              />
+            </Grid>
+          </Grid>
         );
-        
       default:
-        return null;
+        return 'Unknown step';
     }
   };
 
   return (
-    <div>
-      <h2>Seller Onboarding</h2>
-      <p className="text-muted">Complete the form to register a new seller</p>
+    <Box>
+      <Typography variant="h4" gutterBottom>Seller Onboarding</Typography>
+      <Typography color="text.secondary" paragraph>Complete the form to register a new seller</Typography>
       
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && <Alert variant="success">Seller application submitted successfully!</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 3 }}>Seller application submitted successfully!</Alert>}
       
-      <div className="progress-indicator mb-4">
-        <div className="d-flex justify-content-between">
-          <div className={`step ${step >= 1 ? 'active' : ''}`}>
-            <div className="step-number">1</div>
-            <div className="step-title">Business Information</div>
-          </div>
-          <div className={`step ${step >= 2 ? 'active' : ''}`}>
-            <div className="step-number">2</div>
-            <div className="step-title">Contact Details</div>
-          </div>
-          <div className={`step ${step >= 3 ? 'active' : ''}`}>
-            <div className="step-number">3</div>
-            <div className="step-title">Payment Information</div>
-          </div>
-        </div>
-      </div>
+      <Box sx={{ mb: 4 }}>
+        <Stepper activeStep={activeStep}>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </Box>
       
-      <Form onSubmit={handleSubmit}>
-        {renderStep()}
-      </Form>
-    </div>
+      <Paper sx={{ p: 3 }}>
+        <form onSubmit={activeStep === steps.length - 1 ? handleSubmit : undefined}>
+          {getStepContent(activeStep)}
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+            <Button
+              variant="outlined"
+              disabled={activeStep === 0}
+              onClick={handleBack}
+            >
+              Back
+            </Button>
+            <Box>
+              {activeStep === steps.length - 1 ? (
+                <Button
+                  variant="contained"
+                  color="success"
+                  type="submit"
+                  disabled={loading || !formData.termsAccepted}
+                  startIcon={loading && <CircularProgress size={20} color="inherit" />}
+                >
+                  {loading ? 'Processing...' : 'Submit Application'}
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  onClick={handleNext}
+                >
+                  Next
+                </Button>
+              )}
+            </Box>
+          </Box>
+        </form>
+      </Paper>
+    </Box>
   );
 };
 

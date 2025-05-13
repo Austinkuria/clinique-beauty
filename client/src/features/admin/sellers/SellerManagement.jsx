@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Nav, Tab, Alert } from 'react-bootstrap';
+import { 
+  Container, Box, Grid, Paper, Typography, Tab, Tabs, Alert, Badge
+} from '@mui/material';
 import { sellerApi } from '../../../data/sellerApi';
 import SellerVerification from './SellerVerification';
 import SellerOnboarding from './SellerOnboarding';
 import SellerList from './SellerList';
 
 const SellerManagement = () => {
-  const [activeTab, setActiveTab] = useState('sellers');
+  const [tabValue, setTabValue] = useState(0);
   const [sellers, setSellers] = useState([]);
   const [pendingVerifications, setPendingVerifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,51 +46,80 @@ const SellerManagement = () => {
     }
   };
 
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
+
   return (
-    <Container fluid className="p-4">
-      <h1 className="mb-4">Seller Management</h1>
+    <Container maxWidth="xl" sx={{ p: 4 }}>
+      <Typography variant="h4" gutterBottom>Seller Management</Typography>
       
-      {error && <Alert variant="danger">{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       
-      <Tab.Container id="seller-management-tabs" activeKey={activeTab} onSelect={setActiveTab}>
-        <Row>
-          <Col md={3}>
-            <Nav variant="pills" className="flex-column">
-              <Nav.Item>
-                <Nav.Link eventKey="sellers">All Sellers</Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="verification">
-                  Verification Requests
-                  {pendingVerifications.length > 0 && (
-                    <span className="badge bg-primary ms-2">{pendingVerifications.length}</span>
-                  )}
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="onboarding">Seller Onboarding</Nav.Link>
-              </Nav.Item>
-            </Nav>
-          </Col>
-          <Col md={9}>
-            <Tab.Content>
-              <Tab.Pane eventKey="sellers">
-                <SellerList sellers={sellers} loading={loading} />
-              </Tab.Pane>
-              <Tab.Pane eventKey="verification">
-                <SellerVerification 
-                  requests={pendingVerifications} 
-                  loading={loading}
-                  onVerificationComplete={handleVerificationComplete}
-                />
-              </Tab.Pane>
-              <Tab.Pane eventKey="onboarding">
-                <SellerOnboarding />
-              </Tab.Pane>
-            </Tab.Content>
-          </Col>
-        </Row>
-      </Tab.Container>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs value={tabValue} onChange={handleTabChange}>
+              <Tab 
+                label="All Sellers" 
+                id="tab-0"
+                aria-controls="tabpanel-0"
+              />
+              <Tab 
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    Verification Requests
+                    {pendingVerifications.length > 0 && (
+                      <Box 
+                        component="span" 
+                        sx={{ 
+                          ml: 1,
+                          bgcolor: 'primary.main',
+                          color: 'primary.contrastText',
+                          borderRadius: '50%',
+                          width: 20,
+                          height: 20,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        {pendingVerifications.length}
+                      </Box>
+                    )}
+                  </Box>
+                }
+                id="tab-1"
+                aria-controls="tabpanel-1"
+              />
+              <Tab 
+                label="Seller Onboarding" 
+                id="tab-2"
+                aria-controls="tabpanel-2"
+              />
+            </Tabs>
+          </Box>
+          
+          <Box role="tabpanel" hidden={tabValue !== 0} id="tabpanel-0" aria-labelledby="tab-0" sx={{ py: 3 }}>
+            {tabValue === 0 && <SellerList sellers={sellers} loading={loading} />}
+          </Box>
+          
+          <Box role="tabpanel" hidden={tabValue !== 1} id="tabpanel-1" aria-labelledby="tab-1" sx={{ py: 3 }}>
+            {tabValue === 1 && (
+              <SellerVerification 
+                requests={pendingVerifications} 
+                loading={loading}
+                onVerificationComplete={handleVerificationComplete}
+              />
+            )}
+          </Box>
+          
+          <Box role="tabpanel" hidden={tabValue !== 2} id="tabpanel-2" aria-labelledby="tab-2" sx={{ py: 3 }}>
+            {tabValue === 2 && <SellerOnboarding />}
+          </Box>
+        </Grid>
+      </Grid>
     </Container>
   );
 };
