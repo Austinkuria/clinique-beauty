@@ -1,5 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Form, Row, Col, Button, Spinner, Alert } from 'react-bootstrap';
+import {
+  Paper,
+  Typography,
+  Table,
+  TableContainer,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TextField,
+  Grid,
+  Button,
+  CircularProgress,
+  Alert,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip
+} from '@mui/material';
 import { commissionApi } from '../../../data/commissionApi';
 
 const CommissionHistory = () => {
@@ -48,114 +68,127 @@ const CommissionHistory = () => {
     });
   };
 
+  const getStatusChip = (status) => {
+    switch (status) {
+      case 'paid':
+        return <Chip label="Paid" color="success" size="small" />;
+      case 'pending':
+        return <Chip label="Pending" color="warning" size="small" />;
+      case 'failed':
+        return <Chip label="Failed" color="error" size="small" />;
+      default:
+        return <Chip label={status} color="default" size="small" />;
+    }
+  };
+
   return (
-    <Card>
-      <Card.Header>
-        <h4>Commission Payment History</h4>
-      </Card.Header>
-      <Card.Body>
-        <div className="filters mb-4">
-          <h5>Filter Commission Records</h5>
-          <Row>
-            <Col md={3}>
-              <Form.Group className="mb-3">
-                <Form.Label>Start Date</Form.Label>
-                <Form.Control
-                  type="date"
-                  name="startDate"
-                  value={filters.startDate}
-                  onChange={handleFilterChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={3}>
-              <Form.Group className="mb-3">
-                <Form.Label>End Date</Form.Label>
-                <Form.Control
-                  type="date"
-                  name="endDate"
-                  value={filters.endDate}
-                  onChange={handleFilterChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={3}>
-              <Form.Group className="mb-3">
-                <Form.Label>Seller ID</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="sellerId"
-                  value={filters.sellerId}
-                  onChange={handleFilterChange}
-                  placeholder="Enter seller ID"
-                />
-              </Form.Group>
-            </Col>
-            <Col md={3}>
-              <Form.Group className="mb-3">
-                <Form.Label>Payment Status</Form.Label>
-                <Form.Select
+    <Paper elevation={2} sx={{ p: 0 }}>
+      <Box sx={{ p: 2, borderBottom: '1px solid #eee' }}>
+        <Typography variant="h5">Commission Payment History</Typography>
+      </Box>
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" gutterBottom>Filter Commission Records</Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                label="Start Date"
+                type="date"
+                name="startDate"
+                value={filters.startDate}
+                onChange={handleFilterChange}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                label="End Date"
+                type="date"
+                name="endDate"
+                value={filters.endDate}
+                onChange={handleFilterChange}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                label="Seller ID"
+                name="sellerId"
+                value={filters.sellerId}
+                onChange={handleFilterChange}
+                placeholder="Enter seller ID"
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="status-label">Payment Status</InputLabel>
+                <Select
+                  labelId="status-label"
                   name="status"
                   value={filters.status}
                   onChange={handleFilterChange}
+                  label="Payment Status"
                 >
-                  <option value="all">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="paid">Paid</option>
-                  <option value="failed">Failed</option>
-                </Form.Select>
-              </Form.Group>
-            </Col>
-          </Row>
-          <div className="d-flex justify-content-end">
-            <Button variant="secondary" onClick={resetFilters}>Reset Filters</Button>
-          </div>
-        </div>
+                  <MenuItem value="all">All Statuses</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="paid">Paid</MenuItem>
+                  <MenuItem value="failed">Failed</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+            <Button variant="outlined" onClick={resetFilters}>Reset Filters</Button>
+          </Box>
+        </Box>
         
-        {error && <Alert variant="danger">{error}</Alert>}
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
         
         {loading ? (
-          <div className="text-center p-5"><Spinner animation="border" /></div>
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+            <CircularProgress />
+          </Box>
         ) : history.length === 0 ? (
-          <Alert variant="info">No commission records found matching your criteria.</Alert>
+          <Alert severity="info" sx={{ mb: 3 }}>No commission records found matching your criteria.</Alert>
         ) : (
-          <Table striped bordered hover responsive>
-            <thead>
-              <tr>
-                <th>Payment ID</th>
-                <th>Seller</th>
-                <th>Amount</th>
-                <th>Commission Rate</th>
-                <th>Date</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map(record => (
-                <tr key={record.id}>
-                  <td>{record.id}</td>
-                  <td>
-                    {record.sellerName}
-                    <div className="text-muted small">{record.sellerId}</div>
-                  </td>
-                  <td>${record.amount.toFixed(2)}</td>
-                  <td>{record.rate}%</td>
-                  <td>{new Date(record.date).toLocaleDateString()}</td>
-                  <td>
-                    <span className={`badge bg-${
-                      record.status === 'paid' ? 'success' : 
-                      record.status === 'pending' ? 'warning' : 'danger'
-                    }`}>
-                      {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Payment ID</TableCell>
+                  <TableCell>Seller</TableCell>
+                  <TableCell>Amount</TableCell>
+                  <TableCell>Commission Rate</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {history.map(record => (
+                  <TableRow key={record.id}>
+                    <TableCell>{record.id}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{record.sellerName}</Typography>
+                      <Typography variant="caption" color="textSecondary">{record.sellerId}</Typography>
+                    </TableCell>
+                    <TableCell>${record.amount.toFixed(2)}</TableCell>
+                    <TableCell>{record.rate}%</TableCell>
+                    <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{getStatusChip(record.status)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
-      </Card.Body>
-    </Card>
+      </Box>
+    </Paper>
   );
 };
 

@@ -11,7 +11,8 @@ import {
   Check as CheckIcon,
   Close as CloseIcon,
   Description as DescriptionIcon,
-  Email as EmailIcon
+  Email as EmailIcon,
+  Security as SecurityIcon
 } from '@mui/icons-material';
 
 const ComplianceMonitoring = () => {

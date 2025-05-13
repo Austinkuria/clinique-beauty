@@ -6,13 +6,14 @@ import {
   FormControl, InputLabel, Card, CardContent, List, ListItem, ListItemText
 } from '@mui/material';
 import { 
-  Search as SearchIcon, 
+  Search as SearchIcon,
   FileDownload as FileDownloadIcon,
   GetApp as GetAppIcon,
   Error as ErrorIcon,
-  Check as CheckIcon 
+  Check as CheckIcon,
+  SaveAlt as SaveIcon,
+  Warning as WarningIcon
 } from '@mui/icons-material';
-import { FaFileExport, FaExclamationCircle } from 'react-icons/fa';
 
 const modalStyle = {
   position: 'absolute',
@@ -172,7 +173,7 @@ const PayoutProcessing = () => {
           <Button variant="contained" color="primary" onClick={initiateNewPayout}>
             New Payout
           </Button>
-          <Button variant="outlined" startIcon={<FileDownloadIcon />}>
+          <Button variant="outlined" startIcon={<SaveIcon />}>
             Export
           </Button>
         </Box>
@@ -285,7 +286,7 @@ const PayoutProcessing = () => {
               {selectedPayout.status === 'failed' && (
                 <Paper sx={{ p: 2, bgcolor: '#fdeded', mt: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <ErrorIcon color="error" sx={{ mr: 1 }} />
+                    <WarningIcon color="error" sx={{ mr: 1 }} />
                     <Typography color="error">
                       This payout requires attention due to issues with payment processing.
                     </Typography>

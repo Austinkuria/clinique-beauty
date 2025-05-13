@@ -5,7 +5,12 @@ import {
   Select, MenuItem, Button, Tabs, Tab, LinearProgress, Card, CardContent,
   CardHeader, Divider
 } from '@mui/material';
-import { FaStar, FaChartLine, FaExclamationTriangle } from 'react-icons/fa';
+import {
+  Star as StarIcon,
+  StarBorder as StarBorderIcon,
+  TrendingUp as TrendingUpIcon,
+  Warning as WarningIcon
+} from '@mui/icons-material';
 
 const SellerPerformance = () => {
   const [sellers, setSellers] = useState([]);
@@ -72,9 +77,11 @@ const SellerPerformance = () => {
   const renderRatingStars = (rating) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
-      stars.push(
-        <FaStar key={i} color={i <= rating ? '#ffc107' : '#e4e5e9'} style={{ marginRight: 2 }} />
-      );
+      if (i <= rating) {
+        stars.push(<StarIcon key={i} sx={{ color: '#ffc107', mr: 0.2 }} fontSize="small" />);
+      } else {
+        stars.push(<StarBorderIcon key={i} sx={{ color: '#e4e5e9', mr: 0.2 }} fontSize="small" />);
+      }
     }
     return stars;
   };
