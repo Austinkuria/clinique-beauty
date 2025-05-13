@@ -11,6 +11,7 @@ import {
   Payments as PayoutsIcon,
   VerifiedUser as ComplianceIcon,
   AttachMoney as CommissionsIcon,
+  Campaign as MarketingIcon,
   Settings as SettingsIcon
 } from '@mui/icons-material';
 
@@ -21,12 +22,13 @@ const AdminNavigation = () => {
     { path: '/admin/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
     { path: '/admin/products', label: 'Products', icon: <ProductsIcon /> },
     { path: '/admin/orders', label: 'Orders', icon: <OrdersIcon /> },
-    { path: '/admin/customers', label: 'Customers', icon: <CustomersIcon /> },
+    { path: '/admin/users', label: 'Customers', icon: <CustomersIcon /> },
     { path: '/admin/sellers', label: 'Seller Management', icon: <SellersIcon /> },
     { path: '/admin/seller-performance', label: 'Seller Performance', icon: <PerformanceIcon /> },
     { path: '/admin/payouts', label: 'Payout Processing', icon: <PayoutsIcon /> },
     { path: '/admin/compliance', label: 'Compliance Monitoring', icon: <ComplianceIcon /> },
     { path: '/admin/commissions', label: 'Commission Structure', icon: <CommissionsIcon /> },
+    { path: '/admin/marketing', label: 'Marketing & Promotions', icon: <MarketingIcon /> },
     { path: '/admin/settings', label: 'Settings', icon: <SettingsIcon /> }
   ];
   
@@ -43,6 +45,7 @@ const AdminNavigation = () => {
               to={item.path}
               selected={isActive}
               sx={{
+
                 '&.Mui-selected': {
                   backgroundColor: 'primary.light',
                   '&:hover': {

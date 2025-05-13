@@ -27,7 +27,10 @@ import {
     TrendingUp as TrendingUpIcon,
     TrendingDown as TrendingDownIcon,
     Store as SellersIcon,
-    Calculate as CalculateIcon
+    Calculate as CalculateIcon,
+    Campaign as CampaignIcon,
+    LocalOffer as LocalOfferIcon,
+    Group as GroupIcon
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { ThemeContext } from '../../../context/ThemeContext';
@@ -549,6 +552,117 @@ function AdminDashboard() {
                     >
                         <Typography variant="h6" sx={{ mb: 2 }}>Recent Orders</Typography>
                         <RecentOrdersList orders={recentOrders} />
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* Quick Access Cards */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                {/* ...existing grid items... */}
+                <Grid item xs={12} sm={6} md={2.4}>
+                    <Paper
+                        elevation={theme === 'dark' ? 3 : 1}
+                        sx={{
+                            p: 2,
+                            bgcolor: colorValues.bgPaper,
+                            borderRadius: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            minHeight: '140px',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            transition: 'transform 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: 4
+                            }
+                        }}
+                        component={RouterLink}
+                        to="/admin/marketing"
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                    >
+                        <Box sx={{ p: 1, borderRadius: '50%', bgcolor: `${colorValues.primary}20`, mb: 1 }}>
+                            <CampaignIcon sx={{ color: colorValues.primary, fontSize: 40 }} />
+                        </Box>
+                        <Typography variant="h6" sx={{ textAlign: 'center' }}>
+                            Marketing
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 1 }}>
+                            Campaigns & Promotions
+                        </Typography>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* Additional links section */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12}>
+                    <Paper
+                        elevation={theme === 'dark' ? 3 : 1}
+                        sx={{
+                            p: 3,
+                            bgcolor: colorValues.bgPaper,
+                            borderRadius: 2
+                        }}
+                    >
+                        <Typography variant="h6" sx={{ mb: 3 }}>Marketing & Promotions</Typography>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button 
+                                    component={RouterLink} 
+                                    to="/admin/marketing" 
+                                    variant="contained" 
+                                    color="primary"
+                                    startIcon={<CampaignIcon />}
+                                    fullWidth
+                                    sx={{ py: 1.5 }}
+                                >
+                                    Marketing Dashboard
+                                </Button>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button 
+                                    component={RouterLink} 
+                                    to="/admin/marketing/campaigns" 
+                                    variant="contained" 
+                                    color="info"
+                                    startIcon={<CampaignIcon />}
+                                    fullWidth
+                                    sx={{ py: 1.5 }}
+                                >
+                                    Campaigns
+                                </Button>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button 
+                                    component={RouterLink} 
+                                    to="/admin/marketing/discounts" 
+                                    variant="contained" 
+                                    color="secondary"
+                                    startIcon={<LocalOfferIcon />}
+                                    fullWidth
+                                    sx={{ py: 1.5 }}
+                                >
+                                    Discount Codes
+                                </Button>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button 
+                                    component={RouterLink} 
+                                    to="/admin/users" 
+                                    variant="contained" 
+                                    color="success"
+                                    startIcon={<GroupIcon />}
+                                    fullWidth
+                                    sx={{ py: 1.5 }}
+                                >
+                                    User Segmentation
+                                </Button>
+                            </Grid>
+                        </Grid>
                     </Paper>
                 </Grid>
             </Grid>

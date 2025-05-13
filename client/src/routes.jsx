@@ -37,6 +37,11 @@ import CommissionManagement from './features/admin/commission/CommissionManageme
 import SellerPerformance from './features/admin/sellers/SellerPerformance';
 import PayoutProcessing from './features/admin/payouts/PayoutProcessing';
 import ComplianceMonitoring from './features/admin/compliance/ComplianceMonitoring';
+import MarketingLayout from './features/admin/marketing/MarketingLayout';
+import MarketingDashboard from './features/admin/marketing/MarketingDashboard';
+import CampaignList from './features/admin/marketing/CampaignList';
+import DiscountCodes from './features/admin/marketing/DiscountCodes';
+import CampaignDetail from './features/admin/marketing/CampaignDetail';
 
 // Lazy-load these components for better performance
 const Login = React.lazy(() => import('./features/auth/Login.jsx'));
@@ -70,44 +75,40 @@ export const router = createBrowserRouter([
             {
                 path: '/auth/register/*',
                 element: <RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>
-            },
-            { path: '/auth/register/verify-email-address', element: <ClerkVerification type="verifyEmail" /> },
-            { path: '/auth/register/sso-callback', element: <Register /> },
-            { path: '/auth/verify', element: <ClerkVerification type="verify" /> },
-            { path: '/auth/reset-password', element: <ClerkVerification type="resetPassword" /> },
+            { path: '/auth/reset-password', element: <ClerkVerification type="resetPassword" /> },            { path: '/auth/register/verify-email-address', element: <ClerkVerification type="verifyEmail" /> },
 
-            // Main layout route - renders Navbar/Footer + Outlet for its children
-            {
+            // Main layout route - renders Navbar/Footer + Outlet for its children path: '/auth/verify', element: <ClerkVerification type="verify" /> },
+            {tion type="resetPassword" /> },
                 path: '/', // Matches the root and subsequent paths
-                element: <MainLayout />,
+                element: <MainLayout />,oter + Outlet for its children
                 errorElement: <RouteErrorElement />,
-                children: [
+                children: [hs
                     // Routes rendered within MainLayout's Outlet
                     { index: true, element: <Home /> }, // Use index route for home
                     { path: '/cart', element: <RequireAuth><Cart /></RequireAuth> },
                     { path: '/products/skincare', element: <Skincare /> },
-                    { path: '/products/makeup', element: <Makeup /> },
-                    { path: '/products/fragrance', element: <Fragrance /> },
-                    { path: '/products/hair', element: <HairProducts /> },
+                    { path: '/products/makeup', element: <Makeup /> },or home
+                    { path: '/products/fragrance', element: <Fragrance /> },reAuth> },
+                    { path: '/products/hair', element: <HairProducts /> },ent: <Skincare /> },
                     // Correct path for product detail
-                    { path: '/product/:id', element: <ProductDetail /> },
+                    { path: '/product/:id', element: <ProductDetail /> },/fragrance', element: <Fragrance /> },
                     // Checkout routes
                     { path: '/checkout', element: <RequireAuth><CheckoutPage /></RequireAuth> },
-                    { path: '/checkout/confirmation', element: <RequireAuth><CheckoutConfirmation /></RequireAuth> },
-                ]
-            },
-            // Admin Setup Route (protected but doesn't require admin role)
+                    { path: '/checkout/confirmation', element: <RequireAuth><CheckoutConfirmation /></RequireAuth> },   { path: '/product/:id', element: <ProductDetail /> },
+                ]      // Checkout routes
+            },e /></RequireAuth> },
+            // Admin Setup Route (protected but doesn't require admin role)       { path: '/checkout/confirmation', element: <RequireAuth><CheckoutConfirmation /></RequireAuth> },
             {
                 path: '/admin-setup',
-                element: <RequireAuth><AdminSetup /></RequireAuth>,
+                element: <RequireAuth><AdminSetup /></RequireAuth>, Admin Setup Route (protected but doesn't require admin role)
             },
-            // Admin Routes with AdminGuard
-            {
+            // Admin Routes with AdminGuard   path: '/admin-setup',
+            {reAuth><AdminSetup /></RequireAuth>,
                 path: '/admin',
-                element: <AdminGuard><AdminLayout /></AdminGuard>,
+                element: <AdminGuard><AdminLayout /></AdminGuard>, with AdminGuard
                 children: [
                     { index: true, element: <AdminDashboard /> },
-                    { path: 'products', element: <AdminProducts /> },
+                    { path: 'products', element: <AdminProducts /> },,
                     { path: 'orders', element: <AdminOrders /> },
                     { path: 'users', element: <AdminUsers /> },
                     { path: 'settings', element: <AdminSettings /> },
@@ -117,7 +118,33 @@ export const router = createBrowserRouter([
                     { path: 'seller-performance', element: <SellerPerformance /> },
                     { path: 'payouts', element: <PayoutProcessing /> },
                     { path: 'compliance', element: <ComplianceMonitoring /> },
-                    { path: 'commissions', element: <CommissionManagement /> },
+                    { path: 'commissions', element: <CommissionManagement /> },formance', element: <SellerPerformance /> },
+                    // Analytics Routes
+                    { path: 'analytics/revenue', element: <RevenueAnalytics /> },
+                    { path: 'analytics/products', element: <ProductAnalytics /> },
+                    { path: 'analytics/customers', element: <CustomerAnalytics /> },
+                    { path: 'analytics/geographical', element: <GeographicalAnalytics /> },
+                    { path: 'analytics/stock-alerts', element: <StockAlertsReport /> },
+                    { path: 'analytics/inventory-forecast', element: <InventoryForecast /> },       element: <MarketingLayout />,
+                    // Marketing Routes          children: [
+                    {                   { index: true, element: <MarketingDashboard /> },
+                        path: 'marketing',                       { path: 'campaigns', element: <CampaignList /> },
+                        element: <MarketingLayout />,                         { path: 'discounts', element: <DiscountCodes /> }
+                        children: [                        ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+]);    }        ]            },                ]                    }                        ]                            { path: 'discounts', element: <DiscountCodes /> }                            { path: 'campaigns/:id', element: <CampaignDetail /> },                            { path: 'campaigns/new', element: <CampaignDetail /> },                            { path: 'campaigns', element: <CampaignList /> },                            { index: true, element: <MarketingDashboard /> },                    },
                     // Analytics Routes
                     { path: 'analytics/revenue', element: <RevenueAnalytics /> },
                     { path: 'analytics/products', element: <ProductAnalytics /> },
