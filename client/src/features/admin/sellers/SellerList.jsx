@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon, GetApp as ExportIcon } from '@mui/icons-material';
 
-const SellerList = ({ sellers, loading }) => {
+const SellerList = ({ sellers = [], loading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   
@@ -38,16 +38,19 @@ const SellerList = ({ sellers, loading }) => {
     }
   };
   
-  const filteredSellers = sellers.filter(seller => {
-    const matchesSearch = 
-      seller.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      seller.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      seller.email.toLowerCase().includes(searchTerm.toLowerCase());
-      
-    const matchesStatus = filterStatus === 'all' || seller.status === filterStatus;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Ensure sellers is an array before filtering
+  const filteredSellers = Array.isArray(sellers) 
+    ? sellers.filter(seller => {
+        const matchesSearch = 
+          seller.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          seller.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          seller.email.toLowerCase().includes(searchTerm.toLowerCase());
+          
+        const matchesStatus = filterStatus === 'all' || seller.status === filterStatus;
+        
+        return matchesSearch && matchesStatus;
+      })
+    : [];
 
   if (loading) {
     return (
@@ -90,17 +93,19 @@ const SellerList = ({ sellers, loading }) => {
             onChange={(e) => setFilterStatus(e.target.value)}
             label="Status"
           >
-            <option value="all">All Statuses</option>
-            <option value="approved">Approved</option>
-            <option value="pending">Pending</option>
-            <option value="rejected">Rejected</option>
+            <MenuItem value="all">All Statuses</MenuItem>
+            <MenuItem value="approved">Approved</MenuItem>
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="rejected">Rejected</MenuItem>
           </Select>
         </FormControl>
       </Box>
       
       {filteredSellers.length === 0 ? (
         <Typography sx={{ textAlign: 'center', py: 4 }}>
-          No sellers found matching your criteria.
+          {Array.isArray(sellers) && sellers.length > 0 
+            ? "No sellers found matching your criteria."
+            : "No sellers available in the system."}
         </Typography>
       ) : (
         <TableContainer component={Paper}>

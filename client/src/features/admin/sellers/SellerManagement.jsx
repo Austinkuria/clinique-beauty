@@ -9,7 +9,7 @@ import SellerList from './SellerList';
 
 const SellerManagement = () => {
   const [tabValue, setTabValue] = useState(0);
-  const [sellers, setSellers] = useState([]);
+  const [sellers, setSellers] = useState([]); // Initialize as empty array
   const [pendingVerifications, setPendingVerifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,12 +22,15 @@ const SellerManagement = () => {
           sellerApi.getSellers(),
           sellerApi.getVerificationRequests()
         ]);
-        setSellers(sellersData);
-        setPendingVerifications(verificationData);
+        setSellers(Array.isArray(sellersData) ? sellersData : []); // Ensure it's an array
+        setPendingVerifications(Array.isArray(verificationData) ? verificationData : []);
         setError(null);
       } catch (err) {
         setError('Failed to load seller data. Please try again.');
         console.error(err);
+        // Set empty arrays on error to prevent further issues
+        setSellers([]);
+        setPendingVerifications([]);
       } finally {
         setLoading(false);
       }
