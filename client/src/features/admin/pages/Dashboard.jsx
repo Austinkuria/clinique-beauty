@@ -14,17 +14,22 @@ import {
     TableCell,
     TableContainer,
     TableHead,
-    TableRow
+    TableRow,
+    Button
 } from '@mui/material';
 import {
+    AttachMoney,
     AttachMoney as RevenueIcon,
     ShoppingCart as OrdersIcon,
     People as UsersIcon,
     Inventory as ProductsIcon,
     Assignment as FulfillmentIcon,
     TrendingUp as TrendingUpIcon,
-    TrendingDown as TrendingDownIcon
+    TrendingDown as TrendingDownIcon,
+    Store as SellersIcon,
+    Calculate as CalculateIcon
 } from '@mui/icons-material';
+import { Link as RouterLink } from 'react-router-dom';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
 import { 
@@ -196,6 +201,43 @@ function AdminDashboard() {
                         color="secondary"
                         percentChange={stats.fulfillmentRate.growth}
                     />
+                </Grid>
+                {/* New Seller Management Card */}
+                <Grid item xs={12} sm={6} md={2.4}>
+                    <Paper
+                        elevation={theme === 'dark' ? 3 : 1}
+                        sx={{
+                            p: 2,
+                            bgcolor: colorValues.bgPaper,
+                            borderRadius: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            minHeight: '140px',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            transition: 'transform 0.2s',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: 4
+                            }
+                        }}
+                        component={RouterLink}
+                        to="/admin/sellers"
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                    >
+                        <Box sx={{ p: 1, borderRadius: '50%', bgcolor: `${colorValues.info}20`, mb: 1 }}>
+                            <SellersIcon sx={{ color: colorValues.info, fontSize: 40 }} />
+                        </Box>
+                        <Typography variant="h6" sx={{ textAlign: 'center' }}>
+                            Seller Management
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 1 }}>
+                            Manage your marketplace sellers
+                        </Typography>
+                    </Paper>
                 </Grid>
             </Grid>
             
@@ -420,6 +462,76 @@ function AdminDashboard() {
                         }}
                     >
                         <GeographicalChart geographicalData={geographicalData} />
+                    </Paper>
+                </Grid>
+            </Grid>
+            
+            {/* Seller Management Quick Access */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12}>
+                    <Paper
+                        elevation={theme === 'dark' ? 3 : 1}
+                        sx={{
+                            p: 3,
+                            bgcolor: colorValues.bgPaper,
+                            borderRadius: 2
+                        }}
+                    >
+                        <Typography variant="h6" sx={{ mb: 3 }}>Seller Management</Typography>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button 
+                                    component={RouterLink} 
+                                    to="/admin/sellers" 
+                                    variant="contained" 
+                                    color="primary"
+                                    startIcon={<SellersIcon />}
+                                    fullWidth
+                                    sx={{ py: 1.5 }}
+                                >
+                                    Seller Management
+                                </Button>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button 
+                                    component={RouterLink} 
+                                    to="/admin/seller-performance" 
+                                    variant="contained" 
+                                    color="info"
+                                    startIcon={<TrendingUpIcon />}
+                                    fullWidth
+                                    sx={{ py: 1.5 }}
+                                >
+                                    Performance Metrics
+                                </Button>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button 
+                                    component={RouterLink} 
+                                    to="/admin/payouts" 
+                                    variant="contained" 
+                                    color="success"
+                                    startIcon={<AttachMoney />}
+                                    fullWidth
+                                    sx={{ py: 1.5 }}
+                                >
+                                    Payout Processing
+                                </Button>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button 
+                                    component={RouterLink} 
+                                    to="/admin/commissions" 
+                                    variant="contained" 
+                                    color="secondary"
+                                    startIcon={<CalculateIcon />}
+                                    fullWidth
+                                    sx={{ py: 1.5 }}
+                                >
+                                    Commission Structure
+                                </Button>
+                            </Grid>
+                        </Grid>
                     </Paper>
                 </Grid>
             </Grid>
