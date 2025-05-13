@@ -1,20 +1,40 @@
 import React, { useState } from 'react';
-import { Table, Badge, Button, Form, InputGroup, Spinner } from 'react-bootstrap';
+import {
+  Typography,
+  Box,
+  TextField,
+  InputAdornment,
+  Button,
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
+} from '@mui/material';
+import { Search as SearchIcon, GetApp as ExportIcon } from '@mui/icons-material';
 
 const SellerList = ({ sellers, loading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   
-  const getStatusBadge = (status) => {
+  const getStatusChip = (status) => {
     switch (status) {
       case 'approved':
-        return <Badge bg="success">Approved</Badge>;
+        return <Chip label="Approved" color="success" size="small" />;
       case 'pending':
-        return <Badge bg="warning">Pending</Badge>;
+        return <Chip label="Pending" color="warning" size="small" />;
       case 'rejected':
-        return <Badge bg="danger">Rejected</Badge>;
+        return <Chip label="Rejected" color="error" size="small" />;
       default:
-        return <Badge bg="secondary">{status}</Badge>;
+        return <Chip label={status} color="default" size="small" />;
     }
   };
   
@@ -30,76 +50,92 @@ const SellerList = ({ sellers, loading }) => {
   });
 
   if (loading) {
-    return <div className="text-center p-5"><Spinner animation="border" /></div>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Sellers</h2>
-        <Button variant="primary">Export List</Button>
-      </div>
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h4">Sellers</Typography>
+        <Button variant="contained" startIcon={<ExportIcon />}>
+          Export List
+        </Button>
+      </Box>
       
-      <div className="mb-4 d-flex">
-        <InputGroup className="me-3" style={{ maxWidth: '400px' }}>
-          <InputGroup.Text>
-            <i className="bi bi-search"></i>
-          </InputGroup.Text>
-          <Form.Control 
-            placeholder="Search by name, email, etc." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </InputGroup>
+      <Box sx={{ mb: 4, display: 'flex', gap: 2 }}>
+        <TextField 
+          placeholder="Search by name, email, etc."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ flexGrow: 1, maxWidth: '400px' }}
+          size="small"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
         
-        <Form.Select 
-          style={{ maxWidth: '200px' }}
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="all">All Statuses</option>
-          <option value="approved">Approved</option>
-          <option value="pending">Pending</option>
-          <option value="rejected">Rejected</option>
-        </Form.Select>
-      </div>
+        <FormControl sx={{ width: '200px' }} size="small">
+          <InputLabel id="status-filter-label">Status</InputLabel>
+          <Select
+            labelId="status-filter-label"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            label="Status"
+          >
+            <option value="all">All Statuses</option>
+            <option value="approved">Approved</option>
+            <option value="pending">Pending</option>
+            <option value="rejected">Rejected</option>
+          </Select>
+        </FormControl>
+      </Box>
       
       {filteredSellers.length === 0 ? (
-        <p className="text-center py-4">No sellers found matching your criteria.</p>
+        <Typography sx={{ textAlign: 'center', py: 4 }}>
+          No sellers found matching your criteria.
+        </Typography>
       ) : (
-        <Table striped bordered hover responsive>
-          <thead>
-            <tr>
-              <th>Business Name</th>
-              <th>Contact Person</th>
-              <th>Email</th>
-              <th>Registration Date</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredSellers.map(seller => (
-              <tr key={seller.id}>
-                <td>{seller.businessName}</td>
-                <td>{seller.contactName}</td>
-                <td>{seller.email}</td>
-                <td>{new Date(seller.registrationDate).toLocaleDateString()}</td>
-                <td>{getStatusBadge(seller.status)}</td>
-                <td>
-                  <Button variant="outline-primary" size="sm" className="me-2">
-                    View
-                  </Button>
-                  <Button variant="outline-secondary" size="sm">
-                    Edit
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Business Name</TableCell>
+                <TableCell>Contact Person</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Registration Date</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredSellers.map(seller => (
+                <TableRow key={seller.id}>
+                  <TableCell>{seller.businessName}</TableCell>
+                  <TableCell>{seller.contactName}</TableCell>
+                  <TableCell>{seller.email}</TableCell>
+                  <TableCell>{new Date(seller.registrationDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{getStatusChip(seller.status)}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button variant="outlined" size="small">View</Button>
+                      <Button variant="outlined" color="secondary" size="small">Edit</Button>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </div>
+    </Box>
   );
 };
 

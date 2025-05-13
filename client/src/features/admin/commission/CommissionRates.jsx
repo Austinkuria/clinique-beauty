@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { Card, Table, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import {
+  Paper,
+  Typography,
+  Table,
+  TableContainer,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Button,
+  Alert,
+  Box,
+  TextField,
+  CircularProgress
+} from '@mui/material';
 import { commissionApi } from '../../../data/commissionApi';
 
 const CommissionRates = ({ commissionData, loading, onUpdate }) => {
@@ -82,72 +96,86 @@ const CommissionRates = ({ commissionData, loading, onUpdate }) => {
   };
 
   if (loading) {
-    return <div className="text-center p-5"><Spinner animation="border" /></div>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (!commissionData || !commissionData.categoryRates) {
-    return <Alert variant="info">No commission data available</Alert>;
+    return <Alert severity="info">No commission data available</Alert>;
   }
 
   return (
-    <Card>
-      <Card.Header className="d-flex justify-content-between align-items-center">
-        <h4 className="mb-0">Commission Rates by Category</h4>
+    <Paper elevation={2} sx={{ p: 0 }}>
+      <Box sx={{ 
+        p: 2, 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        borderBottom: '1px solid #eee'
+      }}>
+        <Typography variant="h6">Commission Rates by Category</Typography>
         {!editMode ? (
-          <Button variant="primary" onClick={() => setEditMode(true)}>
+          <Button variant="contained" onClick={() => setEditMode(true)}>
             Edit Rates
           </Button>
         ) : (
-          <div>
-            <Button variant="secondary" onClick={handleCancel} className="me-2" disabled={saving}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" onClick={handleCancel} disabled={saving}>
               Cancel
             </Button>
-            <Button variant="success" onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <>
-                  <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />{' '}
-                  Saving...
-                </>
-              ) : 'Save Changes'}
+            <Button 
+              variant="contained" 
+              color="success" 
+              onClick={handleSave} 
+              disabled={saving} 
+              startIcon={saving && <CircularProgress size={20} color="inherit" />}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
-          </div>
+          </Box>
         )}
-      </Card.Header>
-      <Card.Body>
-        {error && <Alert variant="danger">{error}</Alert>}
-        {success && <Alert variant="success">Commission rates updated successfully!</Alert>}
+      </Box>
+      <Box sx={{ p: 3 }}>
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mb: 3 }}>Commission rates updated successfully!</Alert>}
         
-        <Table striped bordered hover>
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th>Commission Rate (%)</th>
-              {editMode && <th>New Rate (%)</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {commissionData.categoryRates.map(category => (
-              <tr key={category.id}>
-                <td>{category.name}</td>
-                <td>{category.rate}%</td>
-                {editMode && (
-                  <td>
-                    <Form.Control
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={updatedRates[category.id] || ''}
-                      onChange={(e) => handleRateChange(category.id, e.target.value)}
-                    />
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </Card.Body>
-    </Card>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Category</TableCell>
+                <TableCell>Commission Rate (%)</TableCell>
+                {editMode && <TableCell>New Rate (%)</TableCell>}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {commissionData.categoryRates.map(category => (
+                <TableRow key={category.id}>
+                  <TableCell>{category.name}</TableCell>
+                  <TableCell>{category.rate}%</TableCell>
+                  {editMode && (
+                    <TableCell>
+                      <TextField
+                        type="number"
+                        size="small"
+                        inputProps={{ min: 0, max: 100, step: 0.1 }}
+                        value={updatedRates[category.id] || ''}
+                        onChange={(e) => handleRateChange(category.id, e.target.value)}
+                        variant="outlined"
+                        sx={{ width: '120px' }}
+                      />
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    </Paper>
   );
 };
 

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Alert, Spinner, Nav, Tab } from 'react-bootstrap';
+import { 
+  Container, Box, Grid, Paper, Typography, Tab, Tabs,
+  Card, CardContent, CircularProgress, Alert
+} from '@mui/material';
 import CommissionRates from './CommissionRates';
 import CommissionSettings from './CommissionSettings';
 import CommissionHistory from './CommissionHistory';
@@ -9,7 +12,7 @@ const CommissionManagement = () => {
   const [commissionData, setCommissionData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('rates');
+  const [tabValue, setTabValue] = useState(0);
 
   useEffect(() => {
     const fetchCommissionData = async () => {
@@ -44,85 +47,83 @@ const CommissionManagement = () => {
     }
   };
 
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
+
   return (
-    <Container fluid className="p-4">
-      <h1 className="mb-4">Commission Management</h1>
+    <Container maxWidth="xl" sx={{ p: 4 }}>
+      <Typography variant="h4" gutterBottom>Commission Management</Typography>
       
-      {error && <Alert variant="danger">{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       
-      <Card className="mb-4">
-        <Card.Body>
-          <Card.Title>Commission Overview</Card.Title>
-          <Row>
-            <Col md={4}>
-              <div className="stat-card">
-                <h3>Average Commission Rate</h3>
-                <p className="display-4">
-                  {loading ? <Spinner animation="border" size="sm" /> : 
+      <Paper sx={{ mb: 4, p: 3 }}>
+        <Typography variant="h6" gutterBottom>Commission Overview</Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="subtitle1" color="text.secondary">Average Commission Rate</Typography>
+                <Typography variant="h4">
+                  {loading ? <CircularProgress size={24} /> : 
                     commissionData ? `${commissionData.averageRate}%` : 'N/A'}
-                </p>
-              </div>
-            </Col>
-            <Col md={4}>
-              <div className="stat-card">
-                <h3>Commission Paid (Month)</h3>
-                <p className="display-4">
-                  {loading ? <Spinner animation="border" size="sm" /> : 
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="subtitle1" color="text.secondary">Commission Paid (Month)</Typography>
+                <Typography variant="h4">
+                  {loading ? <CircularProgress size={24} /> : 
                     commissionData ? `$${commissionData.monthlyPaid.toLocaleString()}` : 'N/A'}
-                </p>
-              </div>
-            </Col>
-            <Col md={4}>
-              <div className="stat-card">
-                <h3>Active Sellers</h3>
-                <p className="display-4">
-                  {loading ? <Spinner animation="border" size="sm" /> : 
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="subtitle1" color="text.secondary">Active Sellers</Typography>
+                <Typography variant="h4">
+                  {loading ? <CircularProgress size={24} /> : 
                     commissionData ? commissionData.activeSellers.toLocaleString() : 'N/A'}
-                </p>
-              </div>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Paper>
       
-      <Tab.Container id="commission-tabs" activeKey={activeTab} onSelect={setActiveTab}>
-        <Row>
-          <Col md={3}>
-            <Nav variant="pills" className="flex-column">
-              <Nav.Item>
-                <Nav.Link eventKey="rates">Commission Rates</Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="settings">Commission Settings</Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="history">Commission History</Nav.Link>
-              </Nav.Item>
-            </Nav>
-          </Col>
-          <Col md={9}>
-            <Tab.Content>
-              <Tab.Pane eventKey="rates">
-                <CommissionRates 
-                  commissionData={commissionData} 
-                  loading={loading}
-                  onUpdate={handleCommissionUpdate}
-                />
-              </Tab.Pane>
-              <Tab.Pane eventKey="settings">
-                <CommissionSettings 
-                  commissionData={commissionData} 
-                  loading={loading}
-                  onUpdate={handleCommissionUpdate}
-                />
-              </Tab.Pane>
-              <Tab.Pane eventKey="history">
-                <CommissionHistory />
-              </Tab.Pane>
-            </Tab.Content>
-          </Col>
-        </Row>
-      </Tab.Container>
+      <Box sx={{ width: '100%' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={tabValue} onChange={handleTabChange}>
+            <Tab label="Commission Rates" />
+            <Tab label="Commission Settings" />
+            <Tab label="Commission History" />
+          </Tabs>
+        </Box>
+        <Box sx={{ mt: 3 }}>
+          {tabValue === 0 && (
+            <CommissionRates 
+              commissionData={commissionData} 
+              loading={loading}
+              onUpdate={handleCommissionUpdate}
+            />
+          )}
+          {tabValue === 1 && (
+            <CommissionSettings 
+              commissionData={commissionData} 
+              loading={loading}
+              onUpdate={handleCommissionUpdate}
+            />
+          )}
+          {tabValue === 2 && (
+            <CommissionHistory />
+          )}
+        </Box>
+      </Box>
     </Container>
   );
 };

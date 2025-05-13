@@ -1,5 +1,25 @@
 import React, { useState } from 'react';
-import { Card, Form, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import {
+  Paper,
+  Typography,
+  Grid,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Checkbox,
+  Box,
+  Button,
+  Alert,
+  CircularProgress,
+  Card,
+  CardContent,
+  IconButton,
+  Divider
+} from '@mui/material';
+import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
 const CommissionSettings = ({ commissionData, loading, onUpdate }) => {
   const [editMode, setEditMode] = useState(false);
@@ -111,185 +131,193 @@ const CommissionSettings = ({ commissionData, loading, onUpdate }) => {
   };
 
   if (loading) {
-    return <div className="text-center p-5"><Spinner animation="border" /></div>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <Card>
-      <Card.Header className="d-flex justify-content-between align-items-center">
-        <h4 className="mb-0">Commission Settings</h4>
+    <Paper elevation={2} sx={{ p: 0 }}>
+      <Box sx={{ 
+        p: 2, 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        borderBottom: '1px solid #eee'
+      }}>
+        <Typography variant="h6">Commission Settings</Typography>
         {!editMode ? (
-          <Button variant="primary" onClick={() => setEditMode(true)}>
+          <Button variant="contained" onClick={() => setEditMode(true)}>
             Edit Settings
           </Button>
         ) : (
-          <div>
-            <Button variant="secondary" onClick={handleCancel} className="me-2" disabled={saving}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" onClick={handleCancel} disabled={saving}>
               Cancel
             </Button>
-            <Button variant="success" onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <>
-                  <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />{' '}
-                  Saving...
-                </>
-              ) : 'Save Changes'}
-            </Button>
-          </div>
-        )}
-      </Card.Header>
-      <Card.Body>
-        {error && <Alert variant="danger">{error}</Alert>}
-        {success && <Alert variant="success">Commission settings updated successfully!</Alert>}
-        
-        <Form>
-          <Row className="mb-3">
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label>Default Commission Rate (%)</Form.Label>
-                <Form.Control
-                  type="number"
-                  name="defaultCommissionRate"
-                  value={settingsForm.defaultCommissionRate}
-                  onChange={handleInputChange}
-                  disabled={!editMode}
-                  min="0"
-                  max="100"
-                  step="0.1"
-                />
-                <Form.Text className="text-muted">
-                  Applied when no specific category rate is set
-                </Form.Text>
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label>Minimum Payout Amount ($)</Form.Label>
-                <Form.Control
-                  type="number"
-                  name="minimumPayoutAmount"
-                  value={settingsForm.minimumPayoutAmount}
-                  onChange={handleInputChange}
-                  disabled={!editMode}
-                  min="0"
-                  step="0.01"
-                />
-                <Form.Text className="text-muted">
-                  Minimum amount required for payout processing
-                </Form.Text>
-              </Form.Group>
-            </Col>
-          </Row>
-          
-          <Form.Group className="mb-3">
-            <Form.Label>Payout Schedule</Form.Label>
-            <Form.Select 
-              name="payoutSchedule"
-              value={settingsForm.payoutSchedule}
-              onChange={handleInputChange}
-              disabled={!editMode}
+            <Button 
+              variant="contained" 
+              color="success" 
+              onClick={handleSave} 
+              disabled={saving}
+              startIcon={saving && <CircularProgress size={20} color="inherit" />}
             >
-              <option value="weekly">Weekly</option>
-              <option value="biweekly">Bi-weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-            </Form.Select>
-          </Form.Group>
-          
-          <Form.Group className="mb-3">
-            <Form.Check
-              type="checkbox"
-              name="tierBased"
-              checked={settingsForm.tierBased}
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </Box>
+        )}
+      </Box>
+      <Box sx={{ p: 3 }}>
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mb: 3 }}>Commission settings updated successfully!</Alert>}
+        
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Default Commission Rate (%)"
+              type="number"
+              name="defaultCommissionRate"
+              value={settingsForm.defaultCommissionRate}
               onChange={handleInputChange}
               disabled={!editMode}
+              inputProps={{ min: 0, max: 100, step: 0.1 }}
+              helperText="Applied when no specific category rate is set"
+              margin="normal"
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Minimum Payout Amount ($)"
+              type="number"
+              name="minimumPayoutAmount"
+              value={settingsForm.minimumPayoutAmount}
+              onChange={handleInputChange}
+              disabled={!editMode}
+              inputProps={{ min: 0, step: 0.01 }}
+              helperText="Minimum amount required for payout processing"
+              margin="normal"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Payout Schedule</InputLabel>
+              <Select
+                name="payoutSchedule"
+                value={settingsForm.payoutSchedule}
+                onChange={handleInputChange}
+                disabled={!editMode}
+                label="Payout Schedule"
+              >
+                <MenuItem value="weekly">Weekly</MenuItem>
+                <MenuItem value="biweekly">Bi-weekly</MenuItem>
+                <MenuItem value="monthly">Monthly</MenuItem>
+                <MenuItem value="quarterly">Quarterly</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="tierBased"
+                  checked={settingsForm.tierBased}
+                  onChange={handleInputChange}
+                  disabled={!editMode}
+                />
+              }
               label="Enable Tier-Based Commission Structure"
             />
-            <Form.Text className="text-muted">
+            <Typography variant="caption" color="text.secondary" display="block">
               Commission rates will be based on seller performance tiers
-            </Form.Text>
-          </Form.Group>
+            </Typography>
+          </Grid>
           
           {settingsForm.tierBased && (
-            <div className="tier-settings mt-4">
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5>Performance Tiers</h5>
+            <Grid item xs={12} sx={{ mt: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">Performance Tiers</Typography>
                 {editMode && (
-                  <Button variant="outline-primary" size="sm" onClick={addTier}>
+                  <Button 
+                    variant="outlined" 
+                    startIcon={<AddIcon />} 
+                    onClick={addTier}
+                    size="small"
+                  >
                     Add Tier
                   </Button>
                 )}
-              </div>
+              </Box>
               
-              {settingsForm.tiers.map((tier, index) => (
-                <Card key={index} className="mb-3">
-                  <Card.Body>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <h6>Tier {index + 1}</h6>
-                      {editMode && (
-                        <Button 
-                          variant="outline-danger" 
-                          size="sm"
-                          onClick={() => removeTier(index)}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <Row>
-                      <Col md={4}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Tier Name</Form.Label>
-                          <Form.Control
-                            type="text"
+              {settingsForm.tiers.length === 0 ? (
+                <Alert severity="info">
+                  No tiers defined. {editMode && 'Click "Add Tier" to create performance tiers.'}
+                </Alert>
+              ) : (
+                settingsForm.tiers.map((tier, index) => (
+                  <Card key={index} variant="outlined" sx={{ mb: 2 }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="subtitle1">Tier {index + 1}</Typography>
+                        {editMode && (
+                          <IconButton 
+                            color="error" 
+                            onClick={() => removeTier(index)}
+                            size="small"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        )}
+                      </Box>
+                      
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={4}>
+                          <TextField
+                            fullWidth
+                            label="Tier Name"
                             value={tier.name}
                             onChange={(e) => handleTierChange(index, 'name', e.target.value)}
                             disabled={!editMode}
+                            size="small"
                           />
-                        </Form.Group>
-                      </Col>
-                      <Col md={4}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Minimum Sales ($)</Form.Label>
-                          <Form.Control
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <TextField
+                            fullWidth
+                            label="Minimum Sales ($)"
                             type="number"
                             value={tier.minSales}
                             onChange={(e) => handleTierChange(index, 'minSales', Number(e.target.value))}
                             disabled={!editMode}
-                            min="0"
+                            inputProps={{ min: 0 }}
+                            size="small"
                           />
-                        </Form.Group>
-                      </Col>
-                      <Col md={4}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Commission Rate (%)</Form.Label>
-                          <Form.Control
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <TextField
+                            fullWidth
+                            label="Commission Rate (%)"
                             type="number"
                             value={tier.rate}
                             onChange={(e) => handleTierChange(index, 'rate', Number(e.target.value))}
                             disabled={!editMode}
-                            min="0"
-                            max="100"
-                            step="0.1"
+                            inputProps={{ min: 0, max: 100, step: 0.1 }}
+                            size="small"
                           />
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                  </Card.Body>
-                </Card>
-              ))}
-              
-              {settingsForm.tiers.length === 0 && (
-                <Alert variant="info">
-                  No tiers defined. {editMode && 'Click "Add Tier" to create performance tiers.'}
-                </Alert>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                ))
               )}
-            </div>
+            </Grid>
           )}
-        </Form>
-      </Card.Body>
-    </Card>
+        </Grid>
+      </Box>
+    </Paper>
   );
 };
 
