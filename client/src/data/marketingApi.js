@@ -1,5 +1,8 @@
 import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { getApiUrl } from '../config/env';
+
+// Get the API URL once when the module is first loaded
+const API_BASE_URL = getApiUrl();
 
 export const marketingApi = {
   // Campaign Management
