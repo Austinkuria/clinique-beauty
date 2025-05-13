@@ -44,6 +44,27 @@ const AdminNavigation = () => {
       </Nav.Link>
       <Nav.Link
         as={Link}
+        to="/admin/seller-performance"
+        active={location.pathname.startsWith('/admin/seller-performance')}
+      >
+        Seller Performance
+      </Nav.Link>
+      <Nav.Link
+        as={Link}
+        to="/admin/payouts"
+        active={location.pathname.startsWith('/admin/payouts')}
+      >
+        Payout Processing
+      </Nav.Link>
+      <Nav.Link
+        as={Link}
+        to="/admin/compliance"
+        active={location.pathname.startsWith('/admin/compliance')}
+      >
+        Compliance Monitoring
+      </Nav.Link>
+      <Nav.Link
+        as={Link}
         to="/admin/commissions"
         active={location.pathname.startsWith('/admin/commissions')}
       >

@@ -32,6 +32,11 @@ import GeographicalAnalytics from './features/admin/pages/analytics/Geographical
 import StockAlertsReport from './features/admin/pages/analytics/StockAlertsReport';
 import InventoryForecast from './features/admin/pages/analytics/InventoryForecast';
 import { useTheme } from '@mui/material/styles';
+import SellerManagement from './features/admin/sellers/SellerManagement';
+import CommissionManagement from './features/admin/commission/CommissionManagement';
+import SellerPerformance from './features/admin/sellers/SellerPerformance';
+import PayoutProcessing from './features/admin/payouts/PayoutProcessing';
+import ComplianceMonitoring from './features/admin/compliance/ComplianceMonitoring';
 
 // Lazy-load these components for better performance
 const Login = React.lazy(() => import('./features/auth/Login.jsx'));
@@ -107,7 +112,12 @@ export const router = createBrowserRouter([
                     { path: 'users', element: <AdminUsers /> },
                     { path: 'settings', element: <AdminSettings /> },
                     { path: 'inventory', element: <AdminInventory />},
-                    { path: 'suppliers', element: <Suppliers />}, // Add this route
+                    { path: 'suppliers', element: <Suppliers />},
+                    { path: 'sellers', element: <SellerManagement /> },
+                    { path: 'seller-performance', element: <SellerPerformance /> },
+                    { path: 'payouts', element: <PayoutProcessing /> },
+                    { path: 'compliance', element: <ComplianceMonitoring /> },
+                    { path: 'commissions', element: <CommissionManagement /> },
                     // Analytics Routes
                     { path: 'analytics/revenue', element: <RevenueAnalytics /> },
                     { path: 'analytics/products', element: <ProductAnalytics /> },
