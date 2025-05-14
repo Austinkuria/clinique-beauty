@@ -13,10 +13,18 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
-  Snackbar
+  Snackbar,
+  FormHelperText
 } from '@mui/material';
 import { ArrowBack as BackIcon, Save as SaveIcon } from '@mui/icons-material';
 import { sellerApi } from '../../../data/sellerApi';
+import { 
+  validateEmail, 
+  validatePhone, 
+  validateRequired, 
+  sanitizeInput,
+  sanitizeObject
+} from '../../../utils/inputValidation';
 
 const SellerEdit = () => {
   const { sellerId } = useParams();
@@ -34,7 +42,21 @@ const SellerEdit = () => {
     status: '',
     rejectionReason: ''
   });
+  
+  // Form validation state
+  const [errors, setErrors] = useState({
+    businessName: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    status: '',
+    rejectionReason: ''
+  });
+  
+  // Original data state to track changes
+  const [originalData, setOriginalData] = useState(null);
 
+  // Load seller data
   useEffect(() => {
     const fetchSellerData = async () => {
       try {
@@ -45,7 +67,8 @@ const SellerEdit = () => {
           return;
         }
         
-        setFormData({
+        // Set form data
+        const formattedData = {
           businessName: data.businessName || '',
           contactName: data.contactName || '',
           email: data.email || '',
@@ -53,7 +76,10 @@ const SellerEdit = () => {
           location: data.location || '',
           status: data.status || '',
           rejectionReason: data.rejectionReason || ''
-        });
+        };
+        
+        setFormData(formattedData);
+        setOriginalData(formattedData); // Store original data for comparison
       } catch (err) {
         console.error('Error fetching seller data:', err);
         setError('Failed to load seller data');
@@ -65,22 +91,133 @@ const SellerEdit = () => {
     fetchSellerData();
   }, [sellerId]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  // Validate form field using shared validation utilities
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'businessName':
+        return validateRequired(value) ? '' : 'Business name is required';
+      case 'contactName':
+        return validateRequired(value) ? '' : 'Contact name is required';
+      case 'email':
+        return validateEmail(value) ? '' : 'Please enter a valid email address';
+      case 'phone':
+        // Allow empty phone, but validate if provided
+        return !value || validatePhone(value) ? '' : 'Please enter a valid phone number';
+      case 'status':
+        return validateRequired(value) ? '' : 'Status is required';
+      case 'rejectionReason':
+        return (validateRequired(value) || formData.status !== 'rejected') 
+          ? '' 
+          : 'Rejection reason is required when status is rejected';
+      default:
+        return '';
+    }
   };
 
+  // Validate entire form
+  const validateForm = () => {
+    const newErrors = {
+      businessName: validateField('businessName', formData.businessName),
+      contactName: validateField('contactName', formData.contactName),
+      email: validateField('email', formData.email),
+      phone: validateField('phone', formData.phone),
+      status: validateField('status', formData.status),
+      rejectionReason: validateField('rejectionReason', formData.rejectionReason)
+    };
+    
+    setErrors(newErrors);
+    
+    // Form is valid if no error messages exist
+    return !Object.values(newErrors).some(error => error);
+  };
+
+  // Handle input change with validation
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Sanitize input using the shared utility
+    const sanitizedValue = sanitizeInput(value);
+    
+    // Update form data
+    setFormData(prev => ({
+      ...prev,
+      [name]: sanitizedValue
+    }));
+    
+    // Validate the field
+    const errorMessage = validateField(name, sanitizedValue);
+    
+    // Update errors state
+    setErrors(prev => ({
+      ...prev,
+      [name]: errorMessage
+    }));
+    
+    // Special case: validate rejection reason when status changes
+    if (name === 'status') {
+      const rejectionError = sanitizedValue === 'rejected' && !formData.rejectionReason.trim() 
+        ? 'Rejection reason is required when status is rejected' 
+        : '';
+        
+      setErrors(prev => ({
+        ...prev,
+        rejectionReason: rejectionError
+      }));
+    }
+  };
+
+  // Check if form has been modified
+  const hasChanges = () => {
+    if (!originalData) return false;
+    
+    return Object.keys(formData).some(key => {
+      // Skip rejectionReason comparison if status is not rejected
+      if (key === 'rejectionReason' && formData.status !== 'rejected') {
+        return false;
+      }
+      return formData[key] !== originalData[key];
+    });
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate all fields before submission
+    if (!validateForm()) {
+      setSnackbar({
+        open: true,
+        message: 'Please fix the validation errors before saving',
+        severity: 'error'
+      });
+      return;
+    }
+    
+    // Check for actual changes
+    if (!hasChanges()) {
+      setSnackbar({
+        open: true,
+        message: 'No changes to save',
+        severity: 'info'
+      });
+      return;
+    }
+    
     try {
       setSaving(true);
       
+      // Sanitize the entire form data object before submission
+      const sanitizedFormData = sanitizeObject(formData);
+      
       // Update the verification status if it's changed
-      if (formData.status !== 'pending') {
-        await sellerApi.updateVerificationStatus(sellerId, formData.status, formData.rejectionReason);
+      if (sanitizedFormData.status !== originalData.status || 
+         (sanitizedFormData.status === 'rejected' && sanitizedFormData.rejectionReason !== originalData.rejectionReason)) {
+        
+        await sellerApi.updateVerificationStatus(
+          sellerId, 
+          sanitizedFormData.status, 
+          sanitizedFormData.status === 'rejected' ? sanitizedFormData.rejectionReason : ''
+        );
       }
       
       // TODO: Add API call to update other seller fields when that endpoint is ready
@@ -91,6 +228,9 @@ const SellerEdit = () => {
         severity: 'success'
       });
       
+      // Update original data to reflect the changes
+      setOriginalData({...sanitizedFormData});
+      
       // Navigate back to details page after short delay
       setTimeout(() => {
         navigate(`/admin/sellers/${sellerId}`);
@@ -100,11 +240,22 @@ const SellerEdit = () => {
       console.error('Error updating seller:', err);
       setSnackbar({
         open: true,
-        message: 'Failed to update seller information',
+        message: `Failed to update seller information: ${err.message || 'Unknown error'}`,
         severity: 'error'
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Handle cancel confirmation
+  const handleCancel = () => {
+    if (hasChanges()) {
+      if (window.confirm('You have unsaved changes. Are you sure you want to cancel?')) {
+        navigate(`/admin/sellers/${sellerId}`);
+      }
+    } else {
+      navigate(`/admin/sellers/${sellerId}`);
     }
   };
 
@@ -157,6 +308,13 @@ const SellerEdit = () => {
                 fullWidth
                 margin="normal"
                 required
+                error={!!errors.businessName}
+                helperText={errors.businessName}
+                disabled={saving}
+                inputProps={{ 
+                  maxLength: 100,
+                  'data-testid': 'business-name-input'
+                }}
               />
               
               <TextField
@@ -167,6 +325,13 @@ const SellerEdit = () => {
                 fullWidth
                 margin="normal"
                 required
+                error={!!errors.contactName}
+                helperText={errors.contactName}
+                disabled={saving}
+                inputProps={{ 
+                  maxLength: 100,
+                  'data-testid': 'contact-name-input'
+                }}
               />
               
               <TextField
@@ -178,6 +343,13 @@ const SellerEdit = () => {
                 fullWidth
                 margin="normal"
                 required
+                error={!!errors.email}
+                helperText={errors.email}
+                disabled={saving}
+                inputProps={{ 
+                  maxLength: 255,
+                  'data-testid': 'email-input'
+                }}
               />
             </Grid>
             
@@ -189,6 +361,13 @@ const SellerEdit = () => {
                 onChange={handleInputChange}
                 fullWidth
                 margin="normal"
+                error={!!errors.phone}
+                helperText={errors.phone || "Format: +254XXXXXXXXX"}
+                disabled={saving}
+                inputProps={{ 
+                  maxLength: 20,
+                  'data-testid': 'phone-input'
+                }}
               />
               
               <TextField
@@ -198,21 +377,34 @@ const SellerEdit = () => {
                 onChange={handleInputChange}
                 fullWidth
                 margin="normal"
+                disabled={saving}
+                inputProps={{ 
+                  maxLength: 200,
+                  'data-testid': 'location-input'
+                }}
               />
               
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Status</InputLabel>
+              <FormControl 
+                fullWidth 
+                margin="normal" 
+                error={!!errors.status}
+                disabled={saving}
+                required
+              >
+                <InputLabel id="status-select-label">Status</InputLabel>
                 <Select
+                  labelId="status-select-label"
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
                   label="Status"
-                  required
+                  inputProps={{ 'data-testid': 'status-select' }}
                 >
                   <MenuItem value="pending">Pending</MenuItem>
                   <MenuItem value="approved">Approved</MenuItem>
                   <MenuItem value="rejected">Rejected</MenuItem>
                 </Select>
+                {errors.status && <FormHelperText>{errors.status}</FormHelperText>}
               </FormControl>
             </Grid>
             
@@ -228,6 +420,13 @@ const SellerEdit = () => {
                   multiline
                   rows={3}
                   required
+                  error={!!errors.rejectionReason}
+                  helperText={errors.rejectionReason || "Please provide a clear reason for rejection"}
+                  disabled={saving}
+                  inputProps={{ 
+                    maxLength: 1000,
+                    'data-testid': 'rejection-reason-input'
+                  }}
                 />
               </Grid>
             )}
@@ -236,8 +435,10 @@ const SellerEdit = () => {
               <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                   type="button"
-                  onClick={() => navigate(`/admin/sellers/${sellerId}`)}
+                  onClick={handleCancel}
                   sx={{ mr: 2 }}
+                  disabled={saving}
+                  data-testid="cancel-button"
                 >
                   Cancel
                 </Button>
@@ -246,7 +447,8 @@ const SellerEdit = () => {
                   variant="contained"
                   color="primary"
                   startIcon={<SaveIcon />}
-                  disabled={saving}
+                  disabled={saving || (!hasChanges())}
+                  data-testid="save-button"
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
@@ -260,6 +462,7 @@ const SellerEdit = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
+        data-testid="snackbar"
       >
         <Alert 
           onClose={handleCloseSnackbar} 
