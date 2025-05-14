@@ -1203,6 +1203,336 @@ serve(async (req: Request) => {
             }
         }
 
+        // --- SELLER ROUTES ---
+        // GET /api/sellers - Get all sellers with optional filters
+        if (req.method === 'GET' && route[0] === 'sellers' && route.length === 1) {
+            console.log('[Route Handler] Matched GET /api/sellers');
+            
+            // Check for admin role if auth header is present
+            let isAdmin = false;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+                if (supabaseUserId) {
+                    const { data: userData } = await supabase
+                        .from('user_profiles')
+                        .select('role')
+                        .eq('id', supabaseUserId)
+                        .single();
+                    
+                    isAdmin = userData?.role === 'admin';
+                }
+            }
+            
+            // Get filters from URL params
+            const status = url.searchParams.get('status');
+            const search = url.searchParams.get('search');
+            
+            // Build query
+            let query = supabase.from('sellers').select('*');
+            
+            // Apply filters - non-admins can only see approved sellers
+            if (!isAdmin) {
+                query = query.eq('status', 'approved');
+            } else if (status && status !== 'all') {
+                query = query.eq('status', status);
+            }
+            
+            // Execute query
+            const { data: sellers, error } = await query;
+            
+            if (error) {
+                console.error('[Route Handler GET /api/sellers] Error fetching sellers:', error);
+                throw error;
+            }
+            
+            // Apply search filter in memory (if Supabase doesn't support text search in your plan)
+            let filteredSellers = sellers || [];
+            if (search && search.trim() !== '') {
+                const searchLower = search.toLowerCase();
+                filteredSellers = filteredSellers.filter(seller => 
+                    seller.business_name?.toLowerCase().includes(searchLower) ||
+                    seller.contact_name?.toLowerCase().includes(searchLower) ||
+                    seller.email?.toLowerCase().includes(searchLower) ||
+                    seller.location?.toLowerCase().includes(searchLower)
+                );
+            }
+            
+            // Transform response to match frontend expectations
+            const formattedSellers = filteredSellers.map(seller => ({
+                id: seller.id,
+                businessName: seller.business_name,
+                contactName: seller.contact_name,
+                email: seller.email,
+                phone: seller.phone,
+                location: seller.location,
+                registrationDate: seller.registration_date,
+                status: seller.status,
+                verificationDate: seller.verification_date,
+                productCategories: seller.product_categories,
+                rating: seller.rating,
+                salesCount: seller.sales_count,
+                rejectionReason: seller.rejection_reason
+            }));
+            
+            return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
+        }
+        
+        // GET /api/sellers/:id - Get a specific seller
+        if (req.method === 'GET' && route[0] === 'sellers' && route.length === 2) {
+            console.log('[Route Handler] Matched GET /api/sellers/:id');
+            const sellerId = route[1];
+            
+            // Validate seller ID
+            if (!isValidUUID(sellerId)) {
+                return new Response(
+                    JSON.stringify({ error: 'Invalid seller ID format. Must be a valid UUID.' }),
+                    { headers, status: 400 }
+                );
+            }
+            
+            // Check if user is admin or if the seller is approved
+            let isAdmin = false;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+                if (supabaseUserId) {
+                    const { data: userData } = await supabase
+                        .from('user_profiles')
+                        .select('role')
+                        .eq('id', supabaseUserId)
+                        .single();
+                    
+                    isAdmin = userData?.role === 'admin';
+                }
+            }
+            
+            // Get seller data
+            let query = supabase.from('sellers').select('*').eq('id', sellerId);
+            
+            // Non-admins can only see approved sellers
+            if (!isAdmin) {
+                query = query.eq('status', 'approved');
+            }
+            
+            const { data: seller, error } = await query.maybeSingle();
+            
+            if (error) {
+                console.error('[Route Handler GET /api/sellers/:id] Error fetching seller:', error);
+                throw error;
+            }
+            
+            if (!seller) {
+                return new Response(
+                    JSON.stringify({ message: 'Seller not found or not accessible' }),
+                    { headers, status: 404 }
+                );
+            }
+            
+            // Format response to match frontend expectations
+            const formattedSeller = {
+                id: seller.id,
+                businessName: seller.business_name,
+                contactName: seller.contact_name,
+                email: seller.email,
+                phone: seller.phone,
+                location: seller.location,
+                registrationDate: seller.registration_date,
+                status: seller.status,
+                verificationDate: seller.verification_date,
+                productCategories: seller.product_categories,
+                rating: seller.rating,
+                salesCount: seller.sales_count,
+                rejectionReason: seller.rejection_reason
+            };
+            
+            return new Response(JSON.stringify(formattedSeller), { headers, status: 200 });
+        }
+        
+        // PATCH /api/sellers/:id/verification - Update seller verification status (admin only)
+        if (req.method === 'PATCH' && route[0] === 'sellers' && route.length === 3 && route[2] === 'verification') {
+            console.log('[Route Handler] Matched PATCH /api/sellers/:id/verification');
+            const sellerId = route[1];
+            
+            // Validate seller ID
+            if (!isValidUUID(sellerId)) {
+                return new Response(
+                    JSON.stringify({ error: 'Invalid seller ID format. Must be a valid UUID.' }),
+                    { headers, status: 400 }
+                );
+            }
+            
+            // Check if user is admin
+            let isAdmin = false;
+            let adminUserId = null;
+            
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            adminUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!adminUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Unauthorized' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Verify admin role
+            const { data: userData, error: userError } = await supabase
+                .from('user_profiles')
+                .select('role')
+                .eq('id', adminUserId)
+                .single();
+                
+            if (userError || !userData) {
+                return new Response(
+                    JSON.stringify({ message: 'Error verifying user role' }),
+                    { headers, status: 500 }
+                );
+            }
+            
+            isAdmin = userData.role === 'admin';
+            if (!isAdmin) {
+                return new Response(
+                    JSON.stringify({ message: 'Admin privileges required for this operation' }),
+                    { headers, status: 403 }
+                );
+            }
+            
+            // Get the verification data from request body
+            const { status, notes } = await req.json();
+            
+            if (!status || !['approved', 'rejected', 'pending'].includes(status)) {
+                return new Response(
+                    JSON.stringify({ message: 'Valid status (approved, rejected, or pending) required' }),
+                    { headers, status: 400 }
+                );
+            }
+            
+            // Prepare update data
+            const updateData = {
+                status,
+                updated_at: new Date().toISOString()
+            };
+            
+            // Add verification date for approved sellers
+            if (status === 'approved') {
+                updateData.verification_date = new Date().toISOString();
+            }
+            
+            // Add rejection reason for rejected sellers
+            if (status === 'rejected' && notes) {
+                updateData.rejection_reason = notes;
+            }
+            
+            // Update the seller
+            const { data: updatedSeller, error: updateError } = await supabase
+                .from('sellers')
+                .update(updateData)
+                .eq('id', sellerId)
+                .select()
+                .single();
+                
+            if (updateError) {
+                console.error('[Route Handler PATCH /api/sellers/:id/verification] Error updating seller:', updateError);
+                throw updateError;
+            }
+            
+            // Format response
+            const formattedSeller = {
+                id: updatedSeller.id,
+                businessName: updatedSeller.business_name,
+                contactName: updatedSeller.contact_name,
+                email: updatedSeller.email,
+                status: updatedSeller.status,
+                verificationDate: updatedSeller.verification_date,
+                rejectionReason: updatedSeller.rejection_reason
+            };
+            
+            return new Response(
+                JSON.stringify({ 
+                    success: true, 
+                    message: `Seller status updated to ${status}`,
+                    seller: formattedSeller
+                }),
+                { headers, status: 200 }
+            );
+        }
+        
+        // GET /api/verification/pending - Get all pending verification requests (admin only)
+        if (req.method === 'GET' && route[0] === 'verification' && route[1] === 'pending') {
+            console.log('[Route Handler] Matched GET /api/verification/pending');
+            
+            // Check if user is admin
+            let isAdmin = false;
+            let adminUserId = null;
+            
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            adminUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!adminUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Unauthorized' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Verify admin role
+            const { data: userData, error: userError } = await supabase
+                .from('user_profiles')
+                .select('role')
+                .eq('id', adminUserId)
+                .single();
+                
+            if (userError || !userData) {
+                return new Response(
+                    JSON.stringify({ message: 'Error verifying user role' }),
+                    { headers, status: 500 }
+                );
+            }
+            
+            isAdmin = userData.role === 'admin';
+            if (!isAdmin) {
+                return new Response(
+                    JSON.stringify({ message: 'Admin privileges required for this operation' }),
+                    { headers, status: 403 }
+                );
+            }
+            
+            // Get pending verification requests
+            const { data: pendingSellers, error } = await supabase
+                .from('sellers')
+                .select('*')
+                .eq('status', 'pending')
+                .order('registration_date', { ascending: false });
+                
+            if (error) {
+                console.error('[Route Handler GET /api/verification/pending] Error fetching pending sellers:', error);
+                throw error;
+            }
+            
+            // Format response
+            const formattedSellers = (pendingSellers || []).map(seller => ({
+                id: seller.id,
+                businessName: seller.business_name,
+                contactName: seller.contact_name,
+                email: seller.email,
+                phone: seller.phone,
+                location: seller.location,
+                registrationDate: seller.registration_date,
+                productCategories: seller.product_categories
+            }));
+            
+            return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
+        }
+
         // --- Fallback for unhandled routes ---
         console.warn(`[Route Handler] Route not found: ${req.method} ${url.pathname}`);
         return new Response(JSON.stringify({ message: 'Route not found' }), { headers, status: 404 });

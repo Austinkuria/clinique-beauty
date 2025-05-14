@@ -49,3 +49,52 @@ BEGIN
   RETURN v_updated > 0;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Function to create sellers table if it doesn't exist
+CREATE OR REPLACE FUNCTION create_sellers_table()
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- Check if the table already exists
+  IF NOT EXISTS (
+    SELECT FROM information_schema.tables 
+    WHERE table_schema = 'public'
+    AND table_name = 'sellers'
+  ) THEN
+    -- Create the table
+    CREATE TABLE sellers (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      business_name TEXT NOT NULL,
+      contact_name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      phone TEXT,
+      location TEXT,
+      registration_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      status TEXT NOT NULL DEFAULT 'pending',
+      verification_date TIMESTAMPTZ,
+      product_categories JSONB,
+      rating NUMERIC,
+      sales_count INTEGER DEFAULT 0,
+      rejection_reason TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    
+    -- Return true to indicate the table was created
+    RETURN TRUE;
+  ELSE
+    -- Return false to indicate the table already exists
+    RETURN FALSE;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to run arbitrary SQL (use with caution, admin only)
+CREATE OR REPLACE FUNCTION run_sql(sql TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+  EXECUTE sql;
+  RETURN TRUE;
+EXCEPTION WHEN OTHERS THEN
+  RAISE;
+END;
+$$ LANGUAGE plpgsql;

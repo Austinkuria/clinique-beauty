@@ -5,7 +5,7 @@
 
 export const mockSellers = [
   {
-    id: 1,
+    id: "1",
     businessName: "Kilimani Beauty Supplies",
     contactName: "Wangari Maathai",
     email: "wangari@kilimanisupplies.co.ke",
@@ -19,7 +19,7 @@ export const mockSellers = [
     salesCount: 156
   },
   {
-    id: 2,
+    id: "2",
     businessName: "Lagos Glow Cosmetics",
     contactName: "Chinua Achebe",
     email: "chinua@lagosglow.ng",
@@ -33,7 +33,7 @@ export const mockSellers = [
     salesCount: 132
   },
   {
-    id: 3,
+    id: "3",
     businessName: "Maasai Beads & Beauty",
     contactName: "Lekishon Metito",
     email: "lekishon@maasaibeads.com",
@@ -47,7 +47,7 @@ export const mockSellers = [
     salesCount: 98
   },
   {
-    id: 4,
+    id: "4",
     businessName: "Cairo Essence",
     contactName: "Nefertari Hassan",
     email: "nefertari@cairoessence.eg",
@@ -61,7 +61,7 @@ export const mockSellers = [
     salesCount: 115
   },
   {
-    id: 5,
+    id: "5",
     businessName: "Nairobi Natural Hair",
     contactName: "Otieno Nyong'o",
     email: "otieno@nairobihair.co.ke",
@@ -74,7 +74,7 @@ export const mockSellers = [
     salesCount: 0
   },
   {
-    id: 6,
+    id: "6",
     businessName: "Marrakech Argan Beauty",
     contactName: "Aisha El Mansouri",
     email: "aisha@marrakechbeauty.ma",
@@ -88,7 +88,7 @@ export const mockSellers = [
     salesCount: 87
   },
   {
-    id: 7,
+    id: "7",
     businessName: "Johannesburg Luxury Spa Supplies",
     contactName: "Thabo Mbeki",
     email: "thabo@jburgspa.za",
@@ -102,7 +102,7 @@ export const mockSellers = [
     salesCount: 76
   },
   {
-    id: 8,
+    id: "8",
     businessName: "Thai Botanical Extracts",
     contactName: "Sunisa Chakri",
     email: "sunisa@thaibotanical.th",
@@ -116,7 +116,7 @@ export const mockSellers = [
     salesCount: 92
   },
   {
-    id: 9,
+    id: "9",
     businessName: "Paris Elegance Cosmetics",
     contactName: "Camille Dubois",
     email: "camille@pariselegance.fr",
@@ -130,7 +130,7 @@ export const mockSellers = [
     salesCount: 104
   },
   {
-    id: 10,
+    id: "10",
     businessName: "Accra Shea Butter Co.",
     contactName: "Kwame Nkrumah",
     email: "kwame@accrashea.gh",
@@ -144,7 +144,7 @@ export const mockSellers = [
     salesCount: 68
   },
   {
-    id: 11,
+    id: "11",
     businessName: "Mumbai Ayurvedic Treasures",
     contactName: "Amara Patel",
     email: "amara@mumbaiayurvedic.in",
@@ -158,7 +158,7 @@ export const mockSellers = [
     salesCount: 81
   },
   {
-    id: 12,
+    id: "12",
     businessName: "Seoul K-Beauty Exports",
     contactName: "Ji-Young Kim",
     email: "jiyoung@seoulkbeauty.kr",
@@ -172,7 +172,7 @@ export const mockSellers = [
     salesCount: 150
   },
   {
-    id: 13,
+    id: "13",
     businessName: "Mombasa Ocean Extracts",
     contactName: "Fatuma Ali",
     email: "fatuma@mombasaocean.co.ke",
@@ -185,7 +185,7 @@ export const mockSellers = [
     salesCount: 0
   },
   {
-    id: 14,
+    id: "14",
     businessName: "Zanzibar Spice Beauty",
     contactName: "Salim Omar",
     email: "salim@zanzibarspice.tz",
@@ -198,7 +198,7 @@ export const mockSellers = [
     salesCount: 0
   },
   {
-    id: 15,
+    id: "15",
     businessName: "Oslo Nordic Skincare",
     contactName: "Astrid Nilsen",
     email: "astrid@nordiccare.no",
@@ -212,7 +212,7 @@ export const mockSellers = [
     salesCount: 0
   },
   {
-    id: 16,
+    id: "16",
     businessName: "Kampala Shea & Cocoa",
     contactName: "Esther Mukasa",
     email: "esther@kampalashea.ug",
@@ -226,7 +226,7 @@ export const mockSellers = [
     salesCount: 37
   },
   {
-    id: 17,
+    id: "17",
     businessName: "Amazon Rainforest Botanicals",
     contactName: "Carlos Santos",
     email: "carlos@amazonbotanicals.br",
@@ -240,7 +240,7 @@ export const mockSellers = [
     salesCount: 25
   },
   {
-    id: 18,
+    id: "18",
     businessName: "Addis Natural Cosmetics",
     contactName: "Abebe Bekele",
     email: "abebe@addisnatural.et",
@@ -253,7 +253,7 @@ export const mockSellers = [
     salesCount: 0
   },
   {
-    id: 19,
+    id: "19",
     businessName: "Naivasha Aloe Products",
     contactName: "Njeri Kamande",
     email: "njeri@naivashaaloevera.ke",
@@ -267,7 +267,7 @@ export const mockSellers = [
     salesCount: 0
   },
   {
-    id: 20,
+    id: "20",
     businessName: "Sydney Eucalyptus Essentials",
     contactName: "Emma Cooper",
     email: "emma@eucalyptusessentials.au",
