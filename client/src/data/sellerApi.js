@@ -71,8 +71,12 @@ export const sellerApi = {
       // Get auth headers for authenticated requests (token required)
       const headers = getAuthHeader();
       if (!headers.Authorization) {
+        console.error('No authorization token found. This operation requires authentication.');
         throw new Error('Authentication required for this operation');
       }
+      
+      console.log(`Updating seller ${id} to status: ${status}${notes ? ' with notes' : ''}`);
+      console.log('Using authorization headers:', headers.Authorization ? 'Bearer token present' : 'No bearer token');
       
       const response = await axios.patch(
         `${API_BASE_URL}/sellers/${id}/verification`, 
@@ -80,9 +84,22 @@ export const sellerApi = {
         { headers }
       );
       
+      console.log('Server response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error updating verification status:', error);
+      
+      // Enhanced error logging
+      if (error.response) {
+        console.error('Server error details:', error.response.data);
+        console.error('Status code:', error.response.status);
+        
+        // If the server returns a specific error message, use it
+        if (error.response.data && error.response.data.message) {
+          throw new Error(error.response.data.message);
+        }
+      }
+      
       throw error;
     }
   },

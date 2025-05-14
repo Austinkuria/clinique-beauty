@@ -206,25 +206,35 @@ const SellerEdit = () => {
     try {
       setSaving(true);
       
+      // Check if auth token is available before proceeding
+      const token = window.localStorage.getItem('clerk-db-jwt');
+      if (!token) {
+        setSnackbar({
+          open: true,
+          message: 'Authentication token not found. Please try logging in again.',
+          severity: 'error'
+        });
+        return;
+      }
+      
+      console.log('Submitting form data with authentication token');
+      
       // Sanitize the entire form data object before submission
       const sanitizedFormData = sanitizeObject(formData);
       
-      // Update the verification status if it's changed
-      if (sanitizedFormData.status !== originalData.status || 
-         (sanitizedFormData.status === 'rejected' && sanitizedFormData.rejectionReason !== originalData.rejectionReason)) {
-        
-        await sellerApi.updateVerificationStatus(
-          sellerId, 
-          sanitizedFormData.status, 
-          sanitizedFormData.status === 'rejected' ? sanitizedFormData.rejectionReason : ''
-        );
-      }
+      console.log(`Updating seller ${sellerId} status from ${originalData.status} to ${sanitizedFormData.status}`);
       
-      // TODO: Add API call to update other seller fields when that endpoint is ready
+      const result = await sellerApi.updateVerificationStatus(
+        sellerId, 
+        sanitizedFormData.status, 
+        sanitizedFormData.status === 'rejected' ? sanitizedFormData.rejectionReason : ''
+      );
+      
+      console.log('Update result:', result);
       
       setSnackbar({
         open: true,
-        message: 'Seller information updated successfully',
+        message: `Seller status updated to ${sanitizedFormData.status}`,
         severity: 'success'
       });
       
@@ -238,9 +248,20 @@ const SellerEdit = () => {
       
     } catch (err) {
       console.error('Error updating seller:', err);
+      
+      // Show a more specific error message
+      let errorMessage = 'Failed to update seller information';
+      if (err.message === 'Authentication required for this operation') {
+        errorMessage = 'You need to be logged in as an admin to update seller status. Please try logging in again.';
+      } else if (err.response && err.response.data && err.response.data.message) {
+        errorMessage = `Error: ${err.response.data.message}`;
+      } else if (err.message) {
+        errorMessage = `Error: ${err.message}`;
+      }
+      
       setSnackbar({
         open: true,
-        message: `Failed to update seller information: ${err.message || 'Unknown error'}`,
+        message: errorMessage,
         severity: 'error'
       });
     } finally {
