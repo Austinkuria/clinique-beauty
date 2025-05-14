@@ -15,7 +15,9 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Button
+    Button,
+    Card,
+    CardContent
 } from '@mui/material';
 import {
     AttachMoney,
@@ -135,6 +137,28 @@ function AdminDashboard() {
     // to avoid potential errors when accessing properties of null
     const { stats, userGrowth, categoryData, topProducts, geographicalData, fulfillmentData, revenueProjections, recentOrders } = dashboardData;
     const revenueData = dashboardData.revenueCharts[timeRange] || dashboardData.revenueCharts.monthly;
+
+    // Add navigation links or cards for marketing section
+    const marketingLinks = [
+        {
+            title: "Marketing Dashboard",
+            description: "Overview of all marketing activities",
+            path: "/admin/marketing",
+            icon: <CampaignIcon /> // Replace with actual icon component
+        },
+        {
+            title: "Campaigns",
+            description: "Manage marketing campaigns",
+            path: "/admin/marketing/campaigns",
+            icon: <CampaignIcon /> // Replace with actual icon component
+        },
+        {
+            title: "Discount Codes",
+            description: "Manage promotional discounts",
+            path: "/admin/marketing/discounts",
+            icon: <LocalOfferIcon /> // Replace with actual icon component
+        }
+    ];
     
     return (
         <Box>
@@ -666,6 +690,45 @@ function AdminDashboard() {
                     </Paper>
                 </Grid>
             </Grid>
+
+            {/* Marketing Management */}
+            <Box sx={{ mt: 4 }}>
+                <Typography variant="h6" gutterBottom>
+                    Marketing Management
+                </Typography>
+                <Grid container spacing={3}>
+                    {marketingLinks.map((link) => (
+                        <Grid item xs={12} sm={6} md={4} key={link.path}>
+                            <Card 
+                                component={RouterLink} 
+                                to={link.path}
+                                sx={{ 
+                                    height: '100%', 
+                                    display: 'flex', 
+                                    flexDirection: 'column',
+                                    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                    '&:hover': {
+                                        transform: 'translateY(-5px)',
+                                        boxShadow: (theme) => theme.shadows[10],
+                                    }
+                                }}
+                            >
+                                <CardContent sx={{ flexGrow: 1 }}>
+                                    <Box sx={{ display: 'flex', mb: 2 }}>
+                                        {link.icon}
+                                    </Box>
+                                    <Typography variant="h6" component="h3">
+                                        {link.title}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {link.description}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            </Box>
         </Box>
     );
 }
