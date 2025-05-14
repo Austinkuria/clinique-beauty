@@ -32,7 +32,9 @@ import {
     Calculate as CalculateIcon,
     Campaign as CampaignIcon,
     LocalOffer as LocalOfferIcon,
-    Group as GroupIcon
+    Group as GroupIcon,
+    Email as EmailIcon,
+    MailOutline as MailOutlineIcon
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { ThemeContext } from '../../../context/ThemeContext';
@@ -152,6 +154,12 @@ function AdminDashboard() {
             description: "Manage marketing campaigns",
             path: "/admin/marketing/campaigns",
             icon: <CampaignIcon /> // Replace with actual icon component
+        },
+        {
+            title: "Email Campaigns",
+            description: "Manage email marketing",
+            path: "/admin/marketing/email-campaigns",
+            icon: <EmailIcon />
         },
         {
             title: "Discount Codes",
@@ -662,6 +670,19 @@ function AdminDashboard() {
                             <Grid item xs={12} sm={6} md={3}>
                                 <Button 
                                     component={RouterLink} 
+                                    to="/admin/marketing/email-campaigns" 
+                                    variant="contained" 
+                                    color="warning" 
+                                    startIcon={<EmailIcon />}
+                                    fullWidth
+                                    sx={{ py: 1.5 }}
+                                >
+                                    Email Campaigns
+                                </Button>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Button 
+                                    component={RouterLink} 
                                     to="/admin/marketing/discounts" 
                                     variant="contained" 
                                     color="secondary" 
@@ -670,19 +691,6 @@ function AdminDashboard() {
                                     sx={{ py: 1.5 }}
                                 >
                                     Discount Codes
-                                </Button>
-                            </Grid>
-                            <Grid item xs={12} sm={6} md={3}>
-                                <Button 
-                                    component={RouterLink} 
-                                    to="/admin/users" 
-                                    variant="contained" 
-                                    color="success" 
-                                    startIcon={<GroupIcon />}
-                                    fullWidth
-                                    sx={{ py: 1.5 }}
-                                >
-                                    User Segmentation
                                 </Button>
                             </Grid>
                         </Grid>

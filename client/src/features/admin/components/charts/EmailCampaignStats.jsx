@@ -18,7 +18,13 @@ import {
     ShoppingCart,
     TrendingUp,
     TrendingDown,
-    Cancel
+    Cancel,
+    Email,
+    Notifications,
+    Campaign,
+    NewReleases,
+    ShoppingBasket,
+    WavingHand
 } from '@mui/icons-material';
 import { 
     BarChart, 
@@ -157,7 +163,7 @@ const EmailCampaignStats = ({ campaignData }) => {
                             alignItems: 'center',
                             mb: 1
                         }}>
-                            <MailOutline sx={{ color: colorValues.primary, fontSize: 28 }} />
+                            <Email sx={{ color: colorValues.primary, fontSize: 28 }} />
                         </Box>
                         <Typography variant="h4" align="center" sx={{ fontWeight: 'bold' }}>
                             {summary.totalSent.toLocaleString()}
@@ -271,21 +277,26 @@ const EmailCampaignStats = ({ campaignData }) => {
                 </Grid>
             </Grid>
             
-            {/* Performance Charts */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                {/* Monthly Performance Trends */}
-                <Grid item xs={12} md={8}>
+            {/* Performance Charts - Use a full-width container and adjust the grid sizing */}
+            <Grid container spacing={3} sx={{ mb: 4, width: '100%' }}>
+                {/* Monthly Performance Trends - Make it wider */}
+                <Grid item xs={12} md={12} lg={8} sx={{ width: '100%' }}>
                     <Paper
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
                             height: '100%',
+                            width: '100%',  // Ensure full width of container
+                            minHeight: '400px',
                             bgcolor: colorValues.bgPaper,
                             borderRadius: 2
                         }}
                     >
-                        <Typography variant="subtitle1" sx={{ mb: 2 }}>Monthly Performance Trends</Typography>
-                        <Box sx={{ height: 300 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Campaign sx={{ mr: 1, color: colorValues.primary }} />
+                            <Typography variant="subtitle1">Monthly Performance Trends</Typography>
+                        </Box>
+                        <Box sx={{ height: 400, width: '100%' }}> {/* Explicitly set width to 100% */}
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart
                                     data={performanceByMonth}
@@ -349,28 +360,53 @@ const EmailCampaignStats = ({ campaignData }) => {
                     </Paper>
                 </Grid>
                 
-                {/* Campaign Type Distribution */}
-                <Grid item xs={12} md={4}>
+                {/* Campaign Type Distribution - Make it wider */}
+                <Grid item xs={12} md={12} lg={4} sx={{ width: '100%' }}>
                     <Paper
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
                             height: '100%',
+                            width: '100%',  // Ensure full width of container
+                            minHeight: '400px',
                             bgcolor: colorValues.bgPaper,
                             borderRadius: 2
                         }}
                     >
-                        <Typography variant="subtitle1" sx={{ mb: 2 }}>Campaign Types</Typography>
-                        <Box sx={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Notifications sx={{ mr: 1, color: colorValues.primary }} />
+                            <Typography variant="subtitle1">Campaign Types</Typography>
+                        </Box>
+                        <Box sx={{ 
+                            height: 400, // Increase height
+                            width: '100%', // Ensure full width
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center' 
+                        }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={campaignTypes}
+                                        data={campaignTypes.map(type => {
+                                            // Match MUI icons to campaign types
+                                            const iconMap = {
+                                                'Promotional': <Campaign />,
+                                                'Newsletter': <MailOutline />,
+                                                'Product Launch': <NewReleases />,
+                                                'Abandoned Cart': <ShoppingBasket />,
+                                                'Welcome Series': <WavingHand />
+                                            };
+                                            
+                                            return {
+                                                ...type,
+                                                icon: iconMap[type.name] || <Email />
+                                            };
+                                        })}
                                         cx="50%"
                                         cy="50%"
                                         labelLine={false}
                                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                        outerRadius={80}
+                                        outerRadius={120} // Increase pie chart size
                                         fill="#8884d8"
                                         dataKey="value"
                                     >
@@ -401,7 +437,10 @@ const EmailCampaignStats = ({ campaignData }) => {
                     borderRadius: 2
                 }}
             >
-                <Typography variant="subtitle1" sx={{ mb: 2 }}>Recent Campaigns</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <MailOutline sx={{ mr: 1, color: colorValues.primary }} />
+                    <Typography variant="subtitle1">Recent Campaigns</Typography>
+                </Box>
                 <List>
                     {recentCampaigns.map((campaign, index) => (
                         <React.Fragment key={campaign.id}>
