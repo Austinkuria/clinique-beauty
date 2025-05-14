@@ -299,6 +299,7 @@ const SellerEdit = () => {
         
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
+            {/* First column of inputs */}
             <Grid item xs={12} md={6}>
               <TextField
                 label="Business Name"
@@ -353,6 +354,7 @@ const SellerEdit = () => {
               />
             </Grid>
             
+            {/* Second column of inputs */}
             <Grid item xs={12} md={6}>
               <TextField
                 label="Phone"
@@ -408,6 +410,7 @@ const SellerEdit = () => {
               </FormControl>
             </Grid>
             
+            {/* Rejection reason field - placed in a new row that spans the entire width */}
             {formData.status === 'rejected' && (
               <Grid item xs={12}>
                 <TextField
@@ -430,31 +433,36 @@ const SellerEdit = () => {
                 />
               </Grid>
             )}
-            
-            <Grid item xs={12}>
-              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  type="button"
-                  onClick={handleCancel}
-                  sx={{ mr: 2 }}
-                  disabled={saving}
-                  data-testid="cancel-button"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  startIcon={<SaveIcon />}
-                  disabled={saving || (!hasChanges())}
-                  data-testid="save-button"
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </Box>
-            </Grid>
           </Grid>
+          
+          {/* Action buttons - placed OUTSIDE the Grid container to ensure they're at the bottom */}
+          <Box sx={{ 
+            mt: 4, 
+            display: 'flex', 
+            justifyContent: 'flex-end',
+            borderTop: '1px solid #e0e0e0',
+            paddingTop: 3
+          }}>
+            <Button
+              type="button"
+              onClick={handleCancel}
+              sx={{ mr: 2 }}
+              disabled={saving}
+              data-testid="cancel-button"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              startIcon={<SaveIcon />}
+              disabled={saving || (!hasChanges())}
+              data-testid="save-button"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </Box>
         </form>
       </Paper>
       
