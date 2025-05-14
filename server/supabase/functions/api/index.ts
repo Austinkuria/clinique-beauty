@@ -1210,71 +1210,79 @@ serve(async (req: Request) => {
             
             // Check for admin role if auth header is present
             let isAdmin = false;
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-                const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
-                if (supabaseUserId) {
-                    const { data: userData } = await supabase
-                        .from('user_profiles')
-                        .select('role')
-                        .eq('id', supabaseUserId)
-                        .single();
-                    
-                    isAdmin = userData?.role === 'admin';
+            try {
+                if (authHeader && authHeader.startsWith('Bearer ')) {
+                    const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+                    if (supabaseUserId) {
+                        const { data: userData } = await supabase
+                            .from('user_profiles')
+                            .select('role')
+                            .eq('id', supabaseUserId)
+                            .single();
+                        
+                        isAdmin = userData?.role === 'admin';
+                    }
                 }
-            }
-            
-            // Get filters from URL params
-            const status = url.searchParams.get('status');
-            const search = url.searchParams.get('search');
-            
-            // Build query
-            let query = supabase.from('sellers').select('*');
-            
-            // Apply filters - non-admins can only see approved sellers
-            if (!isAdmin) {
-                query = query.eq('status', 'approved');
-            } else if (status && status !== 'all') {
-                query = query.eq('status', status);
-            }
-            
-            // Execute query
-            const { data: sellers, error } = await query;
-            
-            if (error) {
-                console.error('[Route Handler GET /api/sellers] Error fetching sellers:', error);
-                throw error;
-            }
-            
-            // Apply search filter in memory (if Supabase doesn't support text search in your plan)
-            let filteredSellers = sellers || [];
-            if (search && search.trim() !== '') {
-                const searchLower = search.toLowerCase();
-                filteredSellers = filteredSellers.filter(seller => 
-                    seller.business_name?.toLowerCase().includes(searchLower) ||
-                    seller.contact_name?.toLowerCase().includes(searchLower) ||
-                    seller.email?.toLowerCase().includes(searchLower) ||
-                    seller.location?.toLowerCase().includes(searchLower)
+                
+                // Get filters from URL params
+                const status = url.searchParams.get('status');
+                const search = url.searchParams.get('search');
+                
+                // Build query
+                let query = supabase.from('sellers').select('*');
+                
+                // Apply filters - non-admins can only see approved sellers
+                if (!isAdmin) {
+                    query = query.eq('status', 'approved');
+                } else if (status && status !== 'all') {
+                    query = query.eq('status', status);
+                }
+                
+                // Execute query
+                const { data: sellers, error } = await query;
+                
+                if (error) {
+                    console.error('[Route Handler GET /api/sellers] Error fetching sellers:', error);
+                    throw error;
+                }
+                
+                // Apply search filter in memory (if Supabase doesn't support text search in your plan)
+                let filteredSellers = sellers || [];
+                if (search && search.trim() !== '') {
+                    const searchLower = search.toLowerCase();
+                    filteredSellers = filteredSellers.filter(seller => 
+                        seller.business_name?.toLowerCase().includes(searchLower) ||
+                        seller.contact_name?.toLowerCase().includes(searchLower) ||
+                        seller.email?.toLowerCase().includes(searchLower) ||
+                        seller.location?.toLowerCase().includes(searchLower)
+                    );
+                }
+                
+                // Transform response to match frontend expectations
+                const formattedSellers = filteredSellers.map(seller => ({
+                    id: seller.id,
+                    businessName: seller.business_name,
+                    contactName: seller.contact_name,
+                    email: seller.email,
+                    phone: seller.phone,
+                    location: seller.location,
+                    registrationDate: seller.registration_date,
+                    status: seller.status,
+                    verificationDate: seller.verification_date,
+                    productCategories: seller.product_categories,
+                    rating: seller.rating,
+                    salesCount: seller.sales_count,
+                    rejectionReason: seller.rejection_reason
+                }));
+                
+                return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
+            } catch (error) {
+                console.error('[Route Handler GET /api/sellers] Error:', error);
+                return new Response(
+                    JSON.stringify({ message: error.message || 'Internal server error while fetching sellers' }),
+                    { headers, status: 500 }
                 );
             }
-            
-            // Transform response to match frontend expectations
-            const formattedSellers = filteredSellers.map(seller => ({
-                id: seller.id,
-                businessName: seller.business_name,
-                contactName: seller.contact_name,
-                email: seller.email,
-                phone: seller.phone,
-                location: seller.location,
-                registrationDate: seller.registration_date,
-                status: seller.status,
-                verificationDate: seller.verification_date,
-                productCategories: seller.product_categories,
-                rating: seller.rating,
-                salesCount: seller.sales_count,
-                rejectionReason: seller.rejection_reason
-            }));
-            
-            return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
         }
         
         // GET /api/sellers/:id - Get a specific seller

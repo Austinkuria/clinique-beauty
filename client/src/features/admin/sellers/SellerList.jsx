@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Typography,
   Box,
@@ -27,25 +27,56 @@ const SellerList = ({ sellers = [], loading: propLoading }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [localSellers, setLocalSellers] = useState(sellers);
   const [loading, setLoading] = useState(propLoading || false);
+  const [error, setError] = useState(null);
   
-  // Load mock data if no sellers are passed as props
-  useEffect(() => {
-    if (sellers.length === 0 && !propLoading) {
-      setLoading(true);
-      sellerApi.getSellers()
-        .then(data => {
-          setLocalSellers(data);
-          setLoading(false);
-        })
-        .catch(error => {
-          console.error('Error loading sellers:', error);
-          setLoading(false);
-        });
-    } else {
-      setLocalSellers(sellers);
+  // Load sellers data with filters
+  const loadSellers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Only apply filters for API requests if they're set
+      const filters = {};
+      if (filterStatus !== 'all') {
+        filters.status = filterStatus;
+      }
+      if (searchTerm.trim()) {
+        filters.search = searchTerm.trim();
+      }
+      
+      const data = await sellerApi.getSellers(filters);
+      setLocalSellers(data);
+    } catch (err) {
+      console.error('Error loading sellers:', err);
+      setError('Failed to load sellers. Please try again later.');
+    } finally {
+      setLoading(false);
     }
-  }, [sellers, propLoading]);
+  }, [searchTerm, filterStatus]);
   
+  // Load data on initial render and when props change
+  useEffect(() => {
+    if (sellers.length > 0) {
+      // If sellers are provided as props, use them
+      setLocalSellers(sellers);
+    } else {
+      // Otherwise load from API
+      loadSellers();
+    }
+  }, [sellers, loadSellers]);
+  
+  // Handle filter changes with debounce
+  useEffect(() => {
+    // Only fetch if not using prop data
+    if (sellers.length === 0) {
+      const timer = setTimeout(() => {
+        loadSellers();
+      }, 500); // Debounce 500ms
+      
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, filterStatus, sellers.length, loadSellers]);
+
   const getStatusChip = (status) => {
     switch (status) {
       case 'approved':
@@ -60,24 +91,43 @@ const SellerList = ({ sellers = [], loading: propLoading }) => {
   };
   
   // Ensure sellers is an array before filtering
-  const filteredSellers = Array.isArray(localSellers) 
-    ? localSellers.filter(seller => {
-        const matchesSearch = 
-          seller.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          seller.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          seller.email.toLowerCase().includes(searchTerm.toLowerCase());
-          
-        const matchesStatus = filterStatus === 'all' || seller.status === filterStatus;
+  let filteredSellers = [];
+  
+  // If we're using props data, filter it locally
+  if (sellers.length > 0) {
+    filteredSellers = sellers.filter(seller => {
+      const matchesSearch = !searchTerm.trim() || 
+        seller.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        seller.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        seller.email.toLowerCase().includes(searchTerm.toLowerCase());
         
-        return matchesSearch && matchesStatus;
-      })
-    : [];
+      const matchesStatus = filterStatus === 'all' || seller.status === filterStatus;
+      
+      return matchesSearch && matchesStatus;
+    });
+  } else {
+    // Otherwise use the data from the API which is already filtered
+    filteredSellers = Array.isArray(localSellers) ? localSellers : [];
+  }
 
+  // Show loading state
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
         <CircularProgress />
       </Box>
+    );
+  }
+  
+  // Show error state
+  if (error) {
+    return (
+      <Paper sx={{ p: 4, textAlign: 'center' }}>
+        <Typography color="error" gutterBottom>{error}</Typography>
+        <Button variant="contained" onClick={loadSellers} sx={{ mt: 2 }}>
+          Retry
+        </Button>
+      </Paper>
     );
   }
 
