@@ -44,6 +44,7 @@ import MarketingDashboard from './features/admin/marketing/MarketingDashboard';
 import CampaignList from './features/admin/marketing/CampaignList';
 import DiscountCodes from './features/admin/marketing/DiscountCodes';
 import CampaignDetail from './features/admin/marketing/CampaignDetail';
+import EmailCampaigns from './features/admin/marketing/EmailCampaigns';
 
 // Lazy-load these components for better performance
 const Login = React.lazy(() => import('./features/auth/Login.jsx'));
@@ -150,7 +151,9 @@ export const router = createBrowserRouter([
                             { path: 'campaigns', element: <CampaignList /> }, // Admin campaigns management
                             { path: 'campaigns/new', element: <CampaignDetail /> },
                             { path: 'campaigns/:id', element: <CampaignDetail /> },
-                            { path: 'discounts', element: <DiscountCodes /> }
+                            { path: 'campaigns/edit/:id', element: <CampaignDetail /> }, // Add specific route for editing campaigns
+                            { path: 'discounts', element: <DiscountCodes /> },
+                            { path: 'email-campaigns', element: <EmailCampaigns /> }
                         ]
                     }
                 ]

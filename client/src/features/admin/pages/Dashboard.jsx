@@ -61,6 +61,7 @@ import OrderFulfillmentChart from '../components/charts/OrderFulfillmentChart';
 import GeographicalChart from '../components/charts/GeographicalChart';
 import RecentOrdersList from '../components/charts/RecentOrdersList';
 import TopProductsTable from '../components/charts/TopProductsTable';
+import EmailCampaignStats from '../components/charts/EmailCampaignStats';
 
 // Colors for charts
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
@@ -137,7 +138,7 @@ function AdminDashboard() {
     // to avoid potential errors when accessing properties of null
     const { stats, userGrowth, categoryData, topProducts, geographicalData, fulfillmentData, revenueProjections, recentOrders } = dashboardData;
     const revenueData = dashboardData.revenueCharts[timeRange] || dashboardData.revenueCharts.monthly;
-
+    
     // Add navigation links or cards for marketing section
     const marketingLinks = [
         {
@@ -164,7 +165,6 @@ function AdminDashboard() {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Dashboard & Analytics</Typography>
-                
                 <FormControl sx={{ minWidth: 150 }}>
                     <InputLabel id="time-range-select-label">Time Range</InputLabel>
                     <Select
@@ -189,7 +189,7 @@ function AdminDashboard() {
                         title="Total Revenue" 
                         value={stats.revenue.total} 
                         icon={<RevenueIcon />} 
-                        color="primary"
+                        color="primary" 
                         percentChange={stats.revenue.growth}
                     />
                 </Grid>
@@ -198,7 +198,7 @@ function AdminDashboard() {
                         title="Total Orders" 
                         value={stats.orders.total} 
                         icon={<OrdersIcon />} 
-                        color="info"
+                        color="info" 
                         percentChange={stats.orders.growth}
                     />
                 </Grid>
@@ -207,7 +207,7 @@ function AdminDashboard() {
                         title="Total Users" 
                         value={stats.users.total} 
                         icon={<UsersIcon />} 
-                        color="warning"
+                        color="warning" 
                         percentChange={stats.users.growth}
                     />
                 </Grid>
@@ -216,7 +216,7 @@ function AdminDashboard() {
                         title="Total Products" 
                         value={stats.products.total} 
                         icon={<ProductsIcon />} 
-                        color="success"
+                        color="success" 
                         percentChange={stats.products.growth}
                     />
                 </Grid>
@@ -225,13 +225,13 @@ function AdminDashboard() {
                         title="Fulfillment Rate" 
                         value={stats.fulfillmentRate.value + '%'} 
                         icon={<FulfillmentIcon />} 
-                        color="secondary"
+                        color="secondary" 
                         percentChange={stats.fulfillmentRate.growth}
                     />
                 </Grid>
                 {/* New Seller Management Card */}
                 <Grid item xs={12} sm={6} md={2.4}>
-                    <Paper
+                    <Paper 
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 2,
@@ -248,7 +248,7 @@ function AdminDashboard() {
                             transition: 'transform 0.2s',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
-                                boxShadow: 4
+                                boxShadow: 4,
                             }
                         }}
                         component={RouterLink}
@@ -282,9 +282,9 @@ function AdminDashboard() {
                     item 
                     xs={12} 
                     sm={12} 
-                    md={7} 
+                    md={7}  
                     lg={8} 
-                    sx={{ 
+                    sx={{  
                         display: 'flex', 
                         flexDirection: 'column',
                         width: '100%' // Ensure full width of grid cell
@@ -295,7 +295,7 @@ function AdminDashboard() {
                         sx={{
                             p: 3,
                             width: '100%', // Ensure paper takes full width
-                            height: '100%',
+                            height: '100%',// Ensure paper takes full width
                             minHeight: '500px',
                             bgcolor: colorValues.bgPaper,
                             borderRadius: 2,
@@ -305,7 +305,6 @@ function AdminDashboard() {
                         }}
                     >
                         <Typography variant="h6" sx={{ mb: 3 }}>Revenue Overview</Typography>
-                        
                         {/* Use flex-grow to fill available space */}
                         <Box 
                             sx={{ 
@@ -368,9 +367,9 @@ function AdminDashboard() {
                     item 
                     xs={12} 
                     sm={12} 
-                    md={5} 
+                    md={5}  
                     lg={4} 
-                    sx={{ 
+                    sx={{  
                         display: 'flex', 
                         flexDirection: 'column',
                         width: '100%' // Ensure full width of grid cell
@@ -381,7 +380,7 @@ function AdminDashboard() {
                         sx={{
                             p: 3,
                             width: '100%', // Ensure paper takes full width
-                            height: '100%',
+                            height: '100%',// Ensure paper takes full width
                             minHeight: '500px',
                             bgcolor: colorValues.bgPaper,
                             borderRadius: 2,
@@ -391,7 +390,6 @@ function AdminDashboard() {
                         }}
                     >
                         <Typography variant="h6" sx={{ mb: 3 }}>User Growth</Typography>
-                        
                         {/* Use flex-grow to fill available space */}
                         <Box 
                             sx={{ 
@@ -447,13 +445,13 @@ function AdminDashboard() {
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 {/* Top Products Table */}
                 <Grid item xs={12} md={6}>
-                    <Paper
+                    <Paper 
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
                             height: '100%',
                             bgcolor: colorValues.bgPaper,
-                            borderRadius: 2
+                            borderRadius: 2,
                         }}
                     >
                         <Typography variant="h6" sx={{ mb: 2 }}>Top Performing Products</Typography>
@@ -463,13 +461,13 @@ function AdminDashboard() {
                 
                 {/* Order Fulfillment Chart - Now using our component */}
                 <Grid item xs={12} md={6}>
-                    <Paper
+                    <Paper 
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
                             height: '100%',
                             bgcolor: colorValues.bgPaper,
-                            borderRadius: 2
+                            borderRadius: 2,
                         }}
                     >
                         <Typography variant="h6" sx={{ mb: 2 }}>Order Fulfillment</Typography>
@@ -477,15 +475,16 @@ function AdminDashboard() {
                     </Paper>
                 </Grid>
             </Grid>       
+            
             {/* Geographical Sales Analysis */}
             <Grid container spacing={3} sx={{ mb: 6 }}>
                 <Grid item xs={12}>
-                    <Paper
+                    <Paper 
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
                             bgcolor: colorValues.bgPaper,
-                            borderRadius: 2
+                            borderRadius: 2,
                         }}
                     >
                         <GeographicalChart geographicalData={geographicalData} />
@@ -496,12 +495,12 @@ function AdminDashboard() {
             {/* Seller Management Quick Access */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12}>
-                    <Paper
+                    <Paper 
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
                             bgcolor: colorValues.bgPaper,
-                            borderRadius: 2
+                            borderRadius: 2,
                         }}
                     >
                         <Typography variant="h6" sx={{ mb: 3 }}>Seller Management</Typography>
@@ -511,7 +510,7 @@ function AdminDashboard() {
                                     component={RouterLink} 
                                     to="/admin/sellers" 
                                     variant="contained" 
-                                    color="primary"
+                                    color="primary" 
                                     startIcon={<SellersIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
@@ -524,7 +523,7 @@ function AdminDashboard() {
                                     component={RouterLink} 
                                     to="/admin/seller-performance" 
                                     variant="contained" 
-                                    color="info"
+                                    color="info" 
                                     startIcon={<TrendingUpIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
@@ -537,7 +536,7 @@ function AdminDashboard() {
                                     component={RouterLink} 
                                     to="/admin/payouts" 
                                     variant="contained" 
-                                    color="success"
+                                    color="success" 
                                     startIcon={<AttachMoney />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
@@ -550,7 +549,7 @@ function AdminDashboard() {
                                     component={RouterLink} 
                                     to="/admin/commissions" 
                                     variant="contained" 
-                                    color="secondary"
+                                    color="secondary" 
                                     startIcon={<CalculateIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
@@ -566,12 +565,12 @@ function AdminDashboard() {
             {/* Recent Orders */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12}>
-                    <Paper
+                    <Paper 
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
                             bgcolor: colorValues.bgPaper,
-                            borderRadius: 2
+                            borderRadius: 2,
                         }}
                     >
                         <Typography variant="h6" sx={{ mb: 2 }}>Recent Orders</Typography>
@@ -579,12 +578,12 @@ function AdminDashboard() {
                     </Paper>
                 </Grid>
             </Grid>
-
+            
             {/* Quick Access Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 {/* ...existing grid items... */}
                 <Grid item xs={12} sm={6} md={2.4}>
-                    <Paper
+                    <Paper 
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 2,
@@ -601,7 +600,7 @@ function AdminDashboard() {
                             transition: 'transform 0.2s',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
-                                boxShadow: 4
+                                boxShadow: 4,
                             }
                         }}
                         component={RouterLink}
@@ -620,16 +619,16 @@ function AdminDashboard() {
                     </Paper>
                 </Grid>
             </Grid>
-
+            
             {/* Additional links section */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12}>
-                    <Paper
+                    <Paper 
                         elevation={theme === 'dark' ? 3 : 1}
                         sx={{
                             p: 3,
                             bgcolor: colorValues.bgPaper,
-                            borderRadius: 2
+                            borderRadius: 2,
                         }}
                     >
                         <Typography variant="h6" sx={{ mb: 3 }}>Marketing & Promotions</Typography>
@@ -637,9 +636,9 @@ function AdminDashboard() {
                             <Grid item xs={12} sm={6} md={3}>
                                 <Button 
                                     component={RouterLink} 
-                                    to="/admin/marketing" 
+                                    to="/admin/marketing"  
                                     variant="contained" 
-                                    color="primary"
+                                    color="primary" 
                                     startIcon={<CampaignIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
@@ -652,7 +651,7 @@ function AdminDashboard() {
                                     component={RouterLink} 
                                     to="/admin/marketing/campaigns" 
                                     variant="contained" 
-                                    color="info"
+                                    color="info" 
                                     startIcon={<CampaignIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
@@ -665,7 +664,7 @@ function AdminDashboard() {
                                     component={RouterLink} 
                                     to="/admin/marketing/discounts" 
                                     variant="contained" 
-                                    color="secondary"
+                                    color="secondary" 
                                     startIcon={<LocalOfferIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
@@ -678,7 +677,7 @@ function AdminDashboard() {
                                     component={RouterLink} 
                                     to="/admin/users" 
                                     variant="contained" 
-                                    color="success"
+                                    color="success" 
                                     startIcon={<GroupIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
@@ -690,7 +689,94 @@ function AdminDashboard() {
                     </Paper>
                 </Grid>
             </Grid>
-
+            
+            {/* Email Campaign Analytics */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12}>
+                    <Paper 
+                        elevation={theme === 'dark' ? 3 : 1}
+                        sx={{
+                            p: 3,
+                            bgcolor: colorValues.bgPaper,
+                            borderRadius: 2,
+                        }}
+                    >
+                        <EmailCampaignStats 
+                            campaignData={{
+                                summary: {
+                                    totalSent: 45680,
+                                    openRate: 24.8,
+                                    clickRate: 3.7,
+                                    conversionRate: 1.5
+                                },
+                                performanceByMonth: [
+                                    { month: 'Jan', openRate: 22.4, clickRate: 3.2, totalSent: 6.2 },
+                                    { month: 'Feb', openRate: 23.1, clickRate: 3.4, totalSent: 7.8 },
+                                    { month: 'Mar', openRate: 23.8, clickRate: 3.5, totalSent: 8.3 },
+                                    { month: 'Apr', openRate: 24.2, clickRate: 3.6, totalSent: 9.1 },
+                                    { month: 'May', openRate: 24.5, clickRate: 3.6, totalSent: 9.4 },
+                                    { month: 'Jun', openRate: 24.8, clickRate: 3.7, totalSent: 9.8 }
+                                ],
+                                campaignTypes: [
+                                    { name: 'Promotional', value: 42 },
+                                    { name: 'Newsletter', value: 28 },
+                                    { name: 'Product Launch', value: 15 },
+                                    { name: 'Abandoned Cart', value: 10 },
+                                    { name: 'Welcome Series', value: 5 }
+                                ],
+                                recentCampaigns: [
+                                    { 
+                                        id: 1, 
+                                        name: 'Summer Collection Launch', 
+                                        status: 'completed', 
+                                        sentCount: 12500, 
+                                        openRate: 27.3, 
+                                        clickRate: 4.2, 
+                                        sentDate: '2023-06-15' 
+                                    },
+                                    { 
+                                        id: 2, 
+                                        name: 'June Newsletter', 
+                                        status: 'completed', 
+                                        sentCount: 9800, 
+                                        openRate: 24.8, 
+                                        clickRate: 3.7, 
+                                        sentDate: '2023-06-05' 
+                                    },
+                                    { 
+                                        id: 3, 
+                                        name: 'Father\'s Day Promo', 
+                                        status: 'completed', 
+                                        sentCount: 11200, 
+                                        openRate: 26.1, 
+                                        clickRate: 4.0, 
+                                        sentDate: '2023-06-01' 
+                                    },
+                                    { 
+                                        id: 4, 
+                                        name: 'Summer Sale - 24h Flash', 
+                                        status: 'in-progress', 
+                                        sentCount: 5600, 
+                                        openRate: 22.8, 
+                                        clickRate: 3.4, 
+                                        sentDate: '2023-06-20' 
+                                    },
+                                    { 
+                                        id: 5, 
+                                        name: 'New Customer Welcome', 
+                                        status: 'in-progress', 
+                                        sentCount: 2800, 
+                                        openRate: 38.5, 
+                                        clickRate: 6.2, 
+                                        sentDate: '2023-06-18' 
+                                    }
+                                ]
+                            }}
+                        />
+                    </Paper>
+                </Grid>
+            </Grid>
+            
             {/* Marketing Management */}
             <Box sx={{ mt: 4 }}>
                 <Typography variant="h6" gutterBottom>
@@ -705,7 +791,7 @@ function AdminDashboard() {
                                 sx={{ 
                                     height: '100%', 
                                     display: 'flex', 
-                                    flexDirection: 'column',
+                                    flexDirection: 'column', 
                                     transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                                     '&:hover': {
                                         transform: 'translateY(-5px)',
@@ -713,10 +799,10 @@ function AdminDashboard() {
                                     }
                                 }}
                             >
+                                <Box sx={{ display: 'flex', mb: 2 }}>
+                                    {link.icon}
+                                </Box>
                                 <CardContent sx={{ flexGrow: 1 }}>
-                                    <Box sx={{ display: 'flex', mb: 2 }}>
-                                        {link.icon}
-                                    </Box>
                                     <Typography variant="h6" component="h3">
                                         {link.title}
                                     </Typography>
