@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Box,
@@ -19,11 +19,32 @@ import {
   TableRow,
   Paper
 } from '@mui/material';
-import { Search as SearchIcon, GetApp as ExportIcon } from '@mui/icons-material';
+import { Search as SearchIcon, GetApp as ExportIcon, SentimentDissatisfied as EmptyIcon } from '@mui/icons-material';
+import { sellerApi } from '../../../data/sellerApi';
 
-const SellerList = ({ sellers = [], loading }) => {
+const SellerList = ({ sellers = [], loading: propLoading }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [localSellers, setLocalSellers] = useState(sellers);
+  const [loading, setLoading] = useState(propLoading || false);
+  
+  // Load mock data if no sellers are passed as props
+  useEffect(() => {
+    if (sellers.length === 0 && !propLoading) {
+      setLoading(true);
+      sellerApi.getSellers()
+        .then(data => {
+          setLocalSellers(data);
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error('Error loading sellers:', error);
+          setLoading(false);
+        });
+    } else {
+      setLocalSellers(sellers);
+    }
+  }, [sellers, propLoading]);
   
   const getStatusChip = (status) => {
     switch (status) {
@@ -39,8 +60,8 @@ const SellerList = ({ sellers = [], loading }) => {
   };
   
   // Ensure sellers is an array before filtering
-  const filteredSellers = Array.isArray(sellers) 
-    ? sellers.filter(seller => {
+  const filteredSellers = Array.isArray(localSellers) 
+    ? localSellers.filter(seller => {
         const matchesSearch = 
           seller.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           seller.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -102,11 +123,29 @@ const SellerList = ({ sellers = [], loading }) => {
       </Box>
       
       {filteredSellers.length === 0 ? (
-        <Typography sx={{ textAlign: 'center', py: 4 }}>
-          {Array.isArray(sellers) && sellers.length > 0 
-            ? "No sellers found matching your criteria."
-            : "No sellers available in the system."}
-        </Typography>
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <EmptyIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            {searchTerm || filterStatus !== 'all'
+              ? "No sellers found matching your criteria."
+              : "No sellers available in the system."}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {searchTerm || filterStatus !== 'all'
+              ? "Try adjusting your search or filter settings."
+              : "Once sellers register on the platform, they will appear here."}
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => {
+              setSearchTerm('');
+              setFilterStatus('all');
+            }}
+            sx={{ display: searchTerm || filterStatus !== 'all' ? 'inline-flex' : 'none' }}
+          >
+            Clear Filters
+          </Button>
+        </Paper>
       ) : (
         <TableContainer component={Paper}>
           <Table>
