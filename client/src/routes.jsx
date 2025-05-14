@@ -33,6 +33,8 @@ import StockAlertsReport from './features/admin/pages/analytics/StockAlertsRepor
 import InventoryForecast from './features/admin/pages/analytics/InventoryForecast';
 import { useTheme } from '@mui/material/styles';
 import SellerManagement from './features/admin/sellers/SellerManagement';
+import SellerDetail from './features/admin/sellers/SellerDetail';
+import SellerEdit from './features/admin/sellers/SellerEdit';
 import CommissionManagement from './features/admin/commission/CommissionManagement';
 import SellerPerformance from './features/admin/sellers/SellerPerformance';
 import PayoutProcessing from './features/admin/payouts/PayoutProcessing';
@@ -127,6 +129,8 @@ export const router = createBrowserRouter([
                     { path: 'inventory', element: <AdminInventory />},
                     { path: 'suppliers', element: <Suppliers />},
                     { path: 'sellers', element: <SellerManagement /> },
+                    { path: 'sellers/:sellerId', element: <SellerDetail /> },
+                    { path: 'sellers/:sellerId/edit', element: <SellerEdit /> },
                     { path: 'seller-performance', element: <SellerPerformance /> },
                     { path: 'payouts', element: <PayoutProcessing /> },
                     { path: 'compliance', element: <ComplianceMonitoring /> },

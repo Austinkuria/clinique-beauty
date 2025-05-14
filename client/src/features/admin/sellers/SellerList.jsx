@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Typography,
   Box,
@@ -17,12 +18,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
+  Tooltip
 } from '@mui/material';
 import { Search as SearchIcon, GetApp as ExportIcon, SentimentDissatisfied as EmptyIcon } from '@mui/icons-material';
 import { sellerApi } from '../../../data/sellerApi';
 
 const SellerList = ({ sellers = [], loading: propLoading }) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [localSellers, setLocalSellers] = useState(sellers);
@@ -131,11 +134,62 @@ const SellerList = ({ sellers = [], loading: propLoading }) => {
     );
   }
 
+  // Handle navigation to seller details page
+  const handleViewSeller = (sellerId) => {
+    console.log('Navigating to seller details:', sellerId);
+    navigate(`/admin/sellers/${sellerId}`);
+  };
+
+  // Handle navigation to seller edit page  
+  const handleEditSeller = (sellerId) => {
+    console.log('Navigating to edit seller:', sellerId);
+    navigate(`/admin/sellers/${sellerId}/edit`);
+  };
+
+  // Export sellers data as CSV
+  const handleExportSellers = () => {
+    // Create CSV content
+    const headers = ['Business Name', 'Contact Person', 'Email', 'Location', 'Status', 'Registration Date'];
+    const csvRows = [headers];
+    
+    filteredSellers.forEach(seller => {
+      const row = [
+        seller.businessName,
+        seller.contactName,
+        seller.email,
+        seller.location || '',
+        seller.status,
+        new Date(seller.registrationDate).toLocaleDateString()
+      ];
+      csvRows.push(row);
+    });
+    
+    // Convert to CSV string
+    const csvContent = csvRows.map(row => row.map(cell => 
+      `"${String(cell).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `sellers-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4">Sellers</Typography>
-        <Button variant="contained" startIcon={<ExportIcon />}>
+        <Button 
+          variant="contained" 
+          startIcon={<ExportIcon />} 
+          onClick={handleExportSellers}
+          disabled={filteredSellers.length === 0}
+        >
           Export List
         </Button>
       </Box>
@@ -219,8 +273,25 @@ const SellerList = ({ sellers = [], loading: propLoading }) => {
                   <TableCell>{getStatusChip(seller.status)}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button variant="outlined" size="small">View</Button>
-                      <Button variant="outlined" color="secondary" size="small">Edit</Button>
+                      <Tooltip title="View seller details">
+                        <Button 
+                          variant="outlined" 
+                          size="small"
+                          onClick={() => handleViewSeller(seller.id)}
+                        >
+                          View
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="Edit seller information">
+                        <Button 
+                          variant="outlined" 
+                          color="secondary" 
+                          size="small"
+                          onClick={() => handleEditSeller(seller.id)}
+                        >
+                          Edit
+                        </Button>
+                      </Tooltip>
                     </Box>
                   </TableCell>
                 </TableRow>
