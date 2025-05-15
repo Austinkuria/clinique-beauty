@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Paper,
-  Grid,
   Button,
   TextField,
   FormControl,
@@ -25,7 +24,7 @@ import {
   Tab,
   Card,
   CardContent,
-  FormHelperText
+  unstable_Grid2 as Grid // Import the new Grid component
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -362,7 +361,7 @@ const ABTestingTool = () => {
 
       {/* Overview cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>Active Tests</Typography>
@@ -370,7 +369,7 @@ const ABTestingTool = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>Scheduled Tests</Typography>
@@ -378,7 +377,7 @@ const ABTestingTool = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>Completed Tests</Typography>
@@ -386,7 +385,7 @@ const ABTestingTool = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>Total Users in Tests</Typography>
@@ -488,7 +487,7 @@ const ABTestingTool = () => {
           )}
           
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Test Name"
@@ -500,7 +499,7 @@ const ABTestingTool = () => {
                 helperText={formErrors.name}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <FormControl fullWidth error={!!formErrors.testGoal}>
                 <InputLabel>Test Goal</InputLabel>
                 <Select
@@ -519,7 +518,7 @@ const ABTestingTool = () => {
                 )}
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <TextField
                 fullWidth
                 label="Description"
@@ -532,7 +531,7 @@ const ABTestingTool = () => {
                 helperText={formErrors.description}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <FormControl fullWidth error={!!formErrors.target}>
                 <InputLabel>Target Audience</InputLabel>
                 <Select
@@ -552,7 +551,7 @@ const ABTestingTool = () => {
                 )}
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Sample Size (% of traffic)"
@@ -565,7 +564,7 @@ const ABTestingTool = () => {
                 helperText={formErrors.sampleSize}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Start Date"
@@ -579,7 +578,7 @@ const ABTestingTool = () => {
                 helperText={formErrors.startDate}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="End Date"
@@ -614,7 +613,7 @@ const ABTestingTool = () => {
               }}
             >
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
+                <Grid xs={12} sm={4}>
                   <TextField
                     fullWidth
                     label="Variant Name"
@@ -625,7 +624,7 @@ const ABTestingTool = () => {
                     helperText={formErrors.variantErrors?.[index]?.name}
                   />
                 </Grid>
-                <Grid item xs={12} sm={5}>
+                <Grid xs={12} sm={5}>
                   <TextField
                     fullWidth
                     label="Description"
@@ -633,7 +632,7 @@ const ABTestingTool = () => {
                     onChange={(e) => handleVariantChange(index, 'description', e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={2}>
+                <Grid xs={12} sm={2}>
                   <TextField
                     fullWidth
                     label="Traffic %"
@@ -645,7 +644,7 @@ const ABTestingTool = () => {
                     helperText={formErrors.variantErrors?.[index]?.trafficAllocation}
                   />
                 </Grid>
-                <Grid item xs={12} sm={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Grid xs={12} sm={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {index > 1 && (
                     <IconButton color="error" onClick={() => removeVariant(index)}>
                       <DeleteIcon />
@@ -749,11 +748,11 @@ const ABTestingTool = () => {
 
         <Paper sx={{ p: 3, mb: 4 }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" color="textSecondary">Status</Typography>
               <Box sx={{ mt: 1 }}>{getStatusChip(selectedTest.status)}</Box>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" color="textSecondary">Test Goal</Typography>
               <Typography variant="body1">
                 {selectedTest.testGoal === 'conversion_rate' ? 'Conversion Rate' :
@@ -762,15 +761,15 @@ const ABTestingTool = () => {
                  selectedTest.testGoal === 'clicks' ? 'Click Rate' : selectedTest.testGoal}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" color="textSecondary">Start Date</Typography>
               <Typography variant="body1">{new Date(selectedTest.startDate).toLocaleDateString()}</Typography>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" color="textSecondary">End Date</Typography>
               <Typography variant="body1">{new Date(selectedTest.endDate).toLocaleDateString()}</Typography>
             </Grid>
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <Typography variant="subtitle2" color="textSecondary">Description</Typography>
               <Typography variant="body1">{selectedTest.description}</Typography>
             </Grid>
@@ -801,7 +800,7 @@ const ABTestingTool = () => {
               )}
               
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <Typography variant="subtitle2" gutterBottom>Performance by Variant</Typography>
                   <Box sx={{ height: 300 }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -842,7 +841,7 @@ const ABTestingTool = () => {
                     </ResponsiveContainer>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid xs={12} md={6}>
                   <Typography variant="subtitle2" gutterBottom>User Participation</Typography>
                   <Box sx={{ height: 300 }}>
                     <ResponsiveContainer width="100%" height="100%">
