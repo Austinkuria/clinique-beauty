@@ -1,88 +1,192 @@
 # Clinique Beauty - E-commerce Shop
 
-A full-stack e-commerce application built with the PERN stack (PostgreSQL, Express, React, Node.js) for a beauty shop.
+A full-stack e-commerce application built with the PERN stack (PostgreSQL, Express, React, Node.js) for a beauty shop, featuring M-Pesa integration for payments.
+
+![Clinique Beauty Screenshot](./client/src/assets/images/app-screenshot.png)
 
 ## Features
 
-*   **Product Catalog:** Browse products by category.
-*   **Product Details:** View detailed information, images, and pricing.
-*   **User Authentication:** Secure sign-up, sign-in, and profile management
-*   **Shopping Cart:** Add/remove items, view cart summary.
-*   **Wishlist:** Save favorite items.
-*   **Responsive Design:** Adapts to various screen sizes.
-*   **Others:** Search, Reviews, Order History, Checkout Process.
+### User-Facing Features
+* **Product Catalog:** Browse products by category, subcategory, and brand
+* **Advanced Product Details:** View high-resolution images, ingredients, benefits, and shades
+* **User Authentication:** Secure sign-up and sign-in via Clerk Authentication
+* **Shopping Cart:** Add/remove items, update quantities, view cart summary
+* **Checkout Process:** Multi-step checkout with address validation and order summary
+* **M-Pesa Integration:** Direct mobile payments through Safaricom's M-Pesa service
+* **Wishlist:** Save favorite items for future purchase
+* **Order History:** View past orders with status tracking
+* **User Profiles:** Manage personal information, addresses, and payment methods
+* **Responsive Design:** Optimized for mobile, tablet, and desktop devices
+
+### Admin Features
+* **Admin Dashboard:** Analytics dashboard with sales, revenue, and user metrics
+* **Product Management:** Add, edit, delete products with image uploads
+* **Order Management:** View, process, and update order statuses
+* **User Management:** View and manage user accounts and permissions
+* **Inventory Control:** Manage product stock levels and availability
+* **Analytics:** View sales trends, popular products, and customer demographics
 
 ## Tech Stack
 
-*   **Frontend:**
-    *   React with Vite
-    *   React Router
-    *   State Management (Context API, Redux)
-    *   Styling (Material UI, Tailwind CSS,Custom CSS)
-    *   Authentication Client (Clerk React)
-*   **Backend:**
-    *   Node.js
-    *   Express
-    *   Authentication Middleware (e.g., Clerk Node)
-*   **Database:**
-    *   PostgreSQL
-*   **Package Manager:**
-    *   pnpm (as indicated by `pnpm-lock.yaml`)
+### Frontend
+* **Framework:** React 19 with Vite
+* **Routing:** React Router 7
+* **State Management:** React Context API
+* **UI Components:** Material UI 7, custom components with Tailwind CSS 4
+* **Authentication:** Clerk React SDK
+* **Data Visualization:** Recharts
+* **Form Handling:** React Hook Form
+* **Styling:** Tailwind CSS, Emotion styled components
+
+### Backend
+* **Server:** Node.js with Express
+* **Database:** PostgreSQL via Supabase
+* **Authentication:** Clerk Node SDK with JWT verification
+* **File Storage:** Supabase Storage
+* **API Tunneling:** ngrok for M-Pesa callback URLs
+
+### Payment Processing
+* **M-Pesa Integration:** Safaricom Daraja API for mobile payments
+* **Callback Handling:** Express routes for processing payment notifications
+
+### Development Tools
+* **Package Manager:** pnpm
+* **Linting:** ESLint
+* **Environment Variables:** dotenv
+* **Deployment:** Vercel (frontend), Supabase Functions (serverless)
 
 ## Getting Started
 
 ### Prerequisites
-
-*   Node.js (v18 or later recommended)
-*   pnpm (Install via `npm install -g pnpm`)
-*   PostgreSQL database running
-*   (If using Clerk) Clerk Account for API keys
+* Node.js (v18 or later recommended)
+* pnpm (Install via `npm install -g pnpm`)
+* Supabase account for database
+* Clerk account for authentication
+* Safaricom Daraja API account for M-Pesa integration
+* ngrok account for development tunneling
 
 ### Installation & Setup
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd clinique-beauty
-    ```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/clinique-beauty.git
+   cd clinique-beauty
+   ```
 
-2.  **Install Server Dependencies:**
-    ```bash
-    cd server # Or your backend directory name
-    pnpm install
-    ```
+2. **Install dependencies:**
+   ```bash
+   # Install root dependencies
+   pnpm install
+   
+   # Install server dependencies
+   cd server
+   pnpm install
+   
+   # Install client dependencies
+   cd ../client
+   pnpm install
+   ```
 
-3.  **Install Client Dependencies:**
-    ```bash
-    cd ../client # Or your frontend directory name
-    pnpm install
-    ```
+3. **Set up environment variables:**
 
-4.  **Environment Variables:**
+   **Server (.env):**
+   ```bash
+   cd server
+   pnpm run setup-env
+   ```
+   This interactive setup will guide you through configuring:
+   - Server port
+   - Supabase credentials
+   - ngrok domain
+   - M-Pesa API credentials
 
-    *   **Server (`server/.env`):** Create a `.env` file in the `server` directory. Add necessary variables like:
-        ```env
-        DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE_NAME"
-        # Add Clerk Secret Key if using Clerk
-        # CLERK_SECRET_KEY="sk_test_..."
-        # Add JWT Secret if using custom JWT auth
-        # JWT_SECRET="your_jwt_secret"
-        PORT=5000 # Or your preferred server port
-        ```
+   **Client (.env):**
+   Create a `.env` file in the client directory with:
+   ```
+   VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5...
+   VITE_MPESA_ENABLED=true
+   ```
 
-    *   **Client (`client/.env`):** Create a `.env` file in the `client` directory. Add necessary variables like:
-        ```env
-        # Add Clerk Publishable Key if using Clerk
-        # VITE_CLERK_PUBLISHABLE_KEY="pk_test_..."
-        # Base URL for your backend API
-        VITE_API_BASE_URL="http://localhost:5000/api"
-        ```
-        *(Replace placeholders with your actual credentials, keys, and URLs)*
+4. **Database setup:**
+   - Create necessary tables in your Supabase project
+   - Run the seeding script to populate the database:
+   ```bash
+   cd server
+   pnpm run seed
+   ```
 
-5.  **Database Setup:**
-    *   Ensure your PostgreSQL server is running.
-    *   Connect to your database and create the specified database (`DATABASE_NAME`).
-    *   Run database migrations if applicable (e.g., `npx prisma migrate dev` if using Prisma). Add specific instructions based on your ORM setup.
+5. **Start the development servers:**
+   ```bash
+   # In the root directory
+   pnpm start
+   ```
+   This will start both the client (port 5173) and server (port 5000).
+
+## M-Pesa Integration Setup
+
+### Local Development with ngrok
+
+1. **Start the ngrok tunnel for M-Pesa callbacks:**
+   ```bash
+   cd server
+   pnpm run mpesa:ngrok
+   ```
+   This will:
+   - Start an ngrok tunnel to your local server
+   - Configure the M-Pesa callback URL in your .env file
+   - Display the public URL for your callbacks
+
+2. **Test the M-Pesa integration:**
+   ```bash
+   cd server
+   pnpm run check:mpesa
+   ```
+   This will verify that your M-Pesa configuration is working correctly.
+
+### Using M-Pesa in Development
+
+For testing M-Pesa in the sandbox environment:
+- Phone Number: 254708374149
+- PIN: 12345678
+
+### Production Deployment
+
+For production deployment of the M-Pesa integration:
+1. Set up your M-Pesa callback URL to point to your production server
+2. Configure the M-Pesa API credentials in your production environment variables
+3. Ensure your server has HTTPS enabled for secure communication
+
+## Project Structure
+
+```
+clinique-beauty/
+├── client/                 # React frontend
+│   ├── public/             # Static assets
+│   └── src/
+│       ├── api/            # API client and service functions
+│       ├── assets/         # Images and static resources
+│       ├── components/     # Reusable UI components
+│       ├── config/         # Configuration files
+│       ├── contexts/       # React context providers
+│       ├── data/           # Mock data for development
+│       ├── hooks/          # Custom React hooks
+│       ├── pages/          # Page components
+│       └── utils/          # Utility functions
+│
+├── server/                 # Express backend
+│   ├── config/             # Server configuration
+│   ├── middleware/         # Express middleware
+│   ├── routes/             # API route handlers
+│   ├── scripts/            # Utility scripts
+│   ├── test/               # Test files
+│   └── utils/              # Server utility functions
+│
+└── docs/                   # Documentation files
+    ├── mpesa-setup.md      # M-Pesa integration guide
+    └── vercel-deployment.md # Deployment guide
+```
 
 ## Running the Application Online
 
@@ -90,7 +194,7 @@ With ngrok installed, you can make the application available online:
 
 ```bash
 # Start the application and expose it with ngrok
-npm run online
+pnpm run online
 ```
 
 This will:
@@ -98,26 +202,24 @@ This will:
 2. Create a secure tunnel using your reserved ngrok domain
 3. Configure the M-Pesa callback URL automatically
 
-Your site will be available at: https://deer-equal-blowfish.ngrok-free.app
+## Scripts Reference
 
-## Developing Locally
+### Root Scripts
+- `pnpm start` - Start both client and server in development mode
+- `pnpm run online` - Start the application with ngrok tunneling
+- `pnpm run build` - Build the client application for production
 
-```bash
-# Start both client and server in development mode
-npm start
+### Server Scripts
+- `pnpm run dev` - Start the server in development mode
+- `pnpm run setup-env` - Interactive environment setup wizard
+- `pnpm run mpesa:ngrok` - Start ngrok tunnel for M-Pesa callbacks
+- `pnpm run check:mpesa` - Test M-Pesa integration
+- `pnpm run mpesa:dev` - Start server and ngrok tunnel together
 
-# Run just the client
-cd client && npm run dev
-
-# Run just the server
-cd server && npm run dev
-```
-
-## Testing M-Pesa Integration
-
-For testing M-Pesa integration in the sandbox environment:
-- Phone Number: 254708374149
-- PIN: 12345678
+### Client Scripts
+- `pnpm run dev` - Start the client in development mode
+- `pnpm run build` - Build the client for production
+- `pnpm run preview` - Preview the production build locally
 
 ## Contributing
 
@@ -125,7 +227,7 @@ We welcome contributions to improve Clinique Beauty! Here's how you can help:
 
 1. **Report Bugs**: Found a bug? Please open an issue with detailed information.
 2. **Feature Suggestions**: Have an idea? Let us know by creating a new issue or starting a discussion.
-3. **Code Contributions**: Fork the repository, create a new branch for your feature or fix, and submit a pull request. Ensure your code follows the project's style guidelines.
+3. **Code Contributions**: Fork the repository, create a new branch for your feature or fix, and submit a pull request.
 
 ### Steps to Contribute:
 - Fork this repository.
@@ -134,8 +236,20 @@ We welcome contributions to improve Clinique Beauty! Here's how you can help:
 - Push your branch: `git push origin feature-name`.
 - Open a Pull Request for review.
 
+## Troubleshooting
+
+If you encounter issues:
+
+1. **Check environment variables** - Make sure all required variables are set correctly
+2. **Verify Supabase connection** - Test your Supabase credentials
+3. **Check ngrok status** - For M-Pesa issues, verify ngrok is running and configured
+4. **Review server logs** - Check the server console for error messages
+5. **Consult the docs** - See documentation in the `/docs` directory for specific guides
+
 ## License
 
-This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute this software in compliance withthe license terms.
+This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute this software in compliance with the license terms.
 
-Thank you for your contributions!
+## Contact
+
+For questions or support, please open an issue in the GitHub repository or contact the project maintainers.
