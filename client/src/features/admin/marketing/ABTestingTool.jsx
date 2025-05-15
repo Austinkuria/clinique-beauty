@@ -24,7 +24,14 @@ import {
   Tab,
   Card,
   CardContent,
-  unstable_Grid2 as Grid // Import the new Grid component
+  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Backdrop,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -37,7 +44,7 @@ import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
   CheckCircleOutline as CheckCircleOutlineIcon,
-  Science as ScienceIcon
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { 
   BarChart, 
@@ -57,19 +64,19 @@ import {
 import { useApi } from '../../../api/apiClient';
 import { toast } from 'react-hot-toast';
 import { abTestingApi } from '../../../data/abTestingApi';
-import { validateABTest, prepareTestData } from '../../../utils/abTestValidation';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
+// Main component
 const ABTestingTool = () => {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [selectedTest, setSelectedTest] = useState(null);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formErrors, setFormErrors] = useState({});
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -83,10 +90,12 @@ const ABTestingTool = () => {
     testGoal: 'conversion_rate'
   });
 
+  // Fetch tests on component mount
   useEffect(() => {
     fetchTests();
   }, []);
 
+  // Function to fetch tests from API
   const fetchTests = async () => {
     setLoading(true);
     try {
@@ -110,15 +119,18 @@ const ABTestingTool = () => {
     }
   };
 
+  // Handle tab changes
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
 
+  // View test details
   const handleViewTestDetails = (test) => {
     setSelectedTest(test);
     setActiveTab(1); // Switch to Results tab
   };
 
+  // Start a test
   const handleStartTest = async (testId) => {
     try {
       await abTestingApi.startTest(testId);
@@ -130,6 +142,7 @@ const ABTestingTool = () => {
     }
   };
 
+  // Stop a test
   const handleStopTest = async (testId) => {
     try {
       await abTestingApi.stopTest(testId);
@@ -141,6 +154,7 @@ const ABTestingTool = () => {
     }
   };
 
+  // Delete a test
   const handleDeleteTest = async (testId) => {
     if (window.confirm('Are you sure you want to delete this test?')) {
       try {
@@ -157,22 +171,16 @@ const ABTestingTool = () => {
     }
   };
 
+  // Handle form changes
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value
     });
-    
-    // Clear error for this field when changed
-    if (formErrors[name]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [name]: undefined
-      }));
-    }
   };
 
+  // Handle variant changes
   const handleVariantChange = (index, field, value) => {
     const updatedVariants = [...formData.variants];
     updatedVariants[index] = {
@@ -183,32 +191,9 @@ const ABTestingTool = () => {
       ...formData,
       variants: updatedVariants
     });
-    
-    // Clear variant errors when changed
-    if (formErrors.variantErrors?.[index]?.[field]) {
-      const newVariantErrors = [...(formErrors.variantErrors || [])];
-      if (newVariantErrors[index]) {
-        newVariantErrors[index] = {
-          ...newVariantErrors[index],
-          [field]: undefined
-        };
-      }
-      
-      setFormErrors(prev => ({
-        ...prev,
-        variantErrors: newVariantErrors
-      }));
-    }
-    
-    // Clear total allocation error when any allocation changes
-    if (field === 'trafficAllocation' && formErrors.totalAllocation) {
-      setFormErrors(prev => ({
-        ...prev,
-        totalAllocation: undefined
-      }));
-    }
   };
 
+  // Add a new variant
   const addVariant = () => {
     if (formData.variants.length >= 4) {
       toast.error('Maximum 4 variants allowed');
@@ -229,17 +214,9 @@ const ABTestingTool = () => {
       ...formData,
       variants: updatedVariants
     });
-    
-    // Clear variant errors when adding a new variant
-    if (formErrors.variants || formErrors.totalAllocation) {
-      setFormErrors(prev => ({
-        ...prev,
-        variants: undefined,
-        totalAllocation: undefined
-      }));
-    }
   };
 
+  // Remove a variant
   const removeVariant = (index) => {
     if (formData.variants.length <= 2) {
       toast.error('Minimum 2 variants required');
@@ -259,35 +236,21 @@ const ABTestingTool = () => {
       ...formData,
       variants: updatedVariants
     });
-    
-    // Clear variant errors when removing a variant
-    if (formErrors.variants || formErrors.totalAllocation) {
-      setFormErrors(prev => ({
-        ...prev,
-        variants: undefined,
-        totalAllocation: undefined
-      }));
-    }
+  };
+
+  const handleCreateTestClick = () => {
+    setCreateDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setCreateDialogOpen(false);
   };
 
   const createTest = async () => {
-    // Validate form data before submission
-    const validation = validateABTest(formData);
-    
-    if (!validation.isValid) {
-      setFormErrors(validation.errors);
-      toast.error('Please fix the errors in the form');
-      return;
-    }
-    
-    // Prepare data for submission
-    const testData = prepareTestData(formData);
-    
-    setIsSubmitting(true);
     try {
-      await abTestingApi.createTest(testData);
+      await abTestingApi.createTest(formData);
       toast.success('A/B test created successfully');
-      setCreateModalOpen(false);
+      setCreateDialogOpen(false); // Close the dialog instead
       fetchTests();
       
       // Reset form
@@ -303,17 +266,13 @@ const ABTestingTool = () => {
         ],
         testGoal: 'conversion_rate'
       });
-      
-      // Clear form errors
-      setFormErrors({});
     } catch (error) {
       console.error('Error creating test:', error);
-      toast.error('Failed to create test: ' + (error.message || 'Unknown error'));
-    } finally {
-      setIsSubmitting(false);
+      toast.error('Failed to create test');
     }
   };
 
+  // Status chip component
   const getStatusChip = (status) => {
     switch (status) {
       case 'active':
@@ -329,6 +288,7 @@ const ABTestingTool = () => {
     }
   };
 
+  // Loading state
   if (loading && tests.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
@@ -337,6 +297,7 @@ const ABTestingTool = () => {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
@@ -345,6 +306,7 @@ const ABTestingTool = () => {
     );
   }
 
+  // Render the tests list tab
   const renderTestsList = () => (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -353,7 +315,7 @@ const ABTestingTool = () => {
           variant="contained" 
           color="primary" 
           startIcon={<AddIcon />}
-          onClick={() => setCreateModalOpen(true)}
+          onClick={handleCreateTestClick} // Use the new handler
         >
           Create New Test
         </Button>
@@ -361,7 +323,7 @@ const ABTestingTool = () => {
 
       {/* Overview cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>Active Tests</Typography>
@@ -369,7 +331,7 @@ const ABTestingTool = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>Scheduled Tests</Typography>
@@ -377,7 +339,7 @@ const ABTestingTool = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>Completed Tests</Typography>
@@ -385,7 +347,7 @@ const ABTestingTool = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>Total Users in Tests</Typography>
@@ -472,22 +434,26 @@ const ABTestingTool = () => {
         </Table>
       </TableContainer>
 
-      {/* Create new test form */}
-      {createModalOpen && (
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <ScienceIcon sx={{ mr: 1 }} />
+      {/* Create Test Dialog - Replaces the inline form */}
+      <Dialog 
+        open={createDialogOpen} 
+        onClose={handleCloseDialog}
+        fullScreen={fullScreen}
+        maxWidth="md"
+        fullWidth
+        scroll="paper"
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="h6">Create New A/B Test</Typography>
+            <IconButton edge="end" color="inherit" onClick={handleCloseDialog} aria-label="close">
+              <CloseIcon />
+            </IconButton>
           </Box>
-          
-          {formErrors.totalAllocation && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {formErrors.totalAllocation}
-            </Alert>
-          )}
-          
+        </DialogTitle>
+        <DialogContent dividers>
           <Grid container spacing={3}>
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Test Name"
@@ -495,12 +461,10 @@ const ABTestingTool = () => {
                 value={formData.name}
                 onChange={handleFormChange}
                 required
-                error={!!formErrors.name}
-                helperText={formErrors.name}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
-              <FormControl fullWidth error={!!formErrors.testGoal}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
                 <InputLabel>Test Goal</InputLabel>
                 <Select
                   name="testGoal"
@@ -513,12 +477,9 @@ const ABTestingTool = () => {
                   <MenuItem value="revenue">Revenue per User</MenuItem>
                   <MenuItem value="clicks">Click-through Rate</MenuItem>
                 </Select>
-                {formErrors.testGoal && (
-                  <FormHelperText>{formErrors.testGoal}</FormHelperText>
-                )}
               </FormControl>
             </Grid>
-            <Grid xs={12}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Description"
@@ -527,12 +488,10 @@ const ABTestingTool = () => {
                 onChange={handleFormChange}
                 multiline
                 rows={2}
-                error={!!formErrors.description}
-                helperText={formErrors.description}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
-              <FormControl fullWidth error={!!formErrors.target}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
                 <InputLabel>Target Audience</InputLabel>
                 <Select
                   name="target"
@@ -546,12 +505,9 @@ const ABTestingTool = () => {
                   <MenuItem value="mobile_users">Mobile Users</MenuItem>
                   <MenuItem value="desktop_users">Desktop Users</MenuItem>
                 </Select>
-                {formErrors.target && (
-                  <FormHelperText>{formErrors.target}</FormHelperText>
-                )}
               </FormControl>
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Sample Size (% of traffic)"
@@ -560,11 +516,9 @@ const ABTestingTool = () => {
                 value={formData.sampleSize || 100}
                 onChange={handleFormChange}
                 InputProps={{ inputProps: { min: 1, max: 100 } }}
-                error={!!formErrors.sampleSize}
-                helperText={formErrors.sampleSize}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Start Date"
@@ -573,12 +527,9 @@ const ABTestingTool = () => {
                 value={formData.startDate}
                 onChange={handleFormChange}
                 InputLabelProps={{ shrink: true }}
-                required
-                error={!!formErrors.startDate}
-                helperText={formErrors.startDate}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="End Date"
@@ -587,44 +538,25 @@ const ABTestingTool = () => {
                 value={formData.endDate}
                 onChange={handleFormChange}
                 InputLabelProps={{ shrink: true }}
-                required
-                error={!!formErrors.endDate}
-                helperText={formErrors.endDate}
               />
             </Grid>
           </Grid>
 
-          <Box sx={{ mt: 4, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">Test Variants</Typography>
-            {formErrors.variants && (
-              <Typography color="error">{formErrors.variants}</Typography>
-            )}
-          </Box>
+          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>Test Variants</Typography>
           
           {formData.variants.map((variant, index) => (
-            <Box 
-              key={index} 
-              sx={{ 
-                mb: 3, 
-                p: 2, 
-                border: '1px solid', 
-                borderColor: formErrors.variantErrors?.[index] ? 'error.main' : '#e0e0e0', 
-                borderRadius: 1 
-              }}
-            >
+            <Box key={index} sx={{ mb: 3, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
               <Grid container spacing={2}>
-                <Grid xs={12} sm={4}>
+                <Grid item xs={12} sm={4}>
                   <TextField
                     fullWidth
                     label="Variant Name"
                     value={variant.name}
                     onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
                     required
-                    error={!!formErrors.variantErrors?.[index]?.name}
-                    helperText={formErrors.variantErrors?.[index]?.name}
                   />
                 </Grid>
-                <Grid xs={12} sm={5}>
+                <Grid item xs={12} sm={5}>
                   <TextField
                     fullWidth
                     label="Description"
@@ -632,7 +564,7 @@ const ABTestingTool = () => {
                     onChange={(e) => handleVariantChange(index, 'description', e.target.value)}
                   />
                 </Grid>
-                <Grid xs={12} sm={2}>
+                <Grid item xs={12} sm={2}>
                   <TextField
                     fullWidth
                     label="Traffic %"
@@ -640,11 +572,9 @@ const ABTestingTool = () => {
                     value={variant.trafficAllocation}
                     onChange={(e) => handleVariantChange(index, 'trafficAllocation', e.target.value)}
                     InputProps={{ inputProps: { min: 1, max: 100 } }}
-                    error={!!formErrors.variantErrors?.[index]?.trafficAllocation}
-                    helperText={formErrors.variantErrors?.[index]?.trafficAllocation}
                   />
                 </Grid>
-                <Grid xs={12} sm={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Grid item xs={12} sm={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {index > 1 && (
                     <IconButton color="error" onClick={() => removeVariant(index)}>
                       <DeleteIcon />
@@ -665,32 +595,28 @@ const ABTestingTool = () => {
               Add Variant
             </Button>
           </Box>
-          
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-            <Button 
-              variant="outlined" 
-              onClick={() => {
-                setCreateModalOpen(false);
-                setFormErrors({});
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="contained" 
-              color="primary"
-              onClick={createTest}
-              disabled={isSubmitting}
-              startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-            >
-              {isSubmitting ? 'Creating...' : 'Create Test'}
-            </Button>
-          </Box>
-        </Paper>
-      )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button 
+            variant="outlined" 
+            onClick={handleCloseDialog}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={createTest}
+            disabled={!formData.name || !formData.startDate || !formData.endDate}
+          >
+            Create Test
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 
+  // Render the test results tab
   const renderTestResults = () => {
     if (!selectedTest) {
       return (
@@ -748,11 +674,11 @@ const ABTestingTool = () => {
 
         <Paper sx={{ p: 3, mb: 4 }}>
           <Grid container spacing={3}>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" color="textSecondary">Status</Typography>
               <Box sx={{ mt: 1 }}>{getStatusChip(selectedTest.status)}</Box>
             </Grid>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" color="textSecondary">Test Goal</Typography>
               <Typography variant="body1">
                 {selectedTest.testGoal === 'conversion_rate' ? 'Conversion Rate' :
@@ -761,15 +687,15 @@ const ABTestingTool = () => {
                  selectedTest.testGoal === 'clicks' ? 'Click Rate' : selectedTest.testGoal}
               </Typography>
             </Grid>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" color="textSecondary">Start Date</Typography>
               <Typography variant="body1">{new Date(selectedTest.startDate).toLocaleDateString()}</Typography>
             </Grid>
-            <Grid xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" color="textSecondary">End Date</Typography>
               <Typography variant="body1">{new Date(selectedTest.endDate).toLocaleDateString()}</Typography>
             </Grid>
-            <Grid xs={12}>
+            <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary">Description</Typography>
               <Typography variant="body1">{selectedTest.description}</Typography>
             </Grid>
@@ -800,7 +726,7 @@ const ABTestingTool = () => {
               )}
               
               <Grid container spacing={3}>
-                <Grid xs={12} md={6}>
+                <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" gutterBottom>Performance by Variant</Typography>
                   <Box sx={{ height: 300 }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -841,7 +767,7 @@ const ABTestingTool = () => {
                     </ResponsiveContainer>
                   </Box>
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" gutterBottom>User Participation</Typography>
                   <Box sx={{ height: 300 }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -860,7 +786,7 @@ const ABTestingTool = () => {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value) => [`${value} users`, 'Participants']} />
+                        <Tooltip />
                         <Legend />
                       </PieChart>
                     </ResponsiveContainer>
@@ -868,98 +794,13 @@ const ABTestingTool = () => {
                 </Grid>
               </Grid>
             </Paper>
-
-            {/* Performance over time */}
-            {selectedTest.timeSeries && (
-              <Paper sx={{ p: 3, mb: 4 }}>
-                <Typography variant="h6" gutterBottom>Performance Over Time</Typography>
-                <Box sx={{ height: 400 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={selectedTest.timeSeries}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis 
-                        label={{ 
-                          value: selectedTest.testGoal === 'conversion_rate' ? 'Conversion Rate (%)' :
-                                 selectedTest.testGoal === 'avg_order_value' ? 'Avg Order Value ($)' :
-                                 selectedTest.testGoal === 'revenue' ? 'Revenue ($)' :
-                                 'Click Rate (%)',
-                          angle: -90,
-                          position: 'insideLeft' 
-                        }} 
-                      />
-                      <Tooltip />
-                      <Legend />
-                      {selectedTest.variants.map((variant, index) => (
-                        <Line
-                          key={variant.name}
-                          type="monotone"
-                          dataKey={`${variant.name}`}
-                          name={variant.name}
-                          stroke={COLORS[index % COLORS.length]}
-                          activeDot={{ r: 8 }}
-                        />
-                      ))}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </Box>
-              </Paper>
-            )}
-
-            {/* Detailed metrics */}
-            <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" gutterBottom>Detailed Metrics</Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Variant</TableCell>
-                      <TableCell>Participants</TableCell>
-                      <TableCell>Conversion Rate</TableCell>
-                      <TableCell>Avg Order Value</TableCell>
-                      <TableCell>Revenue</TableCell>
-                      <TableCell>Statistical Significance</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {selectedTest.results.map((result, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{result.variant}</TableCell>
-                        <TableCell>{result.participants.toLocaleString()}</TableCell>
-                        <TableCell>{result.conversionRate}%</TableCell>
-                        <TableCell>${result.avgOrderValue.toFixed(2)}</TableCell>
-                        <TableCell>${result.revenue.toFixed(2)}</TableCell>
-                        <TableCell>
-                          {result.significant ? (
-                            <Chip 
-                              icon={<CheckCircleOutlineIcon />} 
-                              label="Significant" 
-                              color="success" 
-                              size="small" 
-                            />
-                          ) : (
-                            <Chip 
-                              label="Not Significant" 
-                              color="default" 
-                              size="small" 
-                            />
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
           </>
         )}
       </Box>
     );
   };
 
+  // Main component render
   return (
     <Box>
       <Paper sx={{ mb: 3 }}>
