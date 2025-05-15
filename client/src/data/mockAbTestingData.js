@@ -265,8 +265,3 @@ export const mockAbTestingData = {
     }
   ]
 };
-
-// Initialize the mock data if it doesn't exist
-if (!mockData.abTests) {
-  mockData.abTests = mockAbTestingData.abTests;
-}

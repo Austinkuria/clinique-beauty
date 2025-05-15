@@ -1,14 +1,11 @@
 // Mock API functions for AB Testing features
-import { mockData } from './mockData';
 import { mockAbTestingData } from './mockAbTestingData';
+
+// Create a local variable to store AB Tests data
+let abTestsData = mockAbTestingData.abTests || [];
 
 // Simulated delay for API calls
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Initialize the mock data if it doesn't exist
-if (!mockData.abTests) {
-  mockData.abTests = mockAbTestingData.abTests;
-}
 
 /**
  * API client for AB Testing features
@@ -23,7 +20,7 @@ export const abTestingApi = {
     
     return {
       success: true,
-      data: mockData.abTests || []
+      data: abTestsData
     };
   },
   
@@ -57,11 +54,8 @@ export const abTestingApi = {
       participants: 0
     };
     
-    // Add to mock data
-    if (!mockData.abTests) {
-      mockData.abTests = [];
-    }
-    mockData.abTests.push(newTest);
+    // Add to the local data
+    abTestsData.push(newTest);
     
     return {
       success: true,
@@ -77,22 +71,18 @@ export const abTestingApi = {
     // Simulate API delay
     await delay(500);
     
-    if (!mockData.abTests) {
-      throw new Error('Test not found');
-    }
-    
-    const testIndex = mockData.abTests.findIndex(test => test.id === testId);
+    const testIndex = abTestsData.findIndex(test => test.id === testId);
     if (testIndex === -1) {
       throw new Error('Test not found');
     }
     
     // Update the test status
-    mockData.abTests[testIndex].status = 'active';
-    mockData.abTests[testIndex].startedAt = new Date().toISOString();
+    abTestsData[testIndex].status = 'active';
+    abTestsData[testIndex].startedAt = new Date().toISOString();
     
     return {
       success: true,
-      data: mockData.abTests[testIndex]
+      data: abTestsData[testIndex]
     };
   },
   
@@ -104,22 +94,18 @@ export const abTestingApi = {
     // Simulate API delay
     await delay(500);
     
-    if (!mockData.abTests) {
-      throw new Error('Test not found');
-    }
-    
-    const testIndex = mockData.abTests.findIndex(test => test.id === testId);
+    const testIndex = abTestsData.findIndex(test => test.id === testId);
     if (testIndex === -1) {
       throw new Error('Test not found');
     }
     
     // Update the test status
-    mockData.abTests[testIndex].status = 'completed';
-    mockData.abTests[testIndex].completedAt = new Date().toISOString();
+    abTestsData[testIndex].status = 'completed';
+    abTestsData[testIndex].completedAt = new Date().toISOString();
     
     return {
       success: true,
-      data: mockData.abTests[testIndex]
+      data: abTestsData[testIndex]
     };
   },
   
@@ -131,17 +117,13 @@ export const abTestingApi = {
     // Simulate API delay
     await delay(500);
     
-    if (!mockData.abTests) {
-      throw new Error('Test not found');
-    }
-    
-    const testIndex = mockData.abTests.findIndex(test => test.id === testId);
+    const testIndex = abTestsData.findIndex(test => test.id === testId);
     if (testIndex === -1) {
       throw new Error('Test not found');
     }
     
     // Remove the test
-    mockData.abTests.splice(testIndex, 1);
+    abTestsData.splice(testIndex, 1);
     
     return {
       success: true
