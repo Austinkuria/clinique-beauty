@@ -24,7 +24,8 @@ import {
   Tabs,
   Tab,
   Card,
-  CardContent
+  CardContent,
+  FormHelperText
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -36,7 +37,8 @@ import {
   BarChart as BarChartIcon,
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
-  CheckCircleOutline as CheckCircleOutlineIcon
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  Science as ScienceIcon
 } from '@mui/icons-material';
 import { 
   BarChart, 
@@ -56,6 +58,7 @@ import {
 import { useApi } from '../../../api/apiClient';
 import { toast } from 'react-hot-toast';
 import { abTestingApi } from '../../../data/abTestingApi';
+import { validateABTest, prepareTestData } from '../../../utils/abTestValidation';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -66,6 +69,8 @@ const ABTestingTool = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [selectedTest, setSelectedTest] = useState(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -159,6 +164,14 @@ const ABTestingTool = () => {
       ...formData,
       [name]: value
     });
+    
+    // Clear error for this field when changed
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
   };
 
   const handleVariantChange = (index, field, value) => {
@@ -171,6 +184,30 @@ const ABTestingTool = () => {
       ...formData,
       variants: updatedVariants
     });
+    
+    // Clear variant errors when changed
+    if (formErrors.variantErrors?.[index]?.[field]) {
+      const newVariantErrors = [...(formErrors.variantErrors || [])];
+      if (newVariantErrors[index]) {
+        newVariantErrors[index] = {
+          ...newVariantErrors[index],
+          [field]: undefined
+        };
+      }
+      
+      setFormErrors(prev => ({
+        ...prev,
+        variantErrors: newVariantErrors
+      }));
+    }
+    
+    // Clear total allocation error when any allocation changes
+    if (field === 'trafficAllocation' && formErrors.totalAllocation) {
+      setFormErrors(prev => ({
+        ...prev,
+        totalAllocation: undefined
+      }));
+    }
   };
 
   const addVariant = () => {
@@ -185,7 +222,7 @@ const ABTestingTool = () => {
       trafficAllocation: newAllocation
     }));
     updatedVariants.push({
-      name: `Variant ${String.fromCharCode(65 + updatedVariants.length)}`, // A, B, C...
+      name: `Variant ${String.fromCharCode(65 + updatedVariants.length - 1)}`, // A, B, C...
       description: 'New variant',
       trafficAllocation: newAllocation
     });
@@ -193,6 +230,15 @@ const ABTestingTool = () => {
       ...formData,
       variants: updatedVariants
     });
+    
+    // Clear variant errors when adding a new variant
+    if (formErrors.variants || formErrors.totalAllocation) {
+      setFormErrors(prev => ({
+        ...prev,
+        variants: undefined,
+        totalAllocation: undefined
+      }));
+    }
   };
 
   const removeVariant = (index) => {
@@ -214,11 +260,33 @@ const ABTestingTool = () => {
       ...formData,
       variants: updatedVariants
     });
+    
+    // Clear variant errors when removing a variant
+    if (formErrors.variants || formErrors.totalAllocation) {
+      setFormErrors(prev => ({
+        ...prev,
+        variants: undefined,
+        totalAllocation: undefined
+      }));
+    }
   };
 
   const createTest = async () => {
+    // Validate form data before submission
+    const validation = validateABTest(formData);
+    
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
+      toast.error('Please fix the errors in the form');
+      return;
+    }
+    
+    // Prepare data for submission
+    const testData = prepareTestData(formData);
+    
+    setIsSubmitting(true);
     try {
-      await abTestingApi.createTest(formData);
+      await abTestingApi.createTest(testData);
       toast.success('A/B test created successfully');
       setCreateModalOpen(false);
       fetchTests();
@@ -236,9 +304,14 @@ const ABTestingTool = () => {
         ],
         testGoal: 'conversion_rate'
       });
+      
+      // Clear form errors
+      setFormErrors({});
     } catch (error) {
       console.error('Error creating test:', error);
-      toast.error('Failed to create test');
+      toast.error('Failed to create test: ' + (error.message || 'Unknown error'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -403,7 +476,16 @@ const ABTestingTool = () => {
       {/* Create new test form */}
       {createModalOpen && (
         <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6" gutterBottom>Create New A/B Test</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <ScienceIcon sx={{ mr: 1 }} />
+            <Typography variant="h6">Create New A/B Test</Typography>
+          </Box>
+          
+          {formErrors.totalAllocation && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {formErrors.totalAllocation}
+            </Alert>
+          )}
           
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
@@ -414,10 +496,12 @@ const ABTestingTool = () => {
                 value={formData.name}
                 onChange={handleFormChange}
                 required
+                error={!!formErrors.name}
+                helperText={formErrors.name}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!formErrors.testGoal}>
                 <InputLabel>Test Goal</InputLabel>
                 <Select
                   name="testGoal"
@@ -430,6 +514,9 @@ const ABTestingTool = () => {
                   <MenuItem value="revenue">Revenue per User</MenuItem>
                   <MenuItem value="clicks">Click-through Rate</MenuItem>
                 </Select>
+                {formErrors.testGoal && (
+                  <FormHelperText>{formErrors.testGoal}</FormHelperText>
+                )}
               </FormControl>
             </Grid>
             <Grid item xs={12}>
@@ -441,10 +528,12 @@ const ABTestingTool = () => {
                 onChange={handleFormChange}
                 multiline
                 rows={2}
+                error={!!formErrors.description}
+                helperText={formErrors.description}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!formErrors.target}>
                 <InputLabel>Target Audience</InputLabel>
                 <Select
                   name="target"
@@ -458,6 +547,9 @@ const ABTestingTool = () => {
                   <MenuItem value="mobile_users">Mobile Users</MenuItem>
                   <MenuItem value="desktop_users">Desktop Users</MenuItem>
                 </Select>
+                {formErrors.target && (
+                  <FormHelperText>{formErrors.target}</FormHelperText>
+                )}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -469,6 +561,8 @@ const ABTestingTool = () => {
                 value={formData.sampleSize || 100}
                 onChange={handleFormChange}
                 InputProps={{ inputProps: { min: 1, max: 100 } }}
+                error={!!formErrors.sampleSize}
+                helperText={formErrors.sampleSize}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -480,6 +574,9 @@ const ABTestingTool = () => {
                 value={formData.startDate}
                 onChange={handleFormChange}
                 InputLabelProps={{ shrink: true }}
+                required
+                error={!!formErrors.startDate}
+                helperText={formErrors.startDate}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -491,14 +588,31 @@ const ABTestingTool = () => {
                 value={formData.endDate}
                 onChange={handleFormChange}
                 InputLabelProps={{ shrink: true }}
+                required
+                error={!!formErrors.endDate}
+                helperText={formErrors.endDate}
               />
             </Grid>
           </Grid>
 
-          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>Test Variants</Typography>
+          <Box sx={{ mt: 4, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Test Variants</Typography>
+            {formErrors.variants && (
+              <Typography color="error">{formErrors.variants}</Typography>
+            )}
+          </Box>
           
           {formData.variants.map((variant, index) => (
-            <Box key={index} sx={{ mb: 3, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+            <Box 
+              key={index} 
+              sx={{ 
+                mb: 3, 
+                p: 2, 
+                border: '1px solid', 
+                borderColor: formErrors.variantErrors?.[index] ? 'error.main' : '#e0e0e0', 
+                borderRadius: 1 
+              }}
+            >
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
                   <TextField
@@ -507,6 +621,8 @@ const ABTestingTool = () => {
                     value={variant.name}
                     onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
                     required
+                    error={!!formErrors.variantErrors?.[index]?.name}
+                    helperText={formErrors.variantErrors?.[index]?.name}
                   />
                 </Grid>
                 <Grid item xs={12} sm={5}>
@@ -525,6 +641,8 @@ const ABTestingTool = () => {
                     value={variant.trafficAllocation}
                     onChange={(e) => handleVariantChange(index, 'trafficAllocation', e.target.value)}
                     InputProps={{ inputProps: { min: 1, max: 100 } }}
+                    error={!!formErrors.variantErrors?.[index]?.trafficAllocation}
+                    helperText={formErrors.variantErrors?.[index]?.trafficAllocation}
                   />
                 </Grid>
                 <Grid item xs={12} sm={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -552,7 +670,10 @@ const ABTestingTool = () => {
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
             <Button 
               variant="outlined" 
-              onClick={() => setCreateModalOpen(false)}
+              onClick={() => {
+                setCreateModalOpen(false);
+                setFormErrors({});
+              }}
             >
               Cancel
             </Button>
@@ -560,9 +681,10 @@ const ABTestingTool = () => {
               variant="contained" 
               color="primary"
               onClick={createTest}
-              disabled={!formData.name || !formData.startDate || !formData.endDate}
+              disabled={isSubmitting}
+              startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
             >
-              Create Test
+              {isSubmitting ? 'Creating...' : 'Create Test'}
             </Button>
           </Box>
         </Paper>
