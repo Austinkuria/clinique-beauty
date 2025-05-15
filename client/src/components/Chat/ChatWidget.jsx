@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from '@clerk/clerk-react';
-import { FaRegPaperPlane, FaTimes, FaRegCommentDots } from 'react-icons/fa';
+import SendIcon from '@mui/icons-material/Send';
+import CloseIcon from '@mui/icons-material/Close';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -160,7 +162,7 @@ const ChatWidget = () => {
         className="p-4 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-all"
         aria-label={isOpen ? "Close chat" : "Open chat"}
       >
-        {isOpen ? <FaTimes size={20} /> : <FaRegCommentDots size={20} />}
+        {isOpen ? <CloseIcon fontSize="small" /> : <ChatBubbleOutlineIcon fontSize="small" />}
       </button>
       
       {/* Chat window */}
@@ -224,7 +226,7 @@ const ChatWidget = () => {
               className="p-2 bg-primary-600 text-white rounded-r-md hover:bg-primary-700"
               disabled={!newMessage.trim()}
             >
-              <FaRegPaperPlane />
+              <SendIcon fontSize="small" />
             </button>
           </form>
         </div>
