@@ -9,6 +9,8 @@ console.log("Environment loaded, SUPABASE_SERVICE_ROLE_KEY exists:", !!process.e
 
 import express from 'express';
 import axios from 'axios';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import connectDB, { supabase } from './config/db.js';
 import productRoutes from './routes/productRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
@@ -16,9 +18,11 @@ import orderRoutes from './routes/orderRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import mpesaRoutes from './routes/mpesaRoutes.js';
+import chatbotRoutes from './routes/chatbotRoutes.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 import { clerkMiddleware } from './middleware/clerkMiddleware.js';
 import { corsMiddleware } from './middleware/corsMiddleware.js';
+import { handleChatMessage } from './services/chatbotService.js';
 
 // Connect to Supabase
 connectDB();
@@ -27,6 +31,50 @@ connectDB();
 global.supabase = supabase;
 
 const app = express();
+const httpServer = createServer(app);
+
+// Initialize Socket.IO with CORS settings
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.NODE_ENV === 'production' 
+      ? ['https://clinique-beauty.vercel.app', 'https://www.clinique-beauty.com'] 
+      : ['http://localhost:3000', 'http://localhost:5173'],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
+  
+  // Handle chat messages
+  socket.on('chat_message', async (message) => {
+    try {
+      // Process the message through our chatbot service
+      const response = await handleChatMessage(message, socket.id);
+      
+      // Send response back to the specific client
+      socket.emit('chat_response', response);
+      
+      // Log the interaction for analytics
+      console.log(`Chat interaction - User: ${message.text} | Bot: ${response.text}`);
+    } catch (error) {
+      console.error('Error handling chat message:', error);
+      socket.emit('chat_error', { error: 'Failed to process your message' });
+    }
+  });
+  
+  // Handle typing indicators
+  socket.on('typing_start', () => {
+    socket.emit('bot_typing', true);
+  });
+  
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
 
 // Use our custom CORS middleware instead of the cors package
 app.use(corsMiddleware);
@@ -109,6 +157,7 @@ app.use('/api/orders', clerkMiddleware, orderRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/users', clerkMiddleware, userRoutes);
 app.use('/api/mpesa', mpesaRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Add a documentation route
 app.get('/api/docs', (req, res) => {
@@ -138,6 +187,12 @@ app.get('/api/docs', (req, res) => {
       '/api/users/verify-admin-code': 'POST - Verify admin code',
       '/api/users/set-admin': 'POST - Set user as admin',
       '/api/users/sync': 'POST - Sync user data with Clerk'
+    },
+    chatbotEndpoints: {
+      '/api/chatbot/train': 'POST - Add training data to the chatbot',
+      '/api/chatbot/feedback': 'POST - Submit feedback about chatbot responses',
+      '/api/chatbot/history': 'GET - Get chat history for a specific user',
+      '/api/chatbot/analytics': 'GET - Get chatbot usage analytics'
     }
   });
 });
@@ -426,7 +481,8 @@ app.get('/api/admin/dashboard', async (req, res) => {
 app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`🔗 M-Pesa callback URL: ${process.env.MPESA_CALLBACK_URL || 'Not configured'}`);
+  console.log(`💬 Chatbot service initialized and ready`);
 });
