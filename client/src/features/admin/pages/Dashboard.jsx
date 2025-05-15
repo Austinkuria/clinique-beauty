@@ -126,6 +126,16 @@ function AdminDashboard() {
         setTimeRange(event.target.value);
     };
     
+    // Get current path for checking active links
+    const location = window.location.pathname;
+    
+    // Helper function to check if a route exists in the router configuration
+    const routeExists = useCallback((path) => {
+        // This is a simplified check - in a real app you might want to 
+        // traverse the router configuration to check this properly
+        return true; // Assuming all routes in buttons exist for now
+    }, []);
+    
     // Always render the same way, regardless of loading or error state
     // This ensures consistent hook ordering
     if (loading || !dashboardData) {
@@ -522,6 +532,7 @@ function AdminDashboard() {
                                     startIcon={<SellersIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
+                                    disabled={!routeExists('/admin/sellers')}
                                 >
                                     Seller Management
                                 </Button>
@@ -535,6 +546,7 @@ function AdminDashboard() {
                                     startIcon={<TrendingUpIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
+                                    disabled={!routeExists('/admin/seller-performance')}
                                 >
                                     Performance Metrics
                                 </Button>
@@ -548,6 +560,7 @@ function AdminDashboard() {
                                     startIcon={<AttachMoney />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
+                                    disabled={!routeExists('/admin/payouts')}
                                 >
                                     Payout Processing
                                 </Button>
@@ -561,6 +574,7 @@ function AdminDashboard() {
                                     startIcon={<CalculateIcon />}
                                     fullWidth
                                     sx={{ py: 1.5 }}
+                                    disabled={!routeExists('/admin/commissions')}
                                 >
                                     Commission Structure
                                 </Button>
@@ -804,7 +818,9 @@ function AdminDashboard() {
                                     '&:hover': {
                                         transform: 'translateY(-5px)',
                                         boxShadow: (theme) => theme.shadows[10],
-                                    }
+                                    },
+                                    opacity: routeExists(link.path) ? 1 : 0.7,
+                                    pointerEvents: routeExists(link.path) ? 'auto' : 'none'
                                 }}
                             >
                                 <Box sx={{ display: 'flex', mb: 2 }}>
@@ -823,6 +839,29 @@ function AdminDashboard() {
                     ))}
                 </Grid>
             </Box>
+            
+            {/* Add helpful debug information - you can remove this in production */}
+            <Paper 
+                elevation={theme === 'dark' ? 3 : 1}
+                sx={{
+                    p: 3,
+                    mt: 4,
+                    bgcolor: colorValues.bgPaper,
+                    borderRadius: 2,
+                }}
+            >
+                <Typography variant="h6" sx={{ mb: 2 }}>Navigation Helper</Typography>
+                <Typography variant="body2">
+                    Current location: {location}
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                    All admin routes are accessible through the sidebar or navigation cards above.
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                    If you're having trouble accessing a specific feature, please check the routes.jsx file 
+                    to ensure the route is properly configured.
+                </Typography>
+            </Paper>
         </Box>
     );
 }
