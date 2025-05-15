@@ -162,30 +162,67 @@ For production deployment of the M-Pesa integration:
 
 ```
 clinique-beauty/
-├── client/                 # React frontend
-│   ├── public/             # Static assets
+├── client/                     # React frontend
+│   ├── public/                 # Static assets and favicon
+│   ├── index.html              # HTML entry point 
+│   ├── vite.config.js          # Vite configuration
 │   └── src/
-│       ├── api/            # API client and service functions
-│       ├── assets/         # Images and static resources
-│       ├── components/     # Reusable UI components
-│       ├── config/         # Configuration files
-│       ├── contexts/       # React context providers
-│       ├── data/           # Mock data for development
-│       ├── hooks/          # Custom React hooks
-│       ├── pages/          # Page components
-│       └── utils/          # Utility functions
+│       ├── api/                # API client and service functions
+│       ├── assets/             # Images, icons, and static resources
+│       │   ├── images/         # Product and UI images
+│       │   └── icons/          # SVG icons
+│       ├── components/         # Reusable UI components
+│       │   ├── auth/           # Authentication related components
+│       │   ├── cart/           # Shopping cart components
+│       │   ├── checkout/       # Checkout flow components
+│       │   ├── common/         # Shared UI elements (buttons, inputs)
+│       │   ├── layout/         # Layout components (header, footer)
+│       │   └── product/        # Product related components
+│       ├── config/             # Configuration files
+│       ├── contexts/           # React context providers
+│       ├── hooks/              # Custom React hooks
+│       ├── pages/              # Page components
+│       │   ├── admin/          # Admin dashboard pages
+│       │   ├── auth/           # Authentication pages
+│       │   ├── cart/           # Cart and checkout pages
+│       │   ├── product/        # Product listing and detail pages
+│       │   └── user/           # User profile and account pages
+│       ├── types/              # TypeScript type definitions
+│       ├── utils/              # Utility functions
+│       ├── App.jsx             # Main app component
+│       └── main.jsx            # Application entry point
 │
-├── server/                 # Express backend
-│   ├── config/             # Server configuration
-│   ├── middleware/         # Express middleware
-│   ├── routes/             # API route handlers
-│   ├── scripts/            # Utility scripts
-│   ├── test/               # Test files
-│   └── utils/              # Server utility functions
+├── server/                     # Express backend
+│   ├── config/                 # Server configuration
+│   │   └── database.js         # Database connection setup
+│   ├── controllers/            # Request handlers
+│   │   ├── productController.js# Product-related controllers
+│   │   ├── orderController.js  # Order-related controllers
+│   │   └── paymentController.js# Payment-related controllers
+│   ├── middleware/             # Express middleware
+│   │   ├── auth.js             # Authentication middleware
+│   │   └── errorHandler.js     # Error handling middleware
+│   ├── models/                 # Data models
+│   ├── routes/                 # API route definitions
+│   │   ├── product.js          # Product routes
+│   │   ├── order.js            # Order routes
+│   │   └── payment.js          # Payment routes
+│   ├── services/               # Business logic
+│   │   └── mpesa.js            # M-Pesa integration service
+│   ├── utils/                  # Server utility functions
+│   ├── .env                    # Environment variables (gitignored)
+│   ├── index.js                # Server entry point
+│   └── package.json            # Server dependencies
 │
-└── docs/                   # Documentation files
-    ├── mpesa-setup.md      # M-Pesa integration guide
-    └── vercel-deployment.md # Deployment guide
+├── docs/                       # Documentation files
+│   ├── api/                    # API documentation
+│   ├── mpesa-setup.md          # M-Pesa integration guide
+│   └── deployment.md           # Deployment guide
+│
+├── .gitignore                  # Git ignore file
+├── package.json                # Root package.json for scripts
+├── README.md                   # Project documentation
+└── pnpm-workspace.yaml         # Workspace configuration
 ```
 
 ## Running the Application Online
