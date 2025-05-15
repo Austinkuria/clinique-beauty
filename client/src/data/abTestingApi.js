@@ -1,8 +1,14 @@
 // Mock API functions for AB Testing features
 import { mockData } from './mockData';
+import { mockAbTestingData } from './mockAbTestingData';
 
 // Simulated delay for API calls
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Initialize the mock data if it doesn't exist
+if (!mockData.abTests) {
+  mockData.abTests = mockAbTestingData.abTests;
+}
 
 /**
  * API client for AB Testing features
