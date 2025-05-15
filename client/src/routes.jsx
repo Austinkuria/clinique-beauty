@@ -45,6 +45,7 @@ import CampaignList from './features/admin/marketing/CampaignList';
 import DiscountCodes from './features/admin/marketing/DiscountCodes';
 import CampaignDetail from './features/admin/marketing/CampaignDetail';
 import EmailCampaigns from './features/admin/marketing/EmailCampaigns';
+import ABTestingTool from './features/admin/marketing/ABTestingTool';
 
 // Lazy-load these components for better performance
 const Login = React.lazy(() => import('./features/auth/Login.jsx'));
@@ -153,7 +154,8 @@ export const router = createBrowserRouter([
                             { path: 'campaigns/:id', element: <CampaignDetail /> },
                             { path: 'campaigns/edit/:id', element: <CampaignDetail /> }, // Add specific route for editing campaigns
                             { path: 'discounts', element: <DiscountCodes /> },
-                            { path: 'email-campaigns', element: <EmailCampaigns /> }
+                            { path: 'email-campaigns', element: <EmailCampaigns /> },
+                            { path: 'ab-testing', element: <ABTestingTool /> } // Add A/B Testing route
                         ]
                     }
                 ]
