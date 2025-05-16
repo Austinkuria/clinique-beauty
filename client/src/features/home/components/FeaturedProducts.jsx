@@ -10,7 +10,9 @@ import {
     CardActions,
     Button,
     Box,
-    CircularProgress // Import CircularProgress for loading state
+    CircularProgress, // Import CircularProgress for loading state
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
 import { useCart } from '../../../context/CartContext';
 import { useApi } from '../../../api/apiClient'; // Import useApi
@@ -23,16 +25,25 @@ function FeaturedProducts() {
     const [loading, setLoading] = useState(true); // State for loading
     const [error, setError] = useState(null); // State for errors
     const [addingItems, setAddingItems] = useState({}); // Track which items are being added
+    const theme = useTheme();
+    const isXsScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
     useEffect(() => {
         const fetchFeatured = async () => {
             setLoading(true);
             setError(null);
             try {
-                // Fetch all products (or modify API if you have a specific 'featured' endpoint)
-                const allProducts = await api.getProducts();
-                // Select the first 3 products as featured (or implement other logic)
-                setFeaturedProducts(allProducts.slice(0, 3));
+                // Try to fetch featured products specifically, if available
+                try {
+                    const featuredData = await api.getFeaturedProducts();
+                    setFeaturedProducts(featuredData);
+                } catch {
+                    // Fallback to getting all products
+                    const allProducts = await api.getProducts();
+                    // Select the first 3-6 products as featured based on screen size
+                    const featuredCount = window.innerWidth < 600 ? 3 : 6;
+                    setFeaturedProducts(allProducts.slice(0, featuredCount));
+                }
             } catch (err) {
                 console.error("Error fetching featured products:", err);
                 setError(err.message || 'Failed to load featured products.');
@@ -43,8 +54,6 @@ function FeaturedProducts() {
 
         fetchFeatured();
     }, [api]); // Dependency array includes api
-
-    // Remove the hardcoded addToCart function, use context's directly
 
     // Handle image errors
     const handleImageError = (e) => {
@@ -75,25 +84,26 @@ function FeaturedProducts() {
     return (
         <Box
             sx={{
-                mt: { xs: -2, md: -4 }, // Negative top margin to reduce space
-                pt: { xs: 3, md: 5 },   // Add some padding inside to maintain internal spacing
-                py: 8,
+                mt: { xs: -1, sm: -2, md: -4 }, // Responsive top margin
+                pt: { xs: 2, sm: 3, md: 5 },   // Responsive internal padding
+                pb: { xs: 4, sm: 6, md: 8 },
                 bgcolor: 'background.default'
             }}
         >
-            <Container>
+            <Container maxWidth="lg">
                 <Typography
                     variant="h3"
                     component="h2"
                     align="center"
                     sx={{
-                        mb: 6,
+                        mb: { xs: 3, sm: 4, md: 6 },
+                        fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' },
                         fontWeight: 600,
                         position: 'relative',
                         '&::after': {
                             content: '""',
                             position: 'absolute',
-                            width: '60px',
+                            width: { xs: '40px', sm: '50px', md: '60px' },
                             height: '3px',
                             bgcolor: 'primary.main',
                             bottom: -2,
@@ -118,10 +128,10 @@ function FeaturedProducts() {
                 )}
 
                 {!loading && !error && (
-                    <Grid container spacing={4}>
-                        {/* Map over featuredProducts state */}
+                    <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
+                        {/* Map over featuredProducts state with more responsive grid sizing */}
                         {featuredProducts.map((product) => (
-                            <Grid item key={product.id} xs={12} sm={6} md={4}>
+                            <Grid item key={product.id} xs={12} sm={6} md={4} lg={4}>
                                 <Card
                                     elevation={2}
                                     sx={{
@@ -130,38 +140,78 @@ function FeaturedProducts() {
                                         flexDirection: 'column',
                                         transition: 'transform 0.3s, box-shadow 0.3s',
                                         '&:hover': {
-                                            transform: 'translateY(-5px)',
-                                            boxShadow: 6
+                                            transform: {
+                                                xs: 'none',
+                                                sm: 'translateY(-5px)'
+                                            },
+                                            boxShadow: {
+                                                xs: 2, 
+                                                sm: 6
+                                            }
                                         }
                                     }}
                                 >
                                     <CardMedia
                                         component="img"
-                                        height="200"
+                                        height={{ xs: '160', sm: '180', md: '200' }}
                                         // Use product.image, provide fallback
                                         image={product.image || defaultProductImage}
                                         alt={product.name}
                                         onError={handleImageError} // Add error handler
+                                        sx={{
+                                            objectFit: 'cover',
+                                            objectPosition: 'center'
+                                        }}
                                     />
-                                    <CardContent sx={{ flexGrow: 1 }}>
-                                        <Typography gutterBottom variant="h5" component="h3">
+                                    <CardContent sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2 } }}>
+                                        <Typography 
+                                            gutterBottom 
+                                            variant="h5" 
+                                            component="h3"
+                                            sx={{ 
+                                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.4rem' } 
+                                            }}
+                                        >
                                             {product.name}
                                         </Typography>
-                                        <Typography variant="body2" color="text.secondary" noWrap> {/* Use noWrap to prevent long descriptions */}
+                                        <Typography 
+                                            variant="body2" 
+                                            color="text.secondary" 
+                                            sx={{
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                height: { xs: '2.5em', sm: '3em' }
+                                            }}
+                                        >
                                             {product.description}
                                         </Typography>
-                                        <Typography variant="h6" color="primary" sx={{ mt: 2 }}>
+                                        <Typography 
+                                            variant="h6" 
+                                            color="primary" 
+                                            sx={{ 
+                                                mt: 2,
+                                                fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' } 
+                                            }}
+                                        >
                                             {/* Ensure price exists and is a number */}
                                             ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
                                         </Typography>
                                     </CardContent>
-                                    <CardActions>
+                                    <CardActions sx={{ 
+                                        p: { xs: 1.5, sm: 2 },
+                                        flexDirection: { xs: 'column', sm: 'row' },
+                                        gap: { xs: 1, sm: 0 }
+                                    }}>
                                         <Button
                                             size="medium"
                                             component={RouterLink}
                                             // Link to the correct product detail page URL structure
                                             to={`/product/${product.id}`}
                                             fullWidth
+                                            sx={{ mb: { xs: 1, sm: 0 } }}
                                         >
                                             View Details
                                         </Button>
@@ -192,6 +242,25 @@ function FeaturedProducts() {
                     <Typography align="center" sx={{ my: 4 }}>
                         No featured products available at the moment.
                     </Typography>
+                )}
+                
+                {/* "View All Products" button at bottom */}
+                {!loading && !error && featuredProducts.length > 0 && (
+                    <Box sx={{ mt: { xs: 3, sm: 4, md: 6 }, textAlign: 'center' }}>
+                        <Button 
+                            component={RouterLink} 
+                            to="/products" 
+                            variant="outlined" 
+                            color="primary"
+                            size={isXsScreen ? "medium" : "large"}
+                            sx={{ 
+                                px: { xs: 3, sm: 4, md: 5 },
+                                py: { xs: 1, md: 1.5 }
+                            }}
+                        >
+                            View All Products
+                        </Button>
+                    </Box>
                 )}
             </Container>
         </Box>
