@@ -40,8 +40,8 @@ function FeaturedProducts() {
                 } catch {
                     // Fallback to getting all products
                     const allProducts = await api.getProducts();
-                    // Select the first 3-6 products as featured based on screen size
-                    const featuredCount = window.innerWidth < 600 ? 3 : 6;
+                    // Select products as featured based on screen size
+                    const featuredCount = window.innerWidth < 600 ? 4 : 8; // Increased count to show more products
                     setFeaturedProducts(allProducts.slice(0, featuredCount));
                 }
             } catch (err) {
@@ -131,8 +131,18 @@ function FeaturedProducts() {
                     <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center">
                         {/* Map over featuredProducts state with improved responsive grid sizing */}
                         {featuredProducts.map((product) => (
-                            <Grid item key={product.id} xs={12} sm={6} md={4} lg={4} 
-                                  sx={{ maxWidth: { xs: '100%', sm: '350px', md: '33.33%' } }}>
+                            <Grid item key={product.id} 
+                                  xs={12} 
+                                  sm={6} 
+                                  md={3} // Changed from md={4} to md={3} for 4 cards per row
+                                  lg={3} // Changed from lg={4} to lg={3} for 4 cards per row
+                                  sx={{ 
+                                      maxWidth: { 
+                                          xs: '100%', 
+                                          sm: '350px', 
+                                          md: '25%'  // Changed from 33.33% to 25% for 4 cards per row
+                                      } 
+                                  }}>
                                 <Card
                                     elevation={2}
                                     sx={{
