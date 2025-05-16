@@ -33,17 +33,10 @@ function FeaturedProducts() {
             setLoading(true);
             setError(null);
             try {
-                // Try to fetch featured products specifically, if available
-                try {
-                    const featuredData = await api.getFeaturedProducts();
-                    setFeaturedProducts(featuredData);
-                } catch {
-                    // Fallback to getting all products
-                    const allProducts = await api.getProducts();
-                    // Select products as featured based on screen size
-                    const featuredCount = window.innerWidth < 600 ? 4 : 8; // Increased count to show more products
-                    setFeaturedProducts(allProducts.slice(0, featuredCount));
-                }
+                // Simplified fetching approach
+                const allProducts = await api.getProducts();
+                const featuredCount = Math.min(allProducts.length, 8);
+                setFeaturedProducts(allProducts.slice(0, featuredCount));
             } catch (err) {
                 console.error("Error fetching featured products:", err);
                 setError(err.message || 'Failed to load featured products.');
@@ -53,6 +46,8 @@ function FeaturedProducts() {
         };
 
         fetchFeatured();
+        
+        // Remove the resize listener to prevent unnecessary re-fetches
     }, [api]); // Dependency array includes api
 
     // Handle image errors
@@ -84,12 +79,13 @@ function FeaturedProducts() {
     return (
         <Box
             sx={{
-                mt: { xs: -1, sm: -2, md: -4 }, // Responsive top margin
-                pt: { xs: 2, sm: 3, md: 5 },   // Responsive internal padding
+                pt: { xs: 4, sm: 5, md: 6 },
                 pb: { xs: 4, sm: 6, md: 8 },
-                bgcolor: 'background.default'
+                bgcolor: 'background.default',
+                width: '100%',
             }}
         >
+            {/* Use a fixed-width container without custom padding */}
             <Container maxWidth="lg">
                 <Typography
                     variant="h3"
@@ -128,81 +124,65 @@ function FeaturedProducts() {
                 )}
 
                 {!loading && !error && (
-                    <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center">
-                        {/* Map over featuredProducts state with improved responsive grid sizing */}
+                    <Grid 
+                        container 
+                        spacing={3}
+                        alignItems="stretch"
+                    >
                         {featuredProducts.map((product) => (
-                            <Grid item key={product.id} 
-                                  xs={12} 
-                                  sm={6} 
-                                  md={3} // Changed from md={4} to md={3} for 4 cards per row
-                                  lg={3} // Changed from lg={4} to lg={3} for 4 cards per row
-                                  sx={{ 
-                                      maxWidth: { 
-                                          xs: '100%', 
-                                          sm: '350px', 
-                                          md: '25%'  // Changed from 33.33% to 25% for 4 cards per row
-                                      } 
-                                  }}>
+                            <Grid 
+                                item 
+                                xs={12} 
+                                sm={6} 
+                                md={3} 
+                                key={product.id}
+                                width={{
+                                    xs: '100%',
+                                    sm: '50%',
+                                    md: '25%'
+                                }}
+                            >
                                 <Card
                                     elevation={2}
                                     sx={{
                                         height: '100%',
-                                        maxWidth: '100%',
-                                        mx: 'auto', // Center the card
                                         display: 'flex',
                                         flexDirection: 'column',
-                                        transition: 'transform 0.3s, box-shadow 0.3s',
+                                        // Simple hover effect
+                                        transition: 'all 0.3s ease',
                                         '&:hover': {
-                                            transform: {
-                                                xs: 'none',
-                                                sm: 'translateY(-5px)'
-                                            },
-                                            boxShadow: {
-                                                xs: 2, 
-                                                sm: 6
-                                            }
+                                            transform: 'translateY(-5px)',
+                                            boxShadow: 4
                                         }
                                     }}
                                 >
                                     <CardMedia
                                         component="img"
                                         sx={{
-                                            height: { xs: '180px', sm: '200px' },
-                                            objectFit: 'cover',
-                                            objectPosition: 'center'
+                                            height: 200,
+                                            objectFit: 'cover'
                                         }}
-                                        // Use product.image, provide fallback
                                         image={product.image || defaultProductImage}
                                         alt={product.name}
-                                        onError={handleImageError} // Add error handler
+                                        onError={handleImageError}
                                     />
-                                    <CardContent sx={{ 
-                                        flexGrow: 1, 
-                                        p: { xs: 1.5, sm: 2 },
-                                        pb: { xs: 0.5, sm: 1 } // Reduce bottom padding
-                                    }}>
+                                    <CardContent sx={{ flexGrow: 1, pb: 1 }}>
                                         <Typography 
                                             gutterBottom 
-                                            variant="h5" 
+                                            variant="h6" 
                                             component="h3"
-                                            sx={{ 
-                                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.4rem' },
-                                                mb: 1
-                                            }}
+                                            sx={{ fontWeight: 600 }}
                                         >
                                             {product.name}
                                         </Typography>
                                         <Typography 
                                             variant="body2" 
-                                            color="text.secondary" 
+                                            color="text.secondary"
                                             sx={{
                                                 display: '-webkit-box',
                                                 WebkitLineClamp: 2,
                                                 WebkitBoxOrient: 'vertical',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                height: { xs: '2.5em', sm: '3em' },
-                                                mb: 1
+                                                overflow: 'hidden'
                                             }}
                                         >
                                             {product.description}
@@ -210,30 +190,16 @@ function FeaturedProducts() {
                                         <Typography 
                                             variant="h6" 
                                             color="primary" 
-                                            sx={{ 
-                                                mt: 1,
-                                                fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' } 
-                                            }}
+                                            sx={{ mt: 2 }}
                                         >
-                                            {/* Ensure price exists and is a number */}
                                             ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
                                         </Typography>
                                     </CardContent>
-                                    <CardActions sx={{ 
-                                        p: { xs: 1.5, sm: 2 },
-                                        pt: { xs: 0.5, sm: 1 }, // Reduce top padding
-                                        flexDirection: { xs: 'column', sm: 'row' },
-                                        gap: { xs: 1, sm: 1 },
-                                        justifyContent: 'space-between'
-                                    }}>
-                                        <Button
-                                            size="small"
-                                            component={RouterLink}
+                                    <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
+                                        <Button 
+                                            size="small" 
+                                            component={RouterLink} 
                                             to={`/product/${product.id}`}
-                                            sx={{ 
-                                                width: { xs: '100%', sm: '48%' },
-                                                py: { xs: 0.5, sm: 0.75 }
-                                            }}
                                         >
                                             View Details
                                         </Button>
@@ -243,14 +209,10 @@ function FeaturedProducts() {
                                             variant="contained"
                                             onClick={() => handleAddToCart(product)}
                                             disabled={addingItems[product.id]}
-                                            sx={{ 
-                                                width: { xs: '100%', sm: '48%' },
-                                                py: { xs: 0.5, sm: 0.75 }
-                                            }}
                                         >
                                             {addingItems[product.id] ? (
-                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <CircularProgress size={16} sx={{ color: 'white', mr: 1 }} />
+                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                    <CircularProgress size={16} sx={{ mr: 1 }} />
                                                     Adding...
                                                 </Box>
                                             ) : (
@@ -271,17 +233,13 @@ function FeaturedProducts() {
                 
                 {/* "View All Products" button at bottom */}
                 {!loading && !error && featuredProducts.length > 0 && (
-                    <Box sx={{ mt: { xs: 3, sm: 4, md: 6 }, textAlign: 'center' }}>
+                    <Box sx={{ mt: 6, textAlign: 'center' }}>
                         <Button 
                             component={RouterLink} 
                             to="/products" 
                             variant="outlined" 
                             color="primary"
                             size={isXsScreen ? "medium" : "large"}
-                            sx={{ 
-                                px: { xs: 3, sm: 4, md: 5 },
-                                py: { xs: 1, md: 1.5 }
-                            }}
                         >
                             View All Products
                         </Button>
