@@ -126,102 +126,111 @@ function FeaturedProducts() {
                 {!loading && !error && (
                     <Grid 
                         container 
-                        spacing={3}
+                        spacing={2}
                         alignItems="stretch"
+                        sx={{ 
+                            width: '100%', 
+                            margin: '0 auto',
+                            display: 'grid',
+                            gridTemplateColumns: {
+                                xs: '1fr', // 1 card per row on extra small screens
+                                sm: 'repeat(2, 1fr)', // 2 cards per row on small screens
+                                md: 'repeat(4, 1fr)' // 4 cards per row on medium and larger screens
+                            },
+                            gap: 2 // Consistent gap
+                        }}
                     >
                         {featuredProducts.map((product) => (
-                            <Grid 
-                                item 
-                                xs={12} 
-                                sm={6} 
-                                md={3} 
+                            <Card
                                 key={product.id}
-                                width={{
-                                    xs: '100%',
-                                    sm: '50%',
-                                    md: '25%'
+                                elevation={2}
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    height: '100%',
+                                    // Simple hover effect
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-5px)',
+                                        boxShadow: 4
+                                    }
                                 }}
                             >
-                                <Card
-                                    elevation={2}
+                                <CardMedia
+                                    component="img"
                                     sx={{
-                                        height: '100%',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        // Simple hover effect
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            transform: 'translateY(-5px)',
-                                            boxShadow: 4
-                                        }
+                                        height: 120,
+                                        objectFit: 'cover'
                                     }}
-                                >
-                                    <CardMedia
-                                        component="img"
-                                        sx={{
-                                            height: 200,
-                                            objectFit: 'cover'
+                                    image={product.image || defaultProductImage}
+                                    alt={product.name}
+                                    onError={handleImageError}
+                                />
+                                <CardContent sx={{ 
+                                    flexGrow: 1, 
+                                    p: 1.25, // Reduce padding even more
+                                    '&:last-child': { pb: 1.25 } // Override MUI's default
+                                }}>
+                                    <Typography 
+                                        variant="subtitle1" 
+                                        component="h3"
+                                        sx={{ 
+                                            fontWeight: 600, 
+                                            mb: 0.5,
+                                            fontSize: '0.9rem', // Even smaller title
+                                            lineHeight: 1.3
                                         }}
-                                        image={product.image || defaultProductImage}
-                                        alt={product.name}
-                                        onError={handleImageError}
-                                    />
-                                    <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-                                        <Typography 
-                                            gutterBottom 
-                                            variant="h6" 
-                                            component="h3"
-                                            sx={{ fontWeight: 600 }}
-                                        >
-                                            {product.name}
-                                        </Typography>
-                                        <Typography 
-                                            variant="body2" 
-                                            color="text.secondary"
-                                            sx={{
-                                                display: '-webkit-box',
-                                                WebkitLineClamp: 2,
-                                                WebkitBoxOrient: 'vertical',
-                                                overflow: 'hidden'
-                                            }}
-                                        >
-                                            {product.description}
-                                        </Typography>
-                                        <Typography 
-                                            variant="h6" 
-                                            color="primary" 
-                                            sx={{ mt: 2 }}
-                                        >
-                                            ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
-                                        </Typography>
-                                    </CardContent>
-                                    <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
-                                        <Button 
-                                            size="small" 
-                                            component={RouterLink} 
-                                            to={`/product/${product.id}`}
-                                        >
-                                            View Details
-                                        </Button>
-                                        <Button
-                                            size="small"
-                                            color="primary"
-                                            variant="contained"
-                                            onClick={() => handleAddToCart(product)}
-                                            disabled={addingItems[product.id]}
-                                        >
-                                            {addingItems[product.id] ? (
-                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    <CircularProgress size={16} sx={{ mr: 1 }} />
-                                                    Adding...
-                                                </Box>
-                                            ) : (
-                                                'Add to Cart'
-                                            )}
-                                        </Button>
-                                    </CardActions>
-                                </Card>
-                            </Grid>
+                                    >
+                                        {product.name}
+                                    </Typography>
+                                    <Typography 
+                                        variant="body2" 
+                                        color="text.secondary"
+                                        sx={{
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            fontSize: '0.8rem', // Smaller text
+                                            lineHeight: 1.4
+                                        }}
+                                    >
+                                        {product.description}
+                                    </Typography>
+                                    <Typography 
+                                        variant="h6" 
+                                        color="primary" 
+                                        sx={{ mt: 2 }}
+                                    >
+                                        Ksh {typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
+                                    </Typography>
+                                </CardContent>
+                                <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
+                                    <Button 
+                                        size="small" 
+                                        component={RouterLink} 
+                                        to={`/product/${product.id}`}
+                                    >
+                                        View Details
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        color="primary"
+                                        variant="contained"
+                                        onClick={() => handleAddToCart(product)}
+                                        disabled={addingItems[product.id]}
+                                    >
+                                        {addingItems[product.id] ? (
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <CircularProgress size={16} sx={{ mr: 1 }} />
+                                                Adding...
+                                            </Box>
+                                        ) : (
+                                            'Add to Cart'
+                                        )}
+                                    </Button>
+                                </CardActions>
+                            </Card>
                         ))}
                     </Grid>
                 )}
