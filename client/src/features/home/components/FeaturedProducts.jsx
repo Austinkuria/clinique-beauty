@@ -135,9 +135,11 @@ function FeaturedProducts() {
                             gridTemplateColumns: {
                                 xs: '1fr', // 1 card per row on extra small screens
                                 sm: 'repeat(2, 1fr)', // 2 cards per row on small screens
-                                md: 'repeat(4, 1fr)' // 4 cards per row on medium and larger screens
+                                md: 'repeat(3, 1fr)', // Changed to 3 cards per row on medium screens
+                                lg: 'repeat(4, 1fr)' // 4 cards only on large screens
                             },
-                            gap: 2 // Consistent gap
+                            gap: '24px 16px', // Increased gap for better spacing
+                            mb: 4 // Increased margin bottom for spacing
                         }}
                     >
                         {featuredProducts.map((product) => (
@@ -148,6 +150,7 @@ function FeaturedProducts() {
                                     display: 'flex',
                                     flexDirection: 'column',
                                     height: '100%',
+                                    mb: 2.5, // Increased margin bottom for each card
                                     // Simple hover effect
                                     transition: 'all 0.3s ease',
                                     '&:hover': {
@@ -159,7 +162,7 @@ function FeaturedProducts() {
                                 <CardMedia
                                     component="img"
                                     sx={{
-                                        height: 120,
+                                        height: 150,
                                         objectFit: 'cover'
                                     }}
                                     image={product.image || defaultProductImage}
