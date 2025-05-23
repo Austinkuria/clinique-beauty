@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT NOT NULL,
     category TEXT NOT NULL,
     subcategory TEXT,
+    sku TEXT UNIQUE, -- Added SKU column, ensuring it's unique
+    status TEXT NOT NULL DEFAULT 'active', -- Added status column
+    approval_status TEXT NOT NULL DEFAULT 'pending', -- Added approval_status column
+    featured BOOLEAN NOT NULL DEFAULT FALSE, -- Added featured column
     stock INTEGER NOT NULL DEFAULT 0,
     rating NUMERIC DEFAULT 0,
     benefits JSONB,

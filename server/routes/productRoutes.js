@@ -1,6 +1,26 @@
 import express from 'express';
+import multer from 'multer';
+import { createProduct } from '../controllers/productController.js';
+import { supabase } from '../config/db.js'; // Ensure Supabase is initialized
 
 const router = express.Router();
+
+// Multer configuration for image uploads
+// Store in memory to pass buffer to Supabase
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+  fileFilter: (req, file, cb) => {
+    // Basic image type validation
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only images are allowed.'), false);
+    }
+  }
+});
 
 // Get all products
 router.get('/', async (req, res) => {
@@ -64,5 +84,9 @@ router.get('/:id', async (req, res) => {
     });
   }
 });
+
+// POST new product - Protected by admin middleware (to be added)
+// For now, ensure this route is only accessible by authenticated admins
+router.post('/', upload.single('image'), createProduct);
 
 export default router;

@@ -12,7 +12,6 @@ import { syncUserToSupabase } from './services/userSyncService';
 import { toast } from 'react-hot-toast';
 import { handleApiError } from './components/ErrorHandler';
 import { AdminProvider } from './context/AdminContext';
-import ChatWidget from './components/Chat/ChatWidget';
 
 function App() {
   const { muiTheme } = useContext(ThemeContext);
@@ -72,7 +71,6 @@ function App() {
             }>
               <Outlet />
             </Suspense>
-            <ChatWidget />
           </AdminProvider>
         </WishlistProvider>
       </CartProvider>

@@ -224,7 +224,7 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     // API_BASE_URL should now correctly point to the Supabase function
     const url = `${API_BASE_URL}${cleanEndpoint}`;
-    const headers = new Headers({ 'Content-Type': 'application/json' }); // Initialize as Headers object
+    const headers = new Headers(); // Initialize empty, Content-Type will be set conditionally
     let token = null;
 
     // --- Add Logging Here ---
@@ -274,7 +274,13 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
             headers: headers, // Pass the Headers object
         };
         if (body) {
-            config.body = JSON.stringify(body);
+            if (body instanceof FormData) {
+                config.body = body;
+                // DO NOT set 'Content-Type' for FormData, browser handles it.
+            } else {
+                headers.set('Content-Type', 'application/json'); // Set for non-FormData
+                config.body = JSON.stringify(body);
+            }
         }
 
         // --- ADJUST LOGGING BEFORE FETCH ---
@@ -839,6 +845,11 @@ import mockDashboardData from '../data/mockDashboardData';
 export const api = {
     getProducts,
     getProductById,
+    createProduct: async (formData) => {
+        // The endpoint '/products' will be appended to API_BASE_URL.
+        // true indicates that authentication is required.
+        return _request('POST', '/products', formData, true);
+    },
     // Updated cart methods
     getCart,
     addToCart,
@@ -847,6 +858,12 @@ export const api = {
     clearCart,
     // Helper function for components
     formatCartItem,
+    // Add createProduct method
+    createProduct: async (formData) => {
+        // Endpoint is /products, as API_BASE_URL handles the /api prefix.
+        // This assumes the backend route is POST /api/products and requires authentication.
+        return _request('POST', '/products', formData, true);
+    },
     // ... other existing methods
     updateUserRole,
     syncUser,

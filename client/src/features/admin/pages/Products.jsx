@@ -123,28 +123,51 @@ function AdminProducts() {
     const [tagDialogOpen, setTagDialogOpen] = useState(false);
     const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
     const [selectedProductApproval, setSelectedProductApproval] = useState(null);
+    const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
+    const [newProductData, setNewProductData] = useState({
+        name: '',
+        description: '',
+        price: '',
+        category: '',
+        subcategory: '',
+        brand: '',
+        sku: '',
+        stockQuantity: '', // Changed from stock_quantity
+        tags: [],
+        meta_title: '',
+        meta_description: '',
+        meta_keywords: '',
+        image: null,
+    });
+    const [imagePreview, setImagePreview] = useState(null);
     
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                // In a real app, you would fetch data from your API
-                // const data = await api.getAdminProducts();
-                // setProducts(data);
-                
-                // For now, we'll use mock data with a loading simulation
-                setTimeout(() => {
-                    setProducts(mockAdminProducts);
-                    setLoading(false);
-                }, 1000);
+                // Fetch data from your API
+                const data = await api.getProducts(); // Assuming api.getProducts() is the correct method
+                if (data) {
+                    setProducts(data);
+                } else {
+                    setProducts([]); // Set to empty array if data is null/undefined
+                    console.warn('fetchProducts: Received null or undefined data from api.getProducts()');
+                }
             } catch (error) {
                 console.error('Error fetching products:', error);
+                setProducts([]); // Set to empty array on error
+                setSnackbar({
+                    open: true,
+                    message: `Error fetching products: ${error.message}`,
+                    severity: 'error'
+                });
+            } finally {
                 setLoading(false);
             }
         };
         
         fetchProducts();
-    }, [api]);
+    }, [api]); // api should be a stable reference from useApi()
     
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -392,12 +415,111 @@ function AdminProducts() {
         setSnackbar({ ...snackbar, open: false });
     };
 
+    const handleOpenAddProductDialog = () => {
+        setAddProductDialogOpen(true);
+    };
+
+    const handleCloseAddProductDialog = () => {
+        setAddProductDialogOpen(false);
+        // Reset form data and image preview
+        setNewProductData({
+            name: '',
+            description: '',
+            price: '',
+            category: '',
+            subcategory: '',
+            brand: '',
+            sku: '',
+            stockQuantity: '', // Changed from stock_quantity
+            tags: [],
+            meta_title: '',
+            meta_description: '',
+            meta_keywords: '',
+            image: null,
+        });
+        setImagePreview(null);
+    };
+
+    const handleNewProductChange = (event) => {
+        const { name, value } = event.target;
+        setNewProductData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleNewProductTagsChange = (event, newValue) => {
+        setNewProductData(prev => ({ ...prev, tags: newValue }));
+    };
+    
+    const handleImageChange = (event) => {
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            setNewProductData(prev => ({ ...prev, image: file }));
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setNewProductData(prev => ({ ...prev, image: null }));
+        setImagePreview(null);
+        // Reset the file input
+        const fileInput = document.getElementById('add-product-image-upload');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    };
+
+    const handleSaveNewProduct = async () => {
+        // Corrected stockQuantity to match the state
+        if (!newProductData.name || !newProductData.price || !newProductData.category || !newProductData.brand || !newProductData.stockQuantity || !newProductData.image) {
+            alert('Please fill in all required fields and select an image.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('name', newProductData.name);
+        formData.append('description', newProductData.description);
+        formData.append('price', newProductData.price);
+        formData.append('category', newProductData.category);
+        formData.append('brand', newProductData.brand);
+        // Corrected stockQuantity to match the state and backend expectation if it differs
+        formData.append('stockQuantity', newProductData.stockQuantity); 
+        formData.append('tags', JSON.stringify(newProductData.tags)); // Assuming tags are an array of strings
+        formData.append('image', newProductData.image); // The File object
+        if (newProductData.sku) formData.append('sku', newProductData.sku);
+        if (newProductData.weight) formData.append('weight', newProductData.weight);
+        if (newProductData.dimensions) formData.append('dimensions', newProductData.dimensions);
+        if (newProductData.color) formData.append('color', newProductData.color);
+        if (newProductData.material) formData.append('material', newProductData.material);
+        if (newProductData.manufacturer) formData.append('manufacturer', newProductData.manufacturer);
+        if (newProductData.releaseDate) formData.append('releaseDate', newProductData.releaseDate);
+
+        try {
+            console.log("Products.jsx: Attempting to create product with formData:", Object.fromEntries(formData.entries()));
+            // Use the apiClient to create the product
+            const response = await api.createProduct(formData);
+            console.log("Products.jsx: Product created successfully:", response);
+
+            // Assuming the response contains the newly created product data
+            // You might want to update your local state or refetch products here
+            // For now, just log and close the dialog
+            // Example: dispatch(fetchProducts()); // If using Redux or similar
+
+            handleCloseAddProductDialog();
+            // Optionally, refresh the product list or show a success message
+            alert('Product added successfully!'); 
+            // TODO: Refresh product list - for now, we can manually refresh or implement a fetchProducts call
+
+        } catch (error) {
+            console.error('Products.jsx: Error creating product:', error);
+            alert(`Failed to add product: ${error.message}`);
+        }
+    };
+
     // Filter and search products
     const filteredProducts = products.filter(product => {
         const matchesSearch = search === '' || 
-            product.name.toLowerCase().includes(search.toLowerCase()) ||
-            product.category.toLowerCase().includes(search.toLowerCase()) ||
-            product.sku.toLowerCase().includes(search.toLowerCase());
+            (product.name && product.name.toLowerCase().includes(search.toLowerCase())) ||
+            (product.category && product.category.toLowerCase().includes(search.toLowerCase())) ||
+            (product.sku && product.sku.toLowerCase().includes(search.toLowerCase())); // Safely access SKU
             
         const matchesCategory = filterCategory === '' || product.category === filterCategory;
         const matchesStatus = filterStatus === '' || product.status === filterStatus;
@@ -438,6 +560,7 @@ function AdminProducts() {
                         variant="contained"
                         color="primary"
                         startIcon={<AddIcon />}
+                        onClick={handleOpenAddProductDialog} // <-- Connect button to open dialog
                         sx={{
                             borderRadius: '8px',
                             textTransform: 'none',
@@ -1322,6 +1445,231 @@ function AdminProducts() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseApprovalDialog}>Cancel</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Add New Product Dialog */}
+            <Dialog
+                open={addProductDialogOpen}
+                onClose={handleCloseAddProductDialog}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>Add New Product</DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={3} sx={{ mt: 1 }}>
+                        <Grid item xs={12} md={8}>
+                            <TextField
+                                fullWidth
+                                label="Product Name"
+                                name="name"
+                                value={newProductData.name}
+                                onChange={handleNewProductChange}
+                                variant="outlined"
+                                required
+                                sx={{ mb: 2 }}
+                            />
+                            <TextField
+                                fullWidth
+                                label="Description"
+                                name="description"
+                                value={newProductData.description}
+                                onChange={handleNewProductChange}
+                                variant="outlined"
+                                multiline
+                                rows={4}
+                                required
+                                sx={{ mb: 2 }}
+                            />
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Price"
+                                        name="price"
+                                        type="number"
+                                        value={newProductData.price}
+                                        onChange={handleNewProductChange}
+                                        variant="outlined"
+                                        required
+                                        InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Stock Quantity"
+                                        name="stock_quantity"
+                                        type="number"
+                                        value={newProductData.stock_quantity}
+                                        onChange={handleNewProductChange}
+                                        variant="outlined"
+                                        required
+                                    />
+                                </Grid>
+                            </Grid>
+                             <Grid container spacing={2} sx={{ mb: 2 }}>
+                                <Grid item xs={12} sm={6}>
+                                    <FormControl fullWidth required>
+                                        <InputLabel id="add-product-category-label">Category</InputLabel>
+                                        <Select
+                                            labelId="add-product-category-label"
+                                            name="category"
+                                            value={newProductData.category}
+                                            onChange={handleNewProductChange}
+                                            label="Category"
+                                        >
+                                            {/* Assuming 'categories' is available in this component's scope */}
+                                            {/* You might need to fetch or pass categories */}
+                                            {categories.map((cat) => (
+                                                <MenuItem key={cat.id} value={cat.name}>
+                                                    {cat.name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Subcategory (Optional)"
+                                        name="subcategory"
+                                        value={newProductData.subcategory}
+                                        onChange={handleNewProductChange}
+                                        variant="outlined"
+                                    />
+                                </Grid>
+                            </Grid>
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Brand (Optional)"
+                                        name="brand"
+                                        value={newProductData.brand}
+                                        onChange={handleNewProductChange}
+                                        variant="outlined"
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="SKU (Optional)"
+                                        name="sku"
+                                        value={newProductData.sku}
+                                        onChange={handleNewProductChange}
+                                        variant="outlined"
+                                    />
+                                </Grid>
+                            </Grid>
+                            {/* Using Autocomplete for tags if available, or simple TextField */}
+                            <TextField 
+                                fullWidth
+                                label="Tags (comma-separated)"
+                                name="tags"
+                                value={newProductData.tags.join(',')} // Display as string
+                                onChange={(e) => setNewProductData(prev => ({ ...prev, tags: e.target.value.split(',').map(t => t.trim()) }))}
+                                variant="outlined"
+                                helperText="Enter tags separated by commas"
+                                sx={{ mb: 2 }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <Typography variant="subtitle1" gutterBottom>Product Image</Typography>
+                            <Box
+                                sx={{
+                                    border: '2px dashed',
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                    p: 2,
+                                    textAlign: 'center',
+                                    mb: 2,
+                                    minHeight: 150,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexDirection: 'column',
+                                    position: 'relative'
+                                }}
+                            >
+                                {imagePreview ? (
+                                    <>
+                                        <Avatar
+                                            src={imagePreview}
+                                            alt="Product Preview"
+                                            variant="rounded"
+                                            sx={{ width: 120, height: 120, mb: 1 }}
+                                        />
+                                        <Button onClick={handleRemoveImage} size="small" color="error">
+                                            Remove Image
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Typography color="textSecondary">Image Preview</Typography>
+                                )}
+                            </Box>
+                            <Button
+                                variant="outlined"
+                                component="label"
+                                fullWidth
+                                startIcon={<CloudUploadIcon />}
+                            >
+                                Upload Image
+                                <input
+                                    id="add-product-image-upload"
+                                    type="file"
+                                    hidden
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                />
+                            </Button>
+                        </Grid>
+                         <Grid item xs={12}>
+                            <Typography variant="h6" gutterBottom sx={{mt: 2}}>SEO (Optional)</Typography>
+                            <TextField
+                                fullWidth
+                                label="Meta Title"
+                                name="meta_title"
+                                value={newProductData.meta_title}
+                                onChange={handleNewProductChange}
+                                variant="outlined"
+                                sx={{ mb: 2 }}
+                                helperText="If empty, product name will be used."
+                            />
+                            <TextField
+                                fullWidth
+                                label="Meta Description"
+                                name="meta_description"
+                                value={newProductData.meta_description}
+                                onChange={handleNewProductChange}
+                                variant="outlined"
+                                multiline
+                                rows={3}
+                                sx={{ mb: 2 }}
+                                helperText="If empty, the start of the product description will be used."
+                            />
+                            <TextField
+                                fullWidth
+                                label="Meta Keywords (comma-separated)"
+                                name="meta_keywords"
+                                value={newProductData.meta_keywords}
+                                onChange={handleNewProductChange}
+                                variant="outlined"
+                                helperText="Enter relevant keywords separated by commas."
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseAddProductDialog}>Cancel</Button>
+                    <Button 
+                        onClick={handleSaveNewProduct} 
+                        variant="contained" 
+                        color="primary"
+                        disabled={loading || !newProductData.name || !newProductData.description || !newProductData.price || !newProductData.category || !newProductData.stock_quantity}
+                    >
+                        {loading ? <CircularProgress size={24} /> : 'Save Product'}
+                    </Button>
                 </DialogActions>
             </Dialog>
             
