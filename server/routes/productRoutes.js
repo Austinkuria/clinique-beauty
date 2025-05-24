@@ -89,4 +89,24 @@ router.get('/:id', async (req, res) => {
 // For now, ensure this route is only accessible by authenticated admins
 router.post('/', upload.single('image'), createProduct);
 
+// POST /api/admin/products/import - Route for importing products from CSV
+router.post('/admin/products/import', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded.' });
+        }
+
+        // Placeholder for CSV processing logic
+        console.log('File uploaded for import:', req.file.originalname);
+        // TODO: Add logic to parse CSV, validate data, and interact with database
+        // For now, just return a success message
+
+        res.status(200).json({ message: 'File uploaded successfully. Product import started.' });
+
+    } catch (error) {
+        console.error('Error importing products:', error);
+        res.status(500).json({ message: 'Error importing products.', error: error.message });
+    }
+});
+
 export default router;

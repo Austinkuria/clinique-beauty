@@ -960,7 +960,8 @@ export const api = {
         if (!(formData instanceof FormData)) {
             throw new Error("Invalid data format for product import. Expected FormData.");
         }
-        return await _request('POST', '/api/admin/products/import', formData, true);
+        // Corrected endpoint: removed leading '/api' as API_BASE_URL should handle it.
+        return await _request('POST', '/admin/products/import', formData, true);
     },
 };
 
