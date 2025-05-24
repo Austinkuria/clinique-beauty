@@ -66,11 +66,32 @@ export const useAdminApi = () => {
     return fetchWithAuth(`/api/admin/products?${queryParams}`);
   };
   
-  const createProduct = async (productData) => {
+  const createProductWithJson = async (productData) => { // Renamed
     return fetchWithAuth('/api/admin/products', {
       method: 'POST',
       body: JSON.stringify(productData)
     });
+  };
+
+  const importProducts = async (formData) => { // New function for FormData
+    if (!(formData instanceof FormData)) {
+      console.error("useAdminApi.importProducts expects FormData.");
+      throw new Error("Invalid data format for product import. Expected a file (FormData).");
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      // Use _request directly for FormData to ensure correct Content-Type handling and auth
+      // The endpoint should be your server's endpoint for bulk product import from a file.
+      const result = await _request('POST', '/api/admin/products/import', formData, true);
+      return result;
+    } catch (err) {
+      setError(err.message || 'An error occurred during product import.');
+      // console.error("Error in importProducts:", err); // Keep for debugging if needed
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
   
   const updateProduct = async (productId, productData) => {
@@ -114,7 +135,8 @@ export const useAdminApi = () => {
     updateUserRole,
     // Products
     getProducts,
-    createProduct,
+    createProduct: createProductWithJson, // Updated name
+    importProducts, // Added new import function
     updateProduct,
     deleteProduct,
     // Orders
@@ -933,7 +955,13 @@ export const api = {
     },
     activateUser: async (userId) => {
       // Implementation for activating a user
-    }
+    },
+    importProducts: async (formData) => { // Exposing importProducts via global api object as well
+        if (!(formData instanceof FormData)) {
+            throw new Error("Invalid data format for product import. Expected FormData.");
+        }
+        return await _request('POST', '/api/admin/products/import', formData, true);
+    },
 };
 
 // Helper function to generate mock users for development

@@ -124,6 +124,12 @@ function AdminProducts() {
     const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
     const [selectedProductApproval, setSelectedProductApproval] = useState(null);
     const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
+    const [uploadedFile, setUploadedFile] = useState(null);
+    const [importOptions, setImportOptions] = useState({
+        updateExisting: false,
+        skipErrors: false,
+        sendNotification: false,
+    });
     const [newProductData, setNewProductData] = useState({
         name: '',
         description: '',
@@ -324,16 +330,73 @@ function AdminProducts() {
 
     const handleUploadDialogClose = () => {
         setUploadDialogOpen(false);
+        setUploadedFile(null); // Reset file on close
+        setImportOptions({ // Reset options on close
+            updateExisting: false,
+            skipErrors: false,
+            sendNotification: false,
+        });
     };
 
-    const handleUploadProducts = () => {
-        // In a real app, you would handle the file upload and processing
-        setUploadDialogOpen(false);
-        setSnackbar({
-            open: true,
-            message: 'Products uploaded successfully',
-            severity: 'success'
-        });
+    const handleFileChange = (event) => {
+        console.log('[AdminProducts] handleFileChange triggered.');
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            console.log('[AdminProducts] File selected:', file);
+            console.log('[AdminProducts] File name:', file.name);
+            setUploadedFile(file);
+        } else {
+            console.log('[AdminProducts] No file selected or files array empty.');
+            setUploadedFile(null);
+        }
+    };
+
+    // Add this log to see the state on re-renders
+    console.log('[AdminProducts] Rendering, uploadedFile state:', uploadedFile);
+
+    const handleImportOptionChange = (event) => {
+        setImportOptions(prev => ({ ...prev, [event.target.name]: event.target.checked }));
+    };
+
+    const handleUploadProducts = async () => {
+        if (!uploadedFile) {
+            setSnackbar({
+                open: true,
+                message: 'Please select a file to upload.',
+                severity: 'error',
+            });
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', uploadedFile);
+        formData.append('updateExisting', importOptions.updateExisting);
+        formData.append('skipErrors', importOptions.skipErrors);
+        formData.append('sendNotification', importOptions.sendNotification);
+
+        setLoading(true);
+        try {
+            const response = await api.importProducts(formData); // We will add this to apiClient.js
+
+            setSnackbar({
+                open: true,
+                message: response.message || 'Products imported successfully!', // Use actual response message
+                severity: 'success',
+            });
+            handleUploadDialogClose();
+            // Optionally, refresh the product list:
+            // const data = await api.getProducts();
+            // if (data) setProducts(data);
+        } catch (error) {
+            console.error('Error importing products:', error);
+            setSnackbar({
+                open: true,
+                message: `Error importing products: ${error.message || 'Unknown error'}`,
+                severity: 'error',
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleOpenSeoDialog = (product) => {
@@ -1131,8 +1194,8 @@ function AdminProducts() {
                             accept=".csv,.xlsx,.xls"
                             style={{ display: 'none' }}
                             id="raised-button-file"
-                            multiple
                             type="file"
+                            onChange={handleFileChange} // Added onChange handler
                         />
                         <label htmlFor="raised-button-file">
                             <Button
@@ -1147,11 +1210,32 @@ function AdminProducts() {
                             Or drop files here
                         </Typography>
                     </Box>
+
+                    {/* Display selected file name and clear button */}
+                    {uploadedFile && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                            <Typography variant="body1" sx={{ mr: 1 }}>
+                                Selected: {uploadedFile.name}
+                            </Typography>
+                            <Chip
+                                label="Clear"
+                                onClick={() => {
+                                    setUploadedFile(null);
+                                    const fileInput = document.getElementById('raised-button-file');
+                                    if (fileInput) {
+                                        fileInput.value = ''; // Reset the actual file input
+                                    }
+                                }}
+                                size="small"
+                            />
+                        </Box>
+                    )}
                     
                     <Button
                         variant="outlined"
                         startIcon={<CloudDownloadIcon />}
                         sx={{ mb: 2 }}
+                        // onClick={handleDownloadTemplate} // Placeholder for download template functionality
                     >
                         Download Template
                     </Button>
@@ -1164,19 +1248,19 @@ function AdminProducts() {
                             <Grid container spacing={2}>
                                 <Grid item xs={12}>
                                     <FormControlLabel
-                                        control={<Checkbox defaultChecked />}
+                                        control={<Checkbox name="updateExisting" checked={importOptions.updateExisting} onChange={handleImportOptionChange} />}
                                         label="Update existing products if SKU matches"
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
                                     <FormControlLabel
-                                        control={<Checkbox defaultChecked />}
+                                        control={<Checkbox name="skipErrors" checked={importOptions.skipErrors} onChange={handleImportOptionChange} />}
                                         label="Skip rows with errors"
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
                                     <FormControlLabel
-                                        control={<Checkbox />}
+                                        control={<Checkbox name="sendNotification" checked={importOptions.sendNotification} onChange={handleImportOptionChange} />}
                                         label="Send email notification when import is complete"
                                     />
                                 </Grid>
@@ -1190,8 +1274,9 @@ function AdminProducts() {
                         onClick={handleUploadProducts} 
                         variant="contained" 
                         color="primary"
+                        disabled={!uploadedFile || loading} // Disable if no file or loading
                     >
-                        Import
+                        {loading ? <CircularProgress size={24} /> : 'Import'}
                     </Button>
                 </DialogActions>
             </Dialog>
