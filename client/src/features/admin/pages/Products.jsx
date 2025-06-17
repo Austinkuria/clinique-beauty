@@ -479,11 +479,10 @@ function AdminProducts() {
 
     const handleOpenAddProductDialog = () => {
         setAddProductDialogOpen(true);
-    };
-
-    const handleCloseAddProductDialog = () => {
+    };    const handleCloseAddProductDialog = () => {
         setAddProductDialogOpen(false);
-        // Reset form data and image preview        setNewProductData({
+        // Reset form data and image preview
+        setNewProductData({
             name: '',
             description: '',
             price: '',
