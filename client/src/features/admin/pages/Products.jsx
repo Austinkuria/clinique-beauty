@@ -129,8 +129,7 @@ function AdminProducts() {
         updateExisting: false,
         skipErrors: false,
         sendNotification: false,
-    });
-    const [newProductData, setNewProductData] = useState({
+    });    const [newProductData, setNewProductData] = useState({
         name: '',
         description: '',
         price: '',
@@ -138,7 +137,7 @@ function AdminProducts() {
         subcategory: '',
         brand: '',
         sku: '',
-        stockQuantity: '', // Changed from stock_quantity
+        stock_quantity: '', // Changed to match form field name
         tags: [],
         meta_title: '',
         meta_description: '',
@@ -484,8 +483,7 @@ function AdminProducts() {
 
     const handleCloseAddProductDialog = () => {
         setAddProductDialogOpen(false);
-        // Reset form data and image preview
-        setNewProductData({
+        // Reset form data and image preview        setNewProductData({
             name: '',
             description: '',
             price: '',
@@ -493,7 +491,7 @@ function AdminProducts() {
             subcategory: '',
             brand: '',
             sku: '',
-            stockQuantity: '', // Changed from stock_quantity
+            stock_quantity: '', // Changed to match form field name
             tags: [],
             meta_title: '',
             meta_description: '',
@@ -528,23 +526,20 @@ function AdminProducts() {
         if (fileInput) {
             fileInput.value = '';
         }
-    };
-
-    const handleSaveNewProduct = async () => {
-        // Corrected stockQuantity to match the state
-        if (!newProductData.name || !newProductData.price || !newProductData.category || !newProductData.brand || !newProductData.stockQuantity || !newProductData.image) {
-            alert('Please fill in all required fields and select an image.');
+    };    const handleSaveNewProduct = async () => {
+        // Check required fields with proper field names
+        if (!newProductData.name || !newProductData.description || !newProductData.price || !newProductData.category || !newProductData.stock_quantity) {
+            alert('Please fill in all required fields: Product Name, Description, Price, Category, and Stock Quantity.');
             return;
         }
 
         const formData = new FormData();
         formData.append('name', newProductData.name);
-        formData.append('description', newProductData.description);
-        formData.append('price', newProductData.price);
+        formData.append('description', newProductData.description);        formData.append('price', newProductData.price);
         formData.append('category', newProductData.category);
         formData.append('brand', newProductData.brand);
-        // Corrected stockQuantity to match the state and backend expectation if it differs
-        formData.append('stockQuantity', newProductData.stockQuantity); 
+        // Use correct field name for stock quantity
+        formData.append('stock_quantity', newProductData.stock_quantity);
         formData.append('tags', JSON.stringify(newProductData.tags)); // Assuming tags are an array of strings
         formData.append('image', newProductData.image); // The File object
         if (newProductData.sku) formData.append('sku', newProductData.sku);
