@@ -353,46 +353,34 @@ serve(async (req: Request) => {
     try {
         console.log(`[Request Start] ${req.method} ${req.url}`);
         console.log(`[Request Start] Route array:`, route);
-        console.log(`[Request Start] Route[0]:`, route[0], `Route length:`, route.length);
-          // --- Use the ANON client for all operations initially ---
-        const supabase = getSupabaseAnonClient();
-        
-        // --- DEBUG: Test Supabase client immediately ---
-        console.log('[Request Handler] 🧪 Testing Supabase client health...');
-        try {
-            // Test if we can make any query at all
-            const { data: testData, error: testError } = await supabase
-                .from('products')
-                .select('id')
-                .limit(1);
-                
-            if (testError) {
-                console.error('[Request Handler] ❌ Supabase client test failed:', testError);
-                console.error('  - This suggests RLS policies or table access issues');
-                console.error('  - Error code:', testError.code);
-                console.error('  - Error message:', testError.message);
-                
-                // Return the exact error format that might be coming from Supabase
-                if (testError.code === 401 || testError.message?.includes('authorization')) {
-                    return new Response(
-                        JSON.stringify({ code: 401, message: "Missing authorization header" }),
-                        { headers, status: 401 }
-                    );
-                }
-            } else {
-                console.log('[Request Handler] ✅ Supabase client test successful');
-                console.log('  - Test returned data:', testData);
-            }
-        } catch (clientTestError) {
-            console.error('[Request Handler] ❌ Supabase client test exception:', clientTestError);
-        }
-        // --- END DEBUG ---
-
-        const authHeader = req.headers.get('Authorization'); // Still useful for checks
+        console.log(`[Request Start] Route[0]:`, route[0], `Route length:`, route.length);        // --- Use the ANON client for all operations initially ---
+        const supabase = getSupabaseAnonClient();        const authHeader = req.headers.get('Authorization'); // Still useful for checks
         console.log(`[Request Handler] Authorization Header Present: ${!!authHeader}`);
         console.log(`[Request Handler] Full path:`, url.pathname);
-        console.log(`[Request Handler] Route matching for: ${req.method} /${route.join('/')}`);        // --- Public Product Routes ---
-        // GET /api/products
+        console.log(`[Request Handler] Route matching for: ${req.method} /${route.join('/')}`);
+        
+        // --- Define Public Routes (No Authentication Required) ---
+        const publicRoutes = [
+            'GET /products',                 // GET /api/products
+            'GET /products/:id',            // GET /api/products/:id
+            'GET /search',                  // GET /api/search (if public)
+            // Add other public routes here as needed
+        ];
+        
+        const currentRoute = `${req.method} /${route.join('/')}`;
+        const isPublicRoute = publicRoutes.some(publicRoute => {
+            if (publicRoute.includes(':id')) {
+                // Handle parameterized routes like GET /products/:id
+                const pattern = publicRoute.replace(':id', '[^/]+');
+                const regex = new RegExp(`^${pattern}$`);
+                return regex.test(currentRoute);
+            }
+            return publicRoute === currentRoute;
+        });
+        
+        console.log(`[Request Handler] Route "${currentRoute}" is ${isPublicRoute ? 'PUBLIC' : 'PRIVATE'}`);
+        
+        // --- Public Product Routes ---        // GET /api/products
         if (req.method === 'GET' && route[0] === 'products' && route.length === 1) {
             console.log('[Route Handler] ✅ MATCHED GET /api/products (Public route)'); // Log route match
             console.log('[Route Handler] ⚡ This route does NOT require authentication'); // Emphasize this is public
@@ -432,6 +420,22 @@ serve(async (req: Request) => {
                     console.error('  - Error details:', JSON.stringify(error, null, 2));
                     console.error('  - Error code:', error.code);
                     console.error('  - Error message:', error.message);
+                    
+                    // Special handling for authentication-related errors on public routes
+                    if (error.code === 401 || error.message?.includes('authorization')) {
+                        console.error('[Route Handler GET /api/products] ⚠️  Authentication error on PUBLIC route!');
+                        console.error('  - This suggests RLS policies are incorrectly blocking public access');
+                        console.error('  - Returning 500 instead of 401 to indicate server misconfiguration');
+                        return new Response(
+                            JSON.stringify({ 
+                                error: true, 
+                                message: 'Server configuration error: Public route blocked by security policies',
+                                hint: 'Please check RLS policies for products table'
+                            }),
+                            { headers, status: 500 }
+                        );
+                    }
+                    
                     throw error;
                 }
 
@@ -444,10 +448,9 @@ serve(async (req: Request) => {
                 console.error('[Route Handler GET /api/products] ❌ Query execution failed:', queryError);
                 throw queryError;
             }
-        }
-        // GET /api/products/:id
+        }        // GET /api/products/:id
         if (req.method === 'GET' && route[0] === 'products' && route.length === 2) {
-            console.log('[Route Handler] Matched GET /api/products/:id');
+            console.log('[Route Handler] ✅ MATCHED GET /api/products/:id (Public route)');
             const id = route[1];
             console.log(`[Route Handler GET /api/products/:id] Fetching product with ID: ${id}`);
 
@@ -460,27 +463,47 @@ serve(async (req: Request) => {
                 );
             }
 
-            // Use select with explicit fields to ensure we get 'images' array
-            const { data, error } = await supabase
-                .from('products')
-                .select('id, name, price, image, images, description, category, subcategory, stock, rating, benefits, ingredients, shades, notes, paletteTheme')
-                .eq('id', id)
-                .maybeSingle();
+            try {
+                // Use select with explicit fields to ensure we get 'images' array
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('id, name, price, image, images, description, category, subcategory, stock, rating, benefits, ingredients, shades, notes, paletteTheme')
+                    .eq('id', id)
+                    .maybeSingle();
 
-            if (error) {
-                console.error('[Route Handler GET /api/products/:id] Error fetching product:', error);
-                throw error;
+                if (error) {
+                    console.error('[Route Handler GET /api/products/:id] Error fetching product:', error);
+                    
+                    // Special handling for authentication-related errors on public routes
+                    if (error.code === 401 || error.message?.includes('authorization')) {
+                        console.error('[Route Handler GET /api/products/:id] ⚠️  Authentication error on PUBLIC route!');
+                        console.error('  - This suggests RLS policies are incorrectly blocking public access');
+                        return new Response(
+                            JSON.stringify({ 
+                                error: true, 
+                                message: 'Server configuration error: Public route blocked by security policies',
+                                hint: 'Please check RLS policies for products table'
+                            }),
+                            { headers, status: 500 }
+                        );
+                    }
+                    
+                    throw error;
+                }
+
+                if (!data) {
+                    console.log('[Route Handler GET /api/products/:id] Product not found');
+                    return new Response(JSON.stringify({ message: 'Product not found' }), { headers, status: 404 });
+                }
+                
+                console.log('[Route Handler GET /api/products/:id] Product found:', { id: data.id, name: data.name });
+                console.log('[Route Handler GET /api/products/:id] Images array:', data.images || []);
+
+                return new Response(JSON.stringify(data), { headers, status: 200 });
+            } catch (queryError) {
+                console.error('[Route Handler GET /api/products/:id] ❌ Query execution failed:', queryError);
+                throw queryError;
             }
-
-            if (!data) {
-                console.log('[Route Handler GET /api/products/:id] Product not found');
-                return new Response(JSON.stringify({ message: 'Product not found' }), { headers, status: 404 });
-            }
-            
-            console.log('[Route Handler GET /api/products/:id] Product found:', { id: data.id, name: data.name });
-            console.log('[Route Handler GET /api/products/:id] Images array:', data.images || []);
-
-            return new Response(JSON.stringify(data), { headers, status: 200 });
         }
 
         // POST /api/products - Create new product (requires authentication)
@@ -679,15 +702,39 @@ serve(async (req: Request) => {
                     { headers, status: 500 }
                 );
             }
-        }
-
-        // --- Authenticated Cart Routes ---
+        }        // --- Authenticated Cart Routes ---
         // Centralized Auth Check for all /cart routes
         let supabaseUserId: string | null = null; // Variable to hold the looked-up Supabase User ID
         if (route[0] === 'cart') {
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
                 console.warn(`[Request Handler] Access denied to /api/${route.join('/')}: No valid Bearer token.`);
                 return new Response(JSON.stringify({ message: 'Authentication required' }), { headers, status: 401 });
+            }
+
+            // --- Test Supabase client for authenticated routes ---
+            console.log('[Request Handler] 🧪 Testing Supabase client for authenticated route...');
+            try {
+                const { data: testData, error: testError } = await supabase
+                    .from('products')
+                    .select('id')
+                    .limit(1);
+                    
+                if (testError) {
+                    console.error('[Request Handler] ❌ Supabase client test failed for authenticated route:', testError);
+                    console.error('  - Error code:', testError.code);
+                    console.error('  - Error message:', testError.message);
+                    
+                    if (testError.code === 401 || testError.message?.includes('authorization')) {
+                        return new Response(
+                            JSON.stringify({ code: 401, message: "Missing authorization header" }),
+                            { headers, status: 401 }
+                        );
+                    }
+                } else {
+                    console.log('[Request Handler] ✅ Supabase client test successful for authenticated route');
+                }
+            } catch (clientTestError) {
+                console.error('[Request Handler] ❌ Supabase client test exception for authenticated route:', clientTestError);
             }
 
             // --- Attempt to get Supabase User ID from token ---
