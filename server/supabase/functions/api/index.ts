@@ -358,8 +358,7 @@ serve(async (req: Request) => {
         console.log(`[Request Handler] Authorization Header Present: ${!!authHeader}`);
         console.log(`[Request Handler] Full path:`, url.pathname);
         console.log(`[Request Handler] Route matching for: ${req.method} /${route.join('/')}`);
-        
-        // --- Define Public Routes (No Authentication Required) ---
+          // --- Define Public Routes (No Authentication Required) ---
         const publicRoutes = [
             'GET /products',                 // GET /api/products
             'GET /products/:id',            // GET /api/products/:id
@@ -380,10 +379,10 @@ serve(async (req: Request) => {
         
         console.log(`[Request Handler] Route "${currentRoute}" is ${isPublicRoute ? 'PUBLIC' : 'PRIVATE'}`);
         
-        // --- Public Product Routes ---        // GET /api/products
+        // --- Public Product Routes (NO AUTHENTICATION REQUIRED) ---        // GET /api/products (PUBLIC - NO AUTHENTICATION REQUIRED)
         if (req.method === 'GET' && route[0] === 'products' && route.length === 1) {
-            console.log('[Route Handler] ✅ MATCHED GET /api/products (Public route)'); // Log route match
-            console.log('[Route Handler] ⚡ This route does NOT require authentication'); // Emphasize this is public
+            console.log('[Route Handler] ✅ MATCHED GET /api/products (Public route)');
+            console.log('[Route Handler] ⚡ This route does NOT require authentication');
             console.log('[Route Handler GET /api/products] 🔍 DEBUG: Request details:');
             console.log('  - URL:', req.url);
             console.log('  - Method:', req.method);
@@ -396,11 +395,17 @@ serve(async (req: Request) => {
             const subcategory = url.searchParams.get('subcategory');
             
             console.log('[Route Handler GET /api/products] 🔧 Building Supabase query...');
-            console.log('  - Using anonymous client');
+            console.log('  - Using SERVICE ROLE client to bypass RLS for public data');
             console.log('  - Category filter:', category || 'none');
             console.log('  - Subcategory filter:', subcategory || 'none');
             
-            let query = supabase.from('products').select('*');
+            // Create a service role client to bypass RLS for public product data
+            const supabaseService = createClient(
+                Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
+                Deno.env.get('PROJECT_SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            );
+            
+            let query = supabaseService.from('products').select('*');
             if (category) {
                 console.log(`[Route Handler GET /api/products] Filtering by category: ${category}`);
                 query = query.eq('category', category);
@@ -421,22 +426,15 @@ serve(async (req: Request) => {
                     console.error('  - Error code:', error.code);
                     console.error('  - Error message:', error.message);
                     
-                    // Special handling for authentication-related errors on public routes
-                    if (error.code === 401 || error.message?.includes('authorization')) {
-                        console.error('[Route Handler GET /api/products] ⚠️  Authentication error on PUBLIC route!');
-                        console.error('  - This suggests RLS policies are incorrectly blocking public access');
-                        console.error('  - Returning 500 instead of 401 to indicate server misconfiguration');
-                        return new Response(
-                            JSON.stringify({ 
-                                error: true, 
-                                message: 'Server configuration error: Public route blocked by security policies',
-                                hint: 'Please check RLS policies for products table'
-                            }),
-                            { headers, status: 500 }
-                        );
-                    }
-                    
-                    throw error;
+                    // For public routes, never return auth errors - return 500 instead
+                    return new Response(
+                        JSON.stringify({ 
+                            error: true, 
+                            message: 'Failed to fetch products',
+                            hint: 'Server configuration issue'
+                        }),
+                        { headers, status: 500 }
+                    );
                 }
 
                 console.log('[Route Handler GET /api/products] ✅ Supabase query successful!');
@@ -446,9 +444,15 @@ serve(async (req: Request) => {
                 return new Response(JSON.stringify(data || []), { headers, status: 200 });
             } catch (queryError) {
                 console.error('[Route Handler GET /api/products] ❌ Query execution failed:', queryError);
-                throw queryError;
+                return new Response(
+                    JSON.stringify({ 
+                        error: true, 
+                        message: 'Internal server error while fetching products'
+                    }),
+                    { headers, status: 500 }
+                );
             }
-        }        // GET /api/products/:id
+        }        // GET /api/products/:id (PUBLIC - NO AUTHENTICATION REQUIRED)
         if (req.method === 'GET' && route[0] === 'products' && route.length === 2) {
             console.log('[Route Handler] ✅ MATCHED GET /api/products/:id (Public route)');
             const id = route[1];
@@ -464,8 +468,14 @@ serve(async (req: Request) => {
             }
 
             try {
+                // Create a service role client to bypass RLS for public product data
+                const supabaseService = createClient(
+                    Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
+                    Deno.env.get('PROJECT_SUPABASE_SERVICE_ROLE_KEY') ?? ''
+                );
+                
                 // Use select with explicit fields to ensure we get 'images' array
-                const { data, error } = await supabase
+                const { data, error } = await supabaseService
                     .from('products')
                     .select('id, name, price, image, images, description, category, subcategory, stock, rating, benefits, ingredients, shades, notes, paletteTheme')
                     .eq('id', id)
@@ -474,21 +484,15 @@ serve(async (req: Request) => {
                 if (error) {
                     console.error('[Route Handler GET /api/products/:id] Error fetching product:', error);
                     
-                    // Special handling for authentication-related errors on public routes
-                    if (error.code === 401 || error.message?.includes('authorization')) {
-                        console.error('[Route Handler GET /api/products/:id] ⚠️  Authentication error on PUBLIC route!');
-                        console.error('  - This suggests RLS policies are incorrectly blocking public access');
-                        return new Response(
-                            JSON.stringify({ 
-                                error: true, 
-                                message: 'Server configuration error: Public route blocked by security policies',
-                                hint: 'Please check RLS policies for products table'
-                            }),
-                            { headers, status: 500 }
-                        );
-                    }
-                    
-                    throw error;
+                    // For public routes, never return auth errors - return 500 instead
+                    return new Response(
+                        JSON.stringify({ 
+                            error: true, 
+                            message: 'Failed to fetch product details',
+                            hint: 'Server configuration issue'
+                        }),
+                        { headers, status: 500 }
+                    );
                 }
 
                 if (!data) {
@@ -502,13 +506,20 @@ serve(async (req: Request) => {
                 return new Response(JSON.stringify(data), { headers, status: 200 });
             } catch (queryError) {
                 console.error('[Route Handler GET /api/products/:id] ❌ Query execution failed:', queryError);
-                throw queryError;
-            }
-        }
+                return new Response(
+                    JSON.stringify({ 
+                        error: true, 
+                        message: 'Internal server error while fetching product'
+                    }),
+                    { headers, status: 500 }
+                );
+            }        }
 
-        // POST /api/products - Create new product (requires authentication)
-        if (req.method === 'POST' && route[0] === 'products' && route.length === 1) {
-            console.log('[Route Handler] Matched POST /api/products');
+        // --- ADMIN PRODUCT ROUTES (AUTHENTICATION REQUIRED) ---
+        
+        // GET /api/admin/products - Get all products for admin dashboard
+        if (req.method === 'GET' && route[0] === 'admin' && route[1] === 'products' && route.length === 2) {
+            console.log('[Route Handler] ✅ MATCHED GET /api/admin/products (Admin route)');
             
             // Authentication check
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -528,7 +539,87 @@ serve(async (req: Request) => {
             }
             
             // Check if user is admin
-            const { data: userData, error: userError } = await supabase
+            const supabaseService = createClient(
+                Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
+                Deno.env.get('PROJECT_SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            );
+            
+            const { data: userData, error: userError } = await supabaseService
+                .from('user_profiles')
+                .select('role')
+                .eq('id', supabaseUserId)
+                .single();
+                
+            if (userError || !userData || userData.role !== 'admin') {
+                return new Response(
+                    JSON.stringify({ message: 'Admin privileges required' }), 
+                    { headers, status: 403 }
+                );
+            }
+            
+            try {
+                const category = url.searchParams.get('category');
+                const subcategory = url.searchParams.get('subcategory');
+                
+                let query = supabaseService.from('products').select('*');
+                if (category) {
+                    query = query.eq('category', category);
+                }
+                if (subcategory) {
+                    query = query.eq('subcategory', subcategory);
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    console.error('[Route Handler GET /api/admin/products] Error fetching products:', error);
+                    throw error;
+                }
+
+                console.log(`[Route Handler GET /api/admin/products] Admin fetched ${data?.length ?? 0} products`);
+                return new Response(JSON.stringify(data || []), { headers, status: 200 });
+                
+            } catch (error) {
+                console.error('[Route Handler GET /api/admin/products] Error:', error);
+                return new Response(
+                    JSON.stringify({ 
+                        error: true, 
+                        message: 'Failed to fetch products for admin',
+                        details: error.message
+                    }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+
+        // POST /api/admin/products - Create new product (admin only)
+        if (req.method === 'POST' && route[0] === 'admin' && route[1] === 'products' && route.length === 2) {
+            console.log('[Route Handler] ✅ MATCHED POST /api/admin/products (Admin route)');
+            
+            // Authentication check
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }), 
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Verify user has admin privileges
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Invalid authentication token' }), 
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Check if user is admin
+            const supabaseService = createClient(
+                Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
+                Deno.env.get('PROJECT_SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            );
+            
+            const { data: userData, error: userError } = await supabaseService
                 .from('user_profiles')
                 .select('role')
                 .eq('id', supabaseUserId)
@@ -589,7 +680,7 @@ serve(async (req: Request) => {
                         const arrayBuffer = await imageFile.arrayBuffer();
                         const fileBuffer = new Uint8Array(arrayBuffer);
                         
-                        const { data: uploadData, error: uploadError } = await supabase.storage
+                        const { data: uploadData, error: uploadError } = await supabaseService.storage
                             .from('product-images')
                             .upload(fileName, fileBuffer, {
                                 contentType: imageFile.type,
@@ -610,7 +701,7 @@ serve(async (req: Request) => {
                         }
                         
                         // Get public URL
-                        const { data: urlData } = supabase.storage
+                        const { data: urlData } = supabaseService.storage
                             .from('product-images')
                             .getPublicUrl(fileName);
                         imageUrl = urlData.publicUrl;
@@ -653,7 +744,7 @@ serve(async (req: Request) => {
                 };
                 
                 // Insert product into database
-                const { data, error } = await supabase.from('products').insert([newProduct]).select();
+                const { data, error } = await supabaseService.from('products').insert([newProduct]).select();
                 
                 if (error) {
                     console.error('Error creating product in Supabase:', error);
@@ -692,7 +783,7 @@ serve(async (req: Request) => {
                 );
                 
             } catch (error) {
-                console.error('Error processing POST /api/products:', error);
+                console.error('Error processing POST /api/admin/products:', error);
                 return new Response(
                     JSON.stringify({ 
                         error: true, 
@@ -702,7 +793,21 @@ serve(async (req: Request) => {
                     { headers, status: 500 }
                 );
             }
-        }        // --- Authenticated Cart Routes ---
+        }
+
+        // POST /api/products - Create new product (legacy route - redirect to admin route)        // POST /api/products - Create new product (legacy route - redirect to admin route)
+        if (req.method === 'POST' && route[0] === 'products' && route.length === 1) {
+            console.log('[Route Handler] ⚠️  MATCHED POST /api/products (LEGACY route - should use /api/admin/products)');
+            
+            return new Response(
+                JSON.stringify({ 
+                    error: true,
+                    message: 'This endpoint is deprecated. Please use /api/admin/products for product creation.',
+                    redirect: '/api/admin/products'
+                }),
+                { headers, status: 410 } // 410 Gone - indicates the resource is no longer available
+            );
+        }// --- Authenticated Cart Routes ---
         // Centralized Auth Check for all /cart routes
         let supabaseUserId: string | null = null; // Variable to hold the looked-up Supabase User ID
         if (route[0] === 'cart') {

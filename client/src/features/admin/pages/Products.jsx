@@ -68,11 +68,12 @@ import {
     Language as LanguageIcon
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../context/ThemeContext';
-import { useApi } from '../../../api/apiClient';
+import { useAdminApi } from '../../../api/apiClient';
 import defaultProductImage from '../../../assets/images/placeholder.webp';
 
 // Import mock data
-import mockAdminProducts, { 
+import mockAdminProducts,
+ { 
     categories, 
     tags, 
     productStatuses, 
@@ -98,7 +99,7 @@ function TabPanel(props) {
 
 function AdminProducts() {
     const { theme, colorValues } = useContext(ThemeContext);
-    const api = useApi();
+    const adminApi = useAdminApi();
     const [loading, setLoading] = useState(false);
     const [products, setProducts] = useState([]);
     const [page, setPage] = useState(0);
