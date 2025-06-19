@@ -138,7 +138,7 @@ function AdminProducts() {
         subcategory: '',
         brand: '',
         sku: '',
-        stock_quantity: '', // Changed to match form field name
+        stock_quantity: '',
         tags: [],
         meta_title: '',
         meta_description: '',
@@ -146,18 +146,17 @@ function AdminProducts() {
         image: null,
     });
     const [imagePreview, setImagePreview] = useState(null);
-    
-    useEffect(() => {
+      useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
             try {
                 // Fetch data from your API
-                const data = await api.getProducts(); // Assuming api.getProducts() is the correct method
+                const data = await adminApi.getProducts(); // Using adminApi for admin dashboard
                 if (data) {
                     setProducts(data);
                 } else {
                     setProducts([]); // Set to empty array if data is null/undefined
-                    console.warn('fetchProducts: Received null or undefined data from api.getProducts()');
+                    console.warn('fetchProducts: Received null or undefined data from adminApi.getProducts()');
                 }
             } catch (error) {
                 console.error('Error fetching products:', error);
@@ -170,10 +169,9 @@ function AdminProducts() {
             } finally {
                 setLoading(false);
             }
-        };
-        
-        fetchProducts();
-    }, [api]); // api should be a stable reference from useApi()
+        };        fetchProducts();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Empty dependency array - fetch products only once on mount
     
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -372,11 +370,9 @@ function AdminProducts() {
         formData.append('file', uploadedFile);
         formData.append('updateExisting', importOptions.updateExisting);
         formData.append('skipErrors', importOptions.skipErrors);
-        formData.append('sendNotification', importOptions.sendNotification);
-
-        setLoading(true);
+        formData.append('sendNotification', importOptions.sendNotification);        setLoading(true);
         try {
-            const response = await api.importProducts(formData); // We will add this to apiClient.js
+            const response = await adminApi.importProducts(formData); // Use adminApi for admin operations
 
             setSnackbar({
                 open: true,
@@ -385,7 +381,7 @@ function AdminProducts() {
             });
             handleUploadDialogClose();
             // Optionally, refresh the product list:
-            // const data = await api.getProducts();
+            // const data = await adminApi.getProducts();
             // if (data) setProducts(data);
         } catch (error) {
             console.error('Error importing products:', error);
@@ -551,9 +547,8 @@ function AdminProducts() {
         if (newProductData.releaseDate) formData.append('releaseDate', newProductData.releaseDate);
 
         try {
-            console.log("Products.jsx: Attempting to create product with formData:", Object.fromEntries(formData.entries()));
-            // Use the apiClient to create the product
-            const response = await api.createProduct(formData);
+            console.log("Products.jsx: Attempting to create product with formData:", Object.fromEntries(formData.entries()));            // Use the adminApi to create the product
+            const response = await adminApi.createProduct(formData);
             console.log("Products.jsx: Product created successfully:", response);
 
             // Assuming the response contains the newly created product data
