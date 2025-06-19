@@ -513,11 +513,291 @@ serve(async (req: Request) => {
                     }),
                     { headers, status: 500 }
                 );
-            }        }
-
-        // --- ADMIN PRODUCT ROUTES (AUTHENTICATION REQUIRED) ---
+            }        }        // --- ADMIN PRODUCT ROUTES (AUTHENTICATION REQUIRED) ---
         
         // GET /api/admin/products - Get all products for admin dashboard
+        if (req.method === 'GET' && route[0] === 'admin' && route[1] === 'products' && route.length === 2) {
+            console.log('[Route Handler] ✅ MATCHED GET /api/admin/products (Admin route - Auth required)');
+            
+            // Authentication check
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                console.warn('[Route Handler GET /api/admin/products] No authentication provided');
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }), 
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Verify user has admin privileges
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                console.warn('[Route Handler GET /api/admin/products] Invalid authentication token');
+                return new Response(
+                    JSON.stringify({ message: 'Invalid authentication token' }), 
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Check if user is admin
+            const { data: userData, error: userError } = await supabase
+                .from('user_profiles')
+                .select('role')
+                .eq('id', supabaseUserId)
+                .single();
+                
+            if (userError || !userData || userData.role !== 'admin') {
+                console.warn('[Route Handler GET /api/admin/products] User is not admin');
+                return new Response(
+                    JSON.stringify({ message: 'Admin privileges required' }), 
+                    { headers, status: 403 }
+                );
+            }
+            
+            console.log('[Route Handler GET /api/admin/products] Admin user authenticated, fetching products...');
+            
+            try {
+                const category = url.searchParams.get('category');
+                const subcategory = url.searchParams.get('subcategory');
+                const page = parseInt(url.searchParams.get('page') || '1');
+                const limit = parseInt(url.searchParams.get('limit') || '50');
+                const offset = (page - 1) * limit;
+                
+                let query = supabase.from('products').select('*');
+                
+                if (category) {
+                    query = query.eq('category', category);
+                }
+                if (subcategory) {
+                    query = query.eq('subcategory', subcategory);
+                }
+                
+                // Add pagination
+                query = query.range(offset, offset + limit - 1);
+                
+                const { data, error } = await query;
+                
+                if (error) {
+                    console.error('[Route Handler GET /api/admin/products] Error fetching products:', error);
+                    throw error;
+                }
+                
+                console.log(`[Route Handler GET /api/admin/products] Successfully fetched ${data?.length || 0} products`);
+                return new Response(JSON.stringify(data || []), { headers, status: 200 });
+                
+            } catch (error) {
+                console.error('[Route Handler GET /api/admin/products] Query failed:', error);
+                return new Response(
+                    JSON.stringify({ 
+                        error: true, 
+                        message: 'Failed to fetch products for admin dashboard'
+                    }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+
+        // POST /api/admin/products - Create new product (Admin only)
+        if (req.method === 'POST' && route[0] === 'admin' && route[1] === 'products' && route.length === 2) {
+            console.log('[Route Handler] ✅ MATCHED POST /api/admin/products (Admin route - Auth required)');
+            
+            // Authentication check
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                console.warn('[Route Handler POST /api/admin/products] No authentication provided');
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }), 
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Verify user has admin privileges
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                console.warn('[Route Handler POST /api/admin/products] Invalid authentication token');
+                return new Response(
+                    JSON.stringify({ message: 'Invalid authentication token' }), 
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Check if user is admin
+            const { data: userData, error: userError } = await supabase
+                .from('user_profiles')
+                .select('role')
+                .eq('id', supabaseUserId)
+                .single();
+                
+            if (userError || !userData || userData.role !== 'admin') {
+                console.warn('[Route Handler POST /api/admin/products] User is not admin');
+                return new Response(
+                    JSON.stringify({ message: 'Admin privileges required' }), 
+                    { headers, status: 403 }
+                );
+            }
+            
+            console.log('[Route Handler POST /api/admin/products] Admin user authenticated, creating product...');
+            
+            try {
+                // Parse form data
+                const formData = await req.formData();
+                
+                // Extract product data from form
+                const name = formData.get('name') as string;
+                const description = formData.get('description') as string;
+                const price = formData.get('price') as string;
+                const category = formData.get('category') as string;
+                const subcategory = formData.get('subcategory') as string;
+                const brand = formData.get('brand') as string;
+                const sku = formData.get('sku') as string;
+                const stock_quantity = formData.get('stock_quantity') as string;
+                const tags = formData.get('tags') as string;
+                const meta_title = formData.get('meta_title') as string;
+                const meta_description = formData.get('meta_description') as string;
+                const meta_keywords = formData.get('meta_keywords') as string;
+                const imageFile = formData.get('image') as File;
+                
+                // Validate required fields
+                if (!name || !description || !price || !category || !stock_quantity) {
+                    return new Response(
+                        JSON.stringify({ 
+                            error: true, 
+                            message: 'Missing required fields: name, description, price, category, stock_quantity.' 
+                        }),
+                        { headers, status: 400 }
+                    );
+                }
+                
+                // Process tags
+                let processedTags: string[] = [];
+                if (tags) {
+                    try {
+                        processedTags = JSON.parse(tags);
+                    } catch {
+                        processedTags = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    }
+                }
+                
+                // Handle image upload if provided
+                let imageUrl: string | null = null;
+                if (imageFile && imageFile.size > 0) {
+                    try {
+                        const fileName = `products/${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`;
+                        const arrayBuffer = await imageFile.arrayBuffer();
+                        const fileBuffer = new Uint8Array(arrayBuffer);
+                        
+                        const { data: uploadData, error: uploadError } = await supabase.storage
+                            .from('product-images')
+                            .upload(fileName, fileBuffer, {
+                                contentType: imageFile.type,
+                                cacheControl: '3600',
+                                upsert: false,
+                            });
+                        
+                        if (uploadError) {
+                            console.error('Error uploading image:', uploadError);
+                            return new Response(
+                                JSON.stringify({
+                                    error: true,
+                                    message: 'Failed to upload product image.',
+                                    details: uploadError.message,
+                                }),
+                                { headers, status: 500 }
+                            );
+                        }
+                        
+                        // Get public URL
+                        const { data: urlData } = supabase.storage
+                            .from('product-images')
+                            .getPublicUrl(fileName);
+                        imageUrl = urlData.publicUrl;
+                        
+                    } catch (uploadError) {
+                        console.error('Image upload failed:', uploadError);
+                        return new Response(
+                            JSON.stringify({
+                                error: true,
+                                message: 'Failed to upload product image.',
+                                details: uploadError.message,
+                            }),
+                            { headers, status: 500 }
+                        );
+                    }
+                }
+                
+                // Create product object
+                const newProduct = {
+                    name,
+                    description,
+                    price: parseFloat(price),
+                    category,
+                    subcategory: subcategory || null,
+                    brand: brand || null,
+                    sku: sku || null,
+                    stock_quantity: parseInt(stock_quantity, 10),
+                    ratings: 0,
+                    reviews_count: 0,
+                    images: imageUrl ? [imageUrl] : [],
+                    tags: processedTags,
+                    availability: 'in stock',
+                    approval_status: 'pending',
+                    meta_title: meta_title || name,
+                    meta_description: meta_description || description.substring(0, 160),
+                    meta_keywords: meta_keywords ? meta_keywords.split(',').map(kw => kw.trim()) : [],
+                    featured: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                };
+                
+                // Insert product into database
+                const { data, error } = await supabase.from('products').insert([newProduct]).select();
+                
+                if (error) {
+                    console.error('Error creating product in Supabase:', error);
+                    
+                    // Check for specific errors
+                    if (error.code === '23505') { // Unique violation
+                        return new Response(
+                            JSON.stringify({ 
+                                error: true, 
+                                message: 'Failed to create product. A product with similar unique properties (e.g., SKU) might already exist.',
+                                details: error.details
+                            }),
+                            { headers, status: 409 }
+                        );
+                    }
+                    
+                    return new Response(
+                        JSON.stringify({ 
+                            error: true, 
+                            message: 'Failed to create product in database.',
+                            details: error.message
+                        }),
+                        { headers, status: 500 }
+                    );
+                }
+                
+                console.log('Product created successfully:', data[0]);
+                
+                return new Response(
+                    JSON.stringify({ 
+                        success: true, 
+                        message: 'Product created successfully!',
+                        product: data[0]
+                    }),
+                    { headers, status: 201 }
+                );
+                
+            } catch (error) {
+                console.error('Error processing POST /api/admin/products:', error);
+                return new Response(
+                    JSON.stringify({ 
+                        error: true, 
+                        message: 'Internal server error while creating product.',
+                        details: error.message
+                    }),
+                    { headers, status: 500 }
+                );
+            }
+        }
         if (req.method === 'GET' && route[0] === 'admin' && route[1] === 'products' && route.length === 2) {
             console.log('[Route Handler] ✅ MATCHED GET /api/admin/products (Admin route)');
             
