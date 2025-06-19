@@ -7,7 +7,6 @@ export const useAdminApi = () => {
   const { getToken } = useClerkAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   // Helper function for authenticated API calls
   const fetchWithAuth = async (endpoint, options = {}) => {
     setLoading(true);
@@ -15,7 +14,13 @@ export const useAdminApi = () => {
     
     try {
       const token = await getToken();
-      const response = await fetch(endpoint, {
+      
+      // Log the full URL being requested for debugging
+      const fullUrl = `${API_BASE_URL}${endpoint}`;
+      console.log(`[AdminAPI] Making request to: ${fullUrl}`);
+      console.log(`[AdminAPI] With token: ${token ? 'Present' : 'Missing'}`);
+      
+      const response = await fetch(fullUrl, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
@@ -24,13 +29,36 @@ export const useAdminApi = () => {
         }
       });
       
+      console.log(`[AdminAPI] Response status: ${response.status}`);
+      console.log(`[AdminAPI] Response headers:`, response.headers);
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const responseText = await response.text();
+        console.error(`[AdminAPI] Error response: ${responseText}`);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch {
+          // If response is not JSON (like HTML), create a generic error
+          errorData = { message: `API error: ${response.status} - ${responseText.substring(0, 100)}...` };
+        }
+        
         throw new Error(errorData.message || `API error: ${response.status}`);
       }
       
-      return await response.json();
+      const responseText = await response.text();
+      console.log(`[AdminAPI] Response body: ${responseText.substring(0, 200)}...`);
+      
+      // Try to parse JSON, but handle non-JSON responses gracefully
+      try {
+        return JSON.parse(responseText);
+      } catch {
+        console.error(`[AdminAPI] Response is not valid JSON: ${responseText.substring(0, 100)}...`);
+        throw new Error('Received non-JSON response from server');
+      }
     } catch (err) {
+      console.error(`[AdminAPI] Request failed:`, err);
       setError(err.message || 'An error occurred');
       throw err;
     } finally {
@@ -58,12 +86,11 @@ export const useAdminApi = () => {
       method: 'PUT',
       body: JSON.stringify({ role })
     });
-  };
-
-  // Products API
+  };  // Products API
   const getProducts = async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
-    return fetchWithAuth(`/api/admin/products?${queryParams}`);
+    const endpoint = `/admin/products${queryParams ? `?${queryParams}` : ''}`;
+    return fetchWithAuth(endpoint);
   };
   
   const createProductWithJson = async (productData) => { // Renamed
