@@ -65,39 +65,49 @@ export const useAdminApi = () => {
       setLoading(false);
     }
   };
-
   // Admin Dashboard API
   const getDashboardData = async (timeRange = 'monthly') => {
-    return fetchWithAuth(`/api/admin/dashboard?timeRange=${timeRange}`);
+    return fetchWithAuth(`/admin/dashboard?timeRange=${timeRange}`);
   };
 
   // Users API
   const getUsers = async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
-    return fetchWithAuth(`/api/admin/users?${queryParams}`);
+    return fetchWithAuth(`/admin/users?${queryParams}`);
   };
   
   const getUserDetails = async (userId) => {
-    return fetchWithAuth(`/api/admin/users/${userId}`);
+    return fetchWithAuth(`/admin/users/${userId}`);
   };
   
   const updateUserRole = async (userId, role) => {
-    return fetchWithAuth(`/api/admin/users/${userId}/role`, {
+    return fetchWithAuth(`/admin/users/${userId}/role`, {
       method: 'PUT',
       body: JSON.stringify({ role })
     });
-  };  // Products API
+  };// Products API
   const getProducts = async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
     const endpoint = `/admin/products${queryParams ? `?${queryParams}` : ''}`;
     return fetchWithAuth(endpoint);
   };
-  
-  const createProductWithJson = async (productData) => { // Renamed
-    return fetchWithAuth('/api/admin/products', {
-      method: 'POST',
-      body: JSON.stringify(productData)
-    });
+  const createProduct = async (formData) => {
+    if (!(formData instanceof FormData)) {
+      console.error("useAdminApi.createProduct expects FormData.");
+      throw new Error("Invalid data format for product creation. Expected FormData.");
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      // Use _request directly for FormData to ensure correct Content-Type handling and auth
+      const result = await _request('POST', '/admin/products', formData, true);
+      return result;
+    } catch (err) {
+      setError(err.message || 'An error occurred during product creation.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const importProducts = async (formData) => { // New function for FormData
@@ -107,10 +117,9 @@ export const useAdminApi = () => {
     }
     setLoading(true);
     setError(null);
-    try {
-      // Use _request directly for FormData to ensure correct Content-Type handling and auth
+    try {      // Use _request directly for FormData to ensure correct Content-Type handling and auth
       // The endpoint should be your server's endpoint for bulk product import from a file.
-      const result = await _request('POST', '/api/admin/products/import', formData, true);
+      const result = await _request('POST', '/admin/products/import', formData, true);
       return result;
     } catch (err) {
       setError(err.message || 'An error occurred during product import.');
@@ -120,16 +129,15 @@ export const useAdminApi = () => {
       setLoading(false);
     }
   };
-  
-  const updateProduct = async (productId, productData) => {
-    return fetchWithAuth(`/api/admin/products/${productId}`, {
+    const updateProduct = async (productId, productData) => {
+    return fetchWithAuth(`/admin/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(productData)
     });
   };
   
   const deleteProduct = async (productId) => {
-    return fetchWithAuth(`/api/admin/products/${productId}`, {
+    return fetchWithAuth(`/admin/products/${productId}`, {
       method: 'DELETE'
     });
   };
@@ -137,15 +145,15 @@ export const useAdminApi = () => {
   // Orders API
   const getOrders = async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
-    return fetchWithAuth(`/api/admin/orders?${queryParams}`);
+    return fetchWithAuth(`/admin/orders?${queryParams}`);
   };
   
   const getOrderDetails = async (orderId) => {
-    return fetchWithAuth(`/api/admin/orders/${orderId}`);
+    return fetchWithAuth(`/admin/orders/${orderId}`);
   };
   
   const updateOrderStatus = async (orderId, status) => {
-    return fetchWithAuth(`/api/admin/orders/${orderId}/status`, {
+    return fetchWithAuth(`/admin/orders/${orderId}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status })
     });
@@ -159,10 +167,9 @@ export const useAdminApi = () => {
     // Users
     getUsers,
     getUserDetails,
-    updateUserRole,
-    // Products
+    updateUserRole,    // Products
     getProducts,
-    createProduct: createProductWithJson, // Updated name
+    createProduct, // Use the FormData version
     importProducts, // Added new import function
     updateProduct,
     deleteProduct,
