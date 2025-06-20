@@ -11,12 +11,21 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT NOT NULL,
     category TEXT NOT NULL,
     subcategory TEXT,
+    brand TEXT, -- Brand information
     sku TEXT UNIQUE, -- Added SKU column, ensuring it's unique
     status TEXT NOT NULL DEFAULT 'active', -- Added status column
     approval_status TEXT NOT NULL DEFAULT 'pending', -- Added approval_status column
     featured BOOLEAN NOT NULL DEFAULT FALSE, -- Added featured column
-    stock INTEGER NOT NULL DEFAULT 0,
-    rating NUMERIC DEFAULT 0,
+    stock INTEGER NOT NULL DEFAULT 0, -- Stock quantity
+    rating NUMERIC DEFAULT 0, -- Average rating
+    reviews_count INTEGER DEFAULT 0, -- Number of reviews
+    tags TEXT[], -- Product tags array
+    availability TEXT DEFAULT 'in stock', -- Product availability status
+    -- SEO fields
+    meta_title TEXT,
+    meta_description TEXT,
+    meta_keywords TEXT[],
+    -- Additional fields
     benefits JSONB,
     ingredients JSONB,
     shades JSONB,

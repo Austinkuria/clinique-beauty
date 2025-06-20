@@ -675,16 +675,20 @@ serve(async (req: Request) => {
                         processedTags = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
                     }
                 }
-                
-                // Handle image upload if provided
+                  // Handle image upload if provided
                 let imageUrl: string | null = null;
                 if (imageFile && imageFile.size > 0) {
                     try {
-                        const fileName = `products/${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`;
+                        // Use service role client for storage operations to bypass RLS
+                        const supabaseService = createClient(
+                            Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
+                            Deno.env.get('PROJECT_SUPABASE_SERVICE_ROLE_KEY') ?? ''
+                        );
+                          const fileName = `products/${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`;
                         const arrayBuffer = await imageFile.arrayBuffer();
                         const fileBuffer = new Uint8Array(arrayBuffer);
                         
-                        const { data: uploadData, error: uploadError } = await supabase.storage
+                        const { data: uploadData, error: uploadError } = await supabaseService.storage
                             .from('product-images')
                             .upload(fileName, fileBuffer, {
                                 contentType: imageFile.type,
@@ -694,6 +698,19 @@ serve(async (req: Request) => {
                         
                         if (uploadError) {
                             console.error('Error uploading image:', uploadError);
+                            
+                            // Check if it's a bucket not found error
+                            if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('does not exist')) {
+                                return new Response(
+                                    JSON.stringify({
+                                        error: true,
+                                        message: 'Storage bucket "product-images" does not exist. Please create it in Supabase Dashboard.',
+                                        details: uploadError.message,
+                                    }),
+                                    { headers, status: 500 }
+                                );
+                            }
+                            
                             return new Response(
                                 JSON.stringify({
                                     error: true,
@@ -704,8 +721,8 @@ serve(async (req: Request) => {
                             );
                         }
                         
-                        // Get public URL
-                        const { data: urlData } = supabase.storage
+                        // Get public URL using the service client
+                        const { data: urlData } = supabaseService.storage
                             .from('product-images')
                             .getPublicUrl(fileName);
                         imageUrl = urlData.publicUrl;
@@ -720,10 +737,8 @@ serve(async (req: Request) => {
                             }),
                             { headers, status: 500 }
                         );
-                    }
-                }
-                
-                // Create product object
+                    }                }
+                  // Create product object with all fields (database schema now supports them)
                 const newProduct = {
                     name,
                     description,
@@ -732,11 +747,13 @@ serve(async (req: Request) => {
                     subcategory: subcategory || null,
                     brand: brand || null,
                     sku: sku || null,
-                    stock_quantity: parseInt(stock_quantity, 10),
-                    ratings: 0,
+                    stock: parseInt(stock_quantity, 10),
+                    rating: 0,
                     reviews_count: 0,
+                    image: imageUrl || '', // Required field, use empty string if no image
                     images: imageUrl ? [imageUrl] : [],
                     tags: processedTags,
+                    status: 'active',
                     availability: 'in stock',
                     approval_status: 'pending',
                     meta_title: meta_title || name,
@@ -746,9 +763,13 @@ serve(async (req: Request) => {
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                 };
+                  // Insert product into database using service client to bypass RLS
+                const supabaseService = createClient(
+                    Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
+                    Deno.env.get('PROJECT_SUPABASE_SERVICE_ROLE_KEY') ?? ''
+                );
                 
-                // Insert product into database
-                const { data, error } = await supabase.from('products').insert([newProduct]).select();
+                const { data, error } = await supabaseService.from('products').insert([newProduct]).select();
                 
                 if (error) {
                     console.error('Error creating product in Supabase:', error);
@@ -995,11 +1016,9 @@ serve(async (req: Request) => {
                                 details: uploadError.message,
                             }),
                             { headers, status: 500 }
-                        );
-                    }
-                }
+                        );                    }                }
                 
-                // Create product object
+                // Create product object with all fields (database schema now supports them)
                 const newProduct = {
                     name,
                     description,
@@ -1008,11 +1027,13 @@ serve(async (req: Request) => {
                     subcategory: subcategory || null,
                     brand: brand || null,
                     sku: sku || null,
-                    stock_quantity: parseInt(stock_quantity, 10),
-                    ratings: 0,
+                    stock: parseInt(stock_quantity, 10),
+                    rating: 0,
                     reviews_count: 0,
+                    image: imageUrl || '', // Required field, use empty string if no image
                     images: imageUrl ? [imageUrl] : [],
                     tags: processedTags,
+                    status: 'active',
                     availability: 'in stock',
                     approval_status: 'pending',
                     meta_title: meta_title || name,
@@ -1022,7 +1043,6 @@ serve(async (req: Request) => {
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                 };
-                
                 // Insert product into database
                 const { data, error } = await supabaseService.from('products').insert([newProduct]).select();
                 
