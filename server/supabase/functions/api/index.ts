@@ -761,8 +761,11 @@ serve(async (req: Request) => {
                     meta_keywords: meta_keywords ? meta_keywords.split(',').map(kw => kw.trim()) : [],
                     featured: false,
                     created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                };
+                    updated_at: new Date().toISOString(),                };
+                
+                // Debug: Log the exact product object being sent to database
+                console.log('[DEBUG] Product object being inserted:', JSON.stringify(newProduct, null, 2));
+                
                   // Insert product into database using service client to bypass RLS
                 const supabaseService = createClient(
                     Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
@@ -1041,8 +1044,11 @@ serve(async (req: Request) => {
                     meta_keywords: meta_keywords ? meta_keywords.split(',').map(kw => kw.trim()) : [],
                     featured: false,
                     created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                };
+                    updated_at: new Date().toISOString(),                };
+                
+                // Debug: Log the exact product object being sent to database
+                console.log('[DEBUG] Product object being inserted (second occurrence):', JSON.stringify(newProduct, null, 2));
+                
                 // Insert product into database
                 const { data, error } = await supabaseService.from('products').insert([newProduct]).select();
                 

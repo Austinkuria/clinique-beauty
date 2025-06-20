@@ -123,8 +123,11 @@ function AdminProducts() {
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [tagDialogOpen, setTagDialogOpen] = useState(false);
     const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
-    const [selectedProductApproval, setSelectedProductApproval] = useState(null);
-    const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
+    const [selectedProductApproval, setSelectedProductApproval] = useState(null);    const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
+    const [editProductDialogOpen, setEditProductDialogOpen] = useState(false);
+    const [viewProductDialogOpen, setViewProductDialogOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [editProductData, setEditProductData] = useState({});
     const [uploadedFile, setUploadedFile] = useState(null);
     const [importOptions, setImportOptions] = useState({
         updateExisting: false,
@@ -567,6 +570,98 @@ function AdminProducts() {
         }
     };
 
+    // View Product handlers
+    const handleOpenViewDialog = (product) => {
+        setSelectedProduct(product);
+        setViewProductDialogOpen(true);
+    };
+
+    const handleCloseViewDialog = () => {
+        setViewProductDialogOpen(false);
+        setSelectedProduct(null);
+    };
+
+    // Edit Product handlers
+    const handleOpenEditDialog = (product) => {
+        setSelectedProduct(product);
+        setEditProductData({
+            name: product.name || '',
+            description: product.description || '',
+            price: product.price || '',
+            category: product.category || '',
+            subcategory: product.subcategory || '',
+            brand: product.brand || '',
+            sku: product.sku || '',
+            stock_quantity: product.stock || '',
+            tags: product.tags || [],
+            meta_title: product.meta_title || '',
+            meta_description: product.meta_description || '',
+            meta_keywords: product.meta_keywords ? product.meta_keywords.join(', ') : '',
+            status: product.status || 'active',
+            availability: product.availability || 'in stock',
+            featured: product.featured || false,
+        });
+        setEditProductDialogOpen(true);
+    };
+
+    const handleCloseEditDialog = () => {
+        setEditProductDialogOpen(false);
+        setSelectedProduct(null);
+        setEditProductData({});
+    };
+
+    const handleEditProductChange = (field, value) => {
+        setEditProductData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleSaveEditProduct = async () => {
+        if (!selectedProduct) return;
+
+        try {
+            // Transform data to match API expectations
+            const updateData = {
+                ...editProductData,
+                price: parseFloat(editProductData.price),
+                stock: parseInt(editProductData.stock_quantity, 10),
+                tags: Array.isArray(editProductData.tags) 
+                    ? editProductData.tags 
+                    : editProductData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+                meta_keywords: editProductData.meta_keywords 
+                    ? editProductData.meta_keywords.split(',').map(kw => kw.trim()).filter(kw => kw)
+                    : [],
+            };
+
+            // Remove stock_quantity since we're using stock
+            delete updateData.stock_quantity;
+
+            await adminApi.updateProduct(selectedProduct.id, updateData);
+
+            // Update local state
+            setProducts(products.map(p => 
+                p.id === selectedProduct.id 
+                    ? { ...p, ...updateData }
+                    : p
+            ));
+
+            handleCloseEditDialog();
+            setSnackbar({
+                open: true,
+                message: 'Product updated successfully',
+                severity: 'success'
+            });
+        } catch (error) {
+            console.error('Error updating product:', error);
+            setSnackbar({
+                open: true,
+                message: `Error updating product: ${error.message}`,
+                severity: 'error'
+            });
+        }
+    };
+
     // Filter and search products
     const filteredProducts = products.filter(product => {
         const matchesSearch = search === '' || 
@@ -984,12 +1079,12 @@ function AdminProducts() {
                                                 </TableCell>
                                                 <TableCell align="center">
                                                     <Tooltip title="View Product">
-                                                        <IconButton size="small" color="primary">
+                                                        <IconButton size="small" color="primary" onClick={() => handleOpenViewDialog(product)}>
                                                             <VisibilityIcon fontSize="small" />
                                                         </IconButton>
                                                     </Tooltip>
                                                     <Tooltip title="Edit Product">
-                                                        <IconButton size="small" color="info">
+                                                        <IconButton size="small" color="info" onClick={() => handleOpenEditDialog(product)}>
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
                                                     </Tooltip>
@@ -1744,6 +1839,346 @@ function AdminProducts() {
                         disabled={loading || !newProductData.name || !newProductData.description || !newProductData.price || !newProductData.category || !newProductData.stock_quantity}
                     >
                         {loading ? <CircularProgress size={24} /> : 'Save Product'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            
+            {/* View Product Dialog */}
+            <Dialog
+                open={viewProductDialogOpen}
+                onClose={handleCloseViewDialog}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    View Product: {selectedProduct?.name}
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle1" gutterBottom>Product Details</Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>SKU:</strong> {selectedProduct?.sku}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>Category:</strong> {selectedProduct?.category}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>Tags:</strong> {selectedProduct?.tags?.join(', ')}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>Status:</strong> 
+                                <Chip 
+                                    label={selectedProduct?.status} 
+                                    size="small"
+                                    sx={{
+                                        bgcolor: 
+                                            selectedProduct.status === 'Active' ? 'success.main' :
+                                            selectedProduct.status === 'Low Stock' ? 'warning.main' :
+                                            selectedProduct.status === 'Out of Stock' ? 'error.main' :
+                                            selectedProduct.status === 'Discontinued' ? 'text.disabled' :
+                                            'info.main',
+                                        color: 'white',
+                                        ml: 1
+                                    }}
+                                />
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>Approval Status:</strong> 
+                                <Chip 
+                                    label={selectedProduct?.approvalStatus} 
+                                    size="small"
+                                    sx={{
+                                        bgcolor: 
+                                            selectedProduct.approvalStatus === 'Approved' ? 'success.main' :
+                                            selectedProduct.approvalStatus === 'Pending' ? 'warning.main' :
+                                            selectedProduct.approvalStatus === 'Rejected' ? 'error.main' :
+                                            'text.disabled',
+                                        color: 'white',
+                                        ml: 1
+                                    }}
+                                />
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>Price:</strong> ${selectedProduct?.price?.toFixed(2)}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>Stock Quantity:</strong> {selectedProduct?.stock}
+                            </Typography>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={selectedProduct?.featured}
+                                        onChange={() => {}}
+                                        color="primary"
+                                        disabled
+                                    />
+                                }
+                                label="Featured Product"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle1" gutterBottom>SEO Information</Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>Meta Title:</strong> {selectedProduct?.meta_title}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>Meta Description:</strong> {selectedProduct?.meta_description}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                <strong>Meta Keywords:</strong> {selectedProduct?.meta_keywords?.join(', ')}
+                            </Typography>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Typography variant="subtitle1" gutterBottom>Product Image</Typography>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                    p: 2,
+                                    minHeight: 200,
+                                    position: 'relative'
+                                }}
+                            >
+                                <Avatar
+                                    src={selectedProduct?.image}
+                                    alt={selectedProduct?.name}
+                                    variant="rounded"
+                                    sx={{ width: 120, height: 120 }}
+                                    onError={(e) => { e.target.src = defaultProductImage; }}
+                                />
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseViewDialog}>Close</Button>
+                </DialogActions>
+            </Dialog>
+            
+            {/* Edit Product Dialog */}
+            <Dialog
+                open={editProductDialogOpen}
+                onClose={handleCloseEditDialog}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>Edit Product: {selectedProduct?.name}</DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={8}>
+                            <TextField
+                                fullWidth
+                                label="Product Name"
+                                name="name"
+                                value={editProductData.name}
+                                onChange={e => handleEditProductChange('name', e.target.value)}
+                                variant="outlined"
+                                required
+                                sx={{ mb: 2 }}
+                            />
+                            <TextField
+                                fullWidth
+                                label="Description"
+                                name="description"
+                                value={editProductData.description}
+                                onChange={e => handleEditProductChange('description', e.target.value)}
+                                variant="outlined"
+                                multiline
+                                rows={4}
+                                required
+                                sx={{ mb: 2 }}
+                            />
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Price"
+                                        name="price"
+                                        type="number"
+                                        value={editProductData.price}
+                                        onChange={e => handleEditProductChange('price', e.target.value)}
+                                        variant="outlined"
+                                        required
+                                        InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Stock Quantity"
+                                        name="stock_quantity"
+                                        type="number"
+                                        value={editProductData.stock_quantity}
+                                        onChange={e => handleEditProductChange('stock_quantity', e.target.value)}
+                                        variant="outlined"
+                                        required
+                                    />
+                                </Grid>
+                            </Grid>
+                             <Grid container spacing={2} sx={{ mb: 2 }}>
+                                <Grid item xs={12} sm={6}>
+                                    <FormControl fullWidth required>
+                                        <InputLabel id="edit-product-category-label">Category</InputLabel>
+                                        <Select
+                                            labelId="edit-product-category-label"
+                                            name="category"
+                                            value={editProductData.category}
+                                            onChange={e => handleEditProductChange('category', e.target.value)}
+                                            label="Category"
+                                        >
+                                            {categories.map((cat) => (
+                                                <MenuItem key={cat.id} value={cat.name}>
+                                                    {cat.name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Subcategory (Optional)"
+                                        name="subcategory"
+                                        value={editProductData.subcategory}
+                                        onChange={e => handleEditProductChange('subcategory', e.target.value)}
+                                        variant="outlined"
+                                    />
+                                </Grid>
+                            </Grid>
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Brand (Optional)"
+                                        name="brand"
+                                        value={editProductData.brand}
+                                        onChange={e => handleEditProductChange('brand', e.target.value)}
+                                        variant="outlined"
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="SKU (Optional)"
+                                        name="sku"
+                                        value={editProductData.sku}
+                                        onChange={e => handleEditProductChange('sku', e.target.value)}
+                                        variant="outlined"
+                                    />
+                                </Grid>
+                            </Grid>
+                            {/* Using Autocomplete for tags if available, or simple TextField */}
+                            <TextField 
+                                fullWidth
+                                label="Tags (comma-separated)"
+                                name="tags"
+                                value={editProductData.tags.join(',')} // Display as string
+                                onChange={(e) => handleEditProductChange('tags', e.target.value.split(',').map(t => t.trim()))}
+                                variant="outlined"
+                                helperText="Enter tags separated by commas"
+                                sx={{ mb: 2 }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <Typography variant="subtitle1" gutterBottom>Product Image</Typography>
+                            <Box
+                                sx={{
+                                    border: '2px dashed',
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                    p: 2,
+                                    textAlign: 'center',
+                                    mb: 2,
+                                    minHeight: 150,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexDirection: 'column',
+                                    position: 'relative'
+                                }}
+                            >
+                                {imagePreview ? (
+                                    <>
+                                        <Avatar
+                                            src={imagePreview}
+                                            alt="Product Preview"
+                                            variant="rounded"
+                                            sx={{ width: 120, height: 120, mb: 1 }}
+                                        />
+                                        <Button onClick={handleRemoveImage} size="small" color="error">
+                                            Remove Image
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Typography color="textSecondary">Image Preview</Typography>
+                                )}
+                            </Box>
+                            <Button
+                                variant="outlined"
+                                component="label"
+                                fullWidth
+                                startIcon={<CloudUploadIcon />}
+                            >
+                                Upload Image
+                                <input
+                                    id="edit-product-image-upload"
+                                    type="file"
+                                    hidden
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                />
+                            </Button>
+                        </Grid>
+                         <Grid item xs={12}>
+                            <Typography variant="h6" gutterBottom sx={{mt: 2}}>SEO (Optional)</Typography>
+                            <TextField
+                                fullWidth
+                                label="Meta Title"
+                                name="meta_title"
+                                value={editProductData.meta_title}
+                                onChange={e => handleEditProductChange('meta_title', e.target.value)}
+                                variant="outlined"
+                                sx={{ mb: 2 }}
+                                helperText="If empty, product name will be used."
+                            />
+                            <TextField
+                                fullWidth
+                                label="Meta Description"
+                                name="meta_description"
+                                value={editProductData.meta_description}
+                                onChange={e => handleEditProductChange('meta_description', e.target.value)}
+                                variant="outlined"
+                                multiline
+                                rows={3}
+                                sx={{ mb: 2 }}
+                                helperText="If empty, the start of the product description will be used."
+                            />
+                            <TextField
+                                fullWidth
+                                label="Meta Keywords (comma-separated)"
+                                name="meta_keywords"
+                                value={editProductData.meta_keywords}
+                                onChange={e => handleEditProductChange('meta_keywords', e.target.value)}
+                                variant="outlined"
+                                helperText="Enter relevant keywords separated by commas."
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseEditDialog}>Cancel</Button>
+                    <Button 
+                        onClick={handleSaveEditProduct} 
+                        variant="contained" 
+                        color="primary"
+                        disabled={loading || !editProductData.name || !editProductData.description || !editProductData.price || !editProductData.category || !editProductData.stock_quantity}
+                    >
+                        {loading ? <CircularProgress size={24} /> : 'Save Changes'}
                     </Button>
                 </DialogActions>
             </Dialog>

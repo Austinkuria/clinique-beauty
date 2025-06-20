@@ -48,7 +48,7 @@ export const createProduct = async (req, res) => {
       brand,
       sku,
       stock_quantity,
-      ratings,
+      rating,
       reviews_count,
       color,
       size,
@@ -105,7 +105,7 @@ export const createProduct = async (req, res) => {
       brand: brand || null,
       sku: sku || null,
       stock_quantity: parseInt(stock_quantity, 10),
-      ratings: ratings ? parseFloat(ratings) : 0,
+      rating: rating ? parseFloat(rating) : 0,
       reviews_count: reviews_count ? parseInt(reviews_count, 10) : 0,
       images: imageUrl ? [imageUrl] : [], // Store image URL in an array as per schema
       color: color || null,
