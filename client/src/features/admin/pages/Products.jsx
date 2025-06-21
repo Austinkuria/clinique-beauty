@@ -563,10 +563,16 @@ function AdminProducts() {
                 severity: 'error'
             });
             return;
-        }
-
-        setLoading(true);
+        }        setLoading(true);
         const formData = new FormData();
+        
+        // Auto-generate SKU if not provided
+        let productSKU = newProductData.sku;
+        if (!productSKU && newProductData.name && newProductData.category) {
+            productSKU = generateSKU(newProductData.name, newProductData.category, newProductData.brand);
+            console.log("Products.jsx: Auto-generated SKU:", productSKU);
+        }
+        
         formData.append('name', newProductData.name);
         formData.append('description', newProductData.description);        formData.append('price', newProductData.price);
         formData.append('category', newProductData.category);
@@ -575,7 +581,7 @@ function AdminProducts() {
         formData.append('stock_quantity', newProductData.stock_quantity);
         formData.append('tags', JSON.stringify(newProductData.tags)); // Assuming tags are an array of strings
         formData.append('image', newProductData.image); // The File object
-        if (newProductData.sku) formData.append('sku', newProductData.sku);
+        if (productSKU) formData.append('sku', productSKU);
         if (newProductData.weight) formData.append('weight', newProductData.weight);
         if (newProductData.dimensions) formData.append('dimensions', newProductData.dimensions);
         if (newProductData.color) formData.append('color', newProductData.color);
@@ -591,14 +597,16 @@ function AdminProducts() {
             // Add the new product to the current products list
             if (response) {
                 setProducts(prev => [...prev, response]);
-            }
-
-            // Close dialog and reset form
+            }            // Close dialog and reset form
             handleCloseAddProductDialog();
-              // Show success message with brand color option
+              // Show success message with SKU info
+            const successMessage = productSKU !== newProductData.sku 
+                ? `Product added successfully! Auto-generated SKU: ${productSKU} 🎉`
+                : 'Product added successfully! 🎉';
+            
             setSnackbar({
                 open: true,
-                message: 'Product added successfully!',
+                message: successMessage,
                 severity: 'success' // Keep green for universal recognition
                 // Alternative: Use 'info' with custom styling for brand color alignment
             });
@@ -706,6 +714,37 @@ function AdminProducts() {
             });
         } finally {
             setLoading(false);
+        }
+    };
+
+    // SKU generation function
+    const generateSKU = (productName, category, brand) => {
+        // Create SKU based on product attributes
+        const namePrefix = productName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '');
+        const categoryPrefix = category.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, '');
+        const brandPrefix = brand ? brand.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, '') : '';
+        const timestamp = Date.now().toString().slice(-4); // Last 4 digits of timestamp
+        const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        
+        return `${namePrefix}${categoryPrefix}${brandPrefix}${timestamp}${randomSuffix}`.substring(0, 12);
+    };
+
+    // Auto-generate SKU when product details change
+    const handleAutoGenerateSKU = () => {
+        if (newProductData.name && newProductData.category) {
+            const autoSKU = generateSKU(newProductData.name, newProductData.category, newProductData.brand);
+            setNewProductData(prev => ({ ...prev, sku: autoSKU }));
+            setSnackbar({
+                open: true,
+                message: `Auto-generated SKU: ${autoSKU}`,
+                severity: 'info'
+            });
+        } else {
+            setSnackbar({
+                open: true,
+                message: 'Please enter product name and category first',
+                severity: 'warning'
+            });
         }
     };
 
@@ -1767,16 +1806,30 @@ function AdminProducts() {
                                         onChange={handleNewProductChange}
                                         variant="outlined"
                                     />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="SKU (Optional)"
-                                        name="sku"
-                                        value={newProductData.sku}
-                                        onChange={handleNewProductChange}
-                                        variant="outlined"
-                                    />
+                                </Grid>                                <Grid item xs={12} sm={6}>
+                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'end' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="SKU"
+                                            name="sku"
+                                            value={newProductData.sku}
+                                            onChange={handleNewProductChange}
+                                            variant="outlined"
+                                            helperText="Leave empty to auto-generate"
+                                        />
+                                        <Button
+                                            variant="outlined"
+                                            onClick={handleAutoGenerateSKU}
+                                            sx={{ 
+                                                minWidth: 'auto',
+                                                px: 2,
+                                                height: '56px', // Match TextField height
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            Auto
+                                        </Button>
+                                    </Box>
                                 </Grid>
                             </Grid>
                             {/* Using Autocomplete for tags if available, or simple TextField */}                            <TextField 
@@ -2104,16 +2157,46 @@ function AdminProducts() {
                                         onChange={e => handleEditProductChange('brand', e.target.value)}
                                         variant="outlined"
                                     />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="SKU (Optional)"
-                                        name="sku"
-                                        value={editProductData.sku}
-                                        onChange={e => handleEditProductChange('sku', e.target.value)}
-                                        variant="outlined"
-                                    />
+                                </Grid>                                <Grid item xs={12} sm={6}>
+                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'end' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="SKU"
+                                            name="sku"
+                                            value={editProductData.sku}
+                                            onChange={e => handleEditProductChange('sku', e.target.value)}
+                                            variant="outlined"
+                                            helperText="Leave empty to auto-generate"
+                                        />
+                                        <Button
+                                            variant="outlined"
+                                            onClick={() => {
+                                                if (editProductData.name && editProductData.category) {
+                                                    const autoSKU = generateSKU(editProductData.name, editProductData.category, editProductData.brand);
+                                                    handleEditProductChange('sku', autoSKU);
+                                                    setSnackbar({
+                                                        open: true,
+                                                        message: `Auto-generated SKU: ${autoSKU}`,
+                                                        severity: 'info'
+                                                    });
+                                                } else {
+                                                    setSnackbar({
+                                                        open: true,
+                                                        message: 'Please enter product name and category first',
+                                                        severity: 'warning'
+                                                    });
+                                                }
+                                            }}
+                                            sx={{ 
+                                                minWidth: 'auto',
+                                                px: 2,
+                                                height: '56px', // Match TextField height
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            Auto
+                                        </Button>
+                                    </Box>
                                 </Grid>
                             </Grid>
                             {/* Using Autocomplete for tags if available, or simple TextField */}                            <TextField 
