@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Client Dev Server",
+			"type": "shell",
+			"command": "cd client && npm run dev",
+			"group": "development",
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}

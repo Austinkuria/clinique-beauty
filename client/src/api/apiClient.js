@@ -19,14 +19,19 @@ export const useAdminApi = () => {
       const fullUrl = `${API_BASE_URL}${endpoint}`;
       console.log(`[AdminAPI] Making request to: ${fullUrl}`);
       console.log(`[AdminAPI] With token: ${token ? 'Present' : 'Missing'}`);
+        const headers = {
+        'Authorization': `Bearer ${token}`,
+        ...options.headers
+      };
+      
+      // Don't set Content-Type for FormData, let the browser set it with boundary
+      if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
       
       const response = await fetch(fullUrl, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          ...options.headers
-        }
+        headers
       });
       
       console.log(`[AdminAPI] Response status: ${response.status}`);
@@ -128,12 +133,19 @@ export const useAdminApi = () => {
     } finally {
       setLoading(false);
     }
-  };
-    const updateProduct = async (productId, productData) => {
-    return fetchWithAuth(`/admin/products/${productId}`, {
-      method: 'PUT',
-      body: JSON.stringify(productData)
-    });
+  };    const updateProduct = async (productId, productData) => {
+    // Handle both FormData and regular objects
+    if (productData instanceof FormData) {
+      return fetchWithAuth(`/admin/products/${productId}`, {
+        method: 'PUT',
+        body: productData // Don't stringify FormData
+      });
+    } else {
+      return fetchWithAuth(`/admin/products/${productId}`, {
+        method: 'PUT',
+        body: JSON.stringify(productData)
+      });
+    }
   };
   
   const deleteProduct = async (productId) => {

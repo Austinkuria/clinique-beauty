@@ -72,8 +72,7 @@ import { useAdminApi } from '../../../api/apiClient';
 import defaultProductImage from '../../../assets/images/placeholder.webp';
 
 // Import mock data
-import mockAdminProducts,
- { 
+import { 
     categories, 
     tags, 
     productStatuses, 
@@ -127,7 +126,22 @@ function AdminProducts() {
     const [editProductDialogOpen, setEditProductDialogOpen] = useState(false);
     const [viewProductDialogOpen, setViewProductDialogOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [editProductData, setEditProductData] = useState({});
+    const [editProductData, setEditProductData] = useState({
+        name: '',
+        description: '',
+        price: '',
+        category: '',
+        subcategory: '',
+        brand: '',
+        sku: '',
+        stock_quantity: '',
+        tags: [],
+        meta_title: '',
+        meta_description: '',
+        meta_keywords: '',
+        status: 'Active',
+        featured: false
+    });
     const [uploadedFile, setUploadedFile] = useState(null);
     const [importOptions, setImportOptions] = useState({
         updateExisting: false,
@@ -508,24 +522,40 @@ function AdminProducts() {
     const handleNewProductTagsChange = (event, newValue) => {
         setNewProductData(prev => ({ ...prev, tags: newValue }));
     };
-    
-    const handleImageChange = (event) => {
+      const handleImageChange = (event) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            setNewProductData(prev => ({ ...prev, image: file }));
-            setImagePreview(URL.createObjectURL(file));
+            const preview = URL.createObjectURL(file);
+            
+            // Check if we're in add or edit mode based on which dialog is open
+            if (addProductDialogOpen) {
+                setNewProductData(prev => ({ ...prev, image: file }));
+            } else if (editProductDialogOpen) {
+                setEditProductData(prev => ({ ...prev, image: file }));
+            }
+            setImagePreview(preview);
         }
     };
 
     const handleRemoveImage = () => {
-        setNewProductData(prev => ({ ...prev, image: null }));
-        setImagePreview(null);
-        // Reset the file input
-        const fileInput = document.getElementById('add-product-image-upload');
-        if (fileInput) {
-            fileInput.value = '';
+        // Check if we're in add or edit mode based on which dialog is open
+        if (addProductDialogOpen) {
+            setNewProductData(prev => ({ ...prev, image: null }));
+            // Reset the file input for add dialog
+            const fileInput = document.getElementById('add-product-image-upload');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        } else if (editProductDialogOpen) {
+            setEditProductData(prev => ({ ...prev, image: null }));
+            // Reset the file input for edit dialog
+            const fileInput = document.getElementById('edit-product-image-upload');
+            if (fileInput) {
+                fileInput.value = '';
+            }
         }
-    };    const handleSaveNewProduct = async () => {
+        setImagePreview(null);
+    };const handleSaveNewProduct = async () => {
         // Check required fields with proper field names
         if (!newProductData.name || !newProductData.description || !newProductData.price || !newProductData.category || !newProductData.stock_quantity) {
             alert('Please fill in all required fields: Product Name, Description, Price, Category, and Stock Quantity.');
@@ -596,10 +626,9 @@ function AdminProducts() {
             tags: product.tags || [],
             meta_title: product.meta_title || '',
             meta_description: product.meta_description || '',
-            meta_keywords: product.meta_keywords ? product.meta_keywords.join(', ') : '',
-            status: product.status || 'active',
-            availability: product.availability || 'in stock',
-            featured: product.featured || false,
+            meta_keywords: product.meta_keywords || '',
+            status: product.status || 'Active',
+            featured: product.featured || false
         });
         setEditProductDialogOpen(true);
     };
@@ -608,6 +637,7 @@ function AdminProducts() {
         setEditProductDialogOpen(false);
         setSelectedProduct(null);
         setEditProductData({});
+        setImagePreview(null);
     };
 
     const handleEditProductChange = (field, value) => {
@@ -620,38 +650,38 @@ function AdminProducts() {
     const handleSaveEditProduct = async () => {
         if (!selectedProduct) return;
 
+        setLoading(true);
         try {
-            // Transform data to match API expectations
-            const updateData = {
-                ...editProductData,
-                price: parseFloat(editProductData.price),
-                stock: parseInt(editProductData.stock_quantity, 10),
-                tags: Array.isArray(editProductData.tags) 
-                    ? editProductData.tags 
-                    : editProductData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-                meta_keywords: editProductData.meta_keywords 
-                    ? editProductData.meta_keywords.split(',').map(kw => kw.trim()).filter(kw => kw)
-                    : [],
-            };
+            const formData = new FormData();
+            
+            // Add all fields to FormData
+            Object.keys(editProductData).forEach(key => {
+                if (key === 'tags' && Array.isArray(editProductData[key])) {
+                    formData.append(key, JSON.stringify(editProductData[key]));
+                } else {
+                    formData.append(key, editProductData[key]);
+                }
+            });
 
-            // Remove stock_quantity since we're using stock
-            delete updateData.stock_quantity;
+            // Add image if a new one was uploaded
+            if (editProductData.image) {
+                formData.append('image', editProductData.image);
+            }
 
-            await adminApi.updateProduct(selectedProduct.id, updateData);
-
-            // Update local state
+            const updatedProduct = await adminApi.updateProduct(selectedProduct.id, formData);
+            
+            // Update the products list
             setProducts(products.map(p => 
-                p.id === selectedProduct.id 
-                    ? { ...p, ...updateData }
-                    : p
+                p.id === selectedProduct.id ? updatedProduct : p
             ));
 
-            handleCloseEditDialog();
             setSnackbar({
                 open: true,
                 message: 'Product updated successfully',
                 severity: 'success'
             });
+
+            handleCloseEditDialog();
         } catch (error) {
             console.error('Error updating product:', error);
             setSnackbar({
@@ -659,6 +689,8 @@ function AdminProducts() {
                 message: `Error updating product: ${error.message}`,
                 severity: 'error'
             });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -1732,12 +1764,11 @@ function AdminProducts() {
                                     />
                                 </Grid>
                             </Grid>
-                            {/* Using Autocomplete for tags if available, or simple TextField */}
-                            <TextField 
+                            {/* Using Autocomplete for tags if available, or simple TextField */}                            <TextField 
                                 fullWidth
                                 label="Tags (comma-separated)"
                                 name="tags"
-                                value={newProductData.tags.join(',')} // Display as string
+                                value={Array.isArray(newProductData.tags) ? newProductData.tags.join(',') : ''} // Display as string with safe check
                                 onChange={(e) => setNewProductData(prev => ({ ...prev, tags: e.target.value.split(',').map(t => t.trim()) }))}
                                 variant="outlined"
                                 helperText="Enter tags separated by commas"
@@ -1867,16 +1898,15 @@ function AdminProducts() {
                                 <strong>Tags:</strong> {selectedProduct?.tags?.join(', ')}
                             </Typography>
                             <Typography variant="body2" sx={{ mb: 1 }}>
-                                <strong>Status:</strong> 
-                                <Chip 
+                                <strong>Status:</strong>                                <Chip 
                                     label={selectedProduct?.status} 
                                     size="small"
                                     sx={{
                                         bgcolor: 
-                                            selectedProduct.status === 'Active' ? 'success.main' :
-                                            selectedProduct.status === 'Low Stock' ? 'warning.main' :
-                                            selectedProduct.status === 'Out of Stock' ? 'error.main' :
-                                            selectedProduct.status === 'Discontinued' ? 'text.disabled' :
+                                            selectedProduct?.status === 'Active' ? 'success.main' :
+                                            selectedProduct?.status === 'Low Stock' ? 'warning.main' :
+                                            selectedProduct?.status === 'Out of Stock' ? 'error.main' :
+                                            selectedProduct?.status === 'Discontinued' ? 'text.disabled' :
                                             'info.main',
                                         color: 'white',
                                         ml: 1
@@ -1884,15 +1914,14 @@ function AdminProducts() {
                                 />
                             </Typography>
                             <Typography variant="body2" sx={{ mb: 1 }}>
-                                <strong>Approval Status:</strong> 
-                                <Chip 
+                                <strong>Approval Status:</strong>                                <Chip 
                                     label={selectedProduct?.approvalStatus} 
                                     size="small"
                                     sx={{
                                         bgcolor: 
-                                            selectedProduct.approvalStatus === 'Approved' ? 'success.main' :
-                                            selectedProduct.approvalStatus === 'Pending' ? 'warning.main' :
-                                            selectedProduct.approvalStatus === 'Rejected' ? 'error.main' :
+                                            selectedProduct?.approvalStatus === 'Approved' ? 'success.main' :
+                                            selectedProduct?.approvalStatus === 'Pending' ? 'warning.main' :
+                                            selectedProduct?.approvalStatus === 'Rejected' ? 'error.main' :
                                             'text.disabled',
                                         color: 'white',
                                         ml: 1
@@ -2072,12 +2101,11 @@ function AdminProducts() {
                                     />
                                 </Grid>
                             </Grid>
-                            {/* Using Autocomplete for tags if available, or simple TextField */}
-                            <TextField 
+                            {/* Using Autocomplete for tags if available, or simple TextField */}                            <TextField 
                                 fullWidth
                                 label="Tags (comma-separated)"
                                 name="tags"
-                                value={editProductData.tags.join(',')} // Display as string
+                                value={Array.isArray(editProductData.tags) ? editProductData.tags.join(',') : ''} // Display as string with safe check
                                 onChange={(e) => handleEditProductChange('tags', e.target.value.split(',').map(t => t.trim()))}
                                 variant="outlined"
                                 helperText="Enter tags separated by commas"
