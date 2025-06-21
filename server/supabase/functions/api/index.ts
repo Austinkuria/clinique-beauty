@@ -1096,12 +1096,188 @@ serve(async (req: Request) => {
                         message: 'Internal server error while creating product.',
                         details: error.message
                     }),
+                    { headers, status: 500 }                );
+            }
+        }
+
+        // PUT /api/admin/products/:id - Update existing product (admin only)
+        if (req.method === 'PUT' && route[0] === 'admin' && route[1] === 'products' && route.length === 3) {
+            const productId = route[2];
+            console.log(`[Route Handler] ✅ MATCHED PUT /api/admin/products/${productId} (Admin route)`);
+            
+            // Authentication check
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }), 
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Verify user has admin privileges
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Invalid authentication token' }), 
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Check if user is admin
+            const supabaseService = createClient(
+                Deno.env.get('PROJECT_SUPABASE_URL') ?? '',
+                Deno.env.get('PROJECT_SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            );
+            
+            const { data: userData, error: userError } = await supabaseService
+                .from('user_profiles')
+                .select('role')
+                .eq('id', supabaseUserId)
+                .single();
+                
+            if (userError || !userData || userData.role !== 'admin') {
+                return new Response(
+                    JSON.stringify({ message: 'Admin privileges required' }), 
+                    { headers, status: 403 }
+                );
+            }
+            
+            try {
+                // Parse form data
+                const formData = await req.formData();
+                
+                // Extract product data from form
+                const name = formData.get('name') as string;
+                const description = formData.get('description') as string;
+                const price = formData.get('price') as string;
+                const category = formData.get('category') as string;
+                const subcategory = formData.get('subcategory') as string;
+                const brand = formData.get('brand') as string;
+                const sku = formData.get('sku') as string;
+                const stockQuantity = formData.get('stock_quantity') as string;
+                const tagsString = formData.get('tags') as string;
+                const metaTitle = formData.get('meta_title') as string;
+                const metaDescription = formData.get('meta_description') as string;
+                const metaKeywords = formData.get('meta_keywords') as string;
+                const status = formData.get('status') as string || 'Active';
+                const featured = formData.get('featured') === 'true';
+                const image = formData.get('image') as File;
+                
+                console.log(`[DEBUG PUT] Updating product ${productId} with data:`, {
+                    name, description, price, category, brand, sku, stockQuantity, tagsString
+                });
+                
+                // Prepare update object
+                const updateData: any = {};
+                
+                if (name) updateData.name = name;
+                if (description) updateData.description = description;
+                if (price) updateData.price = parseFloat(price);
+                if (category) updateData.category = category;
+                if (subcategory) updateData.subcategory = subcategory;
+                if (brand) updateData.brand = brand;
+                if (sku) updateData.sku = sku;
+                if (stockQuantity) updateData.stock = parseInt(stockQuantity);
+                if (tagsString) {
+                    try {
+                        updateData.tags = JSON.parse(tagsString);
+                    } catch {
+                        updateData.tags = tagsString.split(',').map(tag => tag.trim());
+                    }
+                }
+                if (metaTitle) updateData.meta_title = metaTitle;
+                if (metaDescription) updateData.meta_description = metaDescription;
+                if (metaKeywords) updateData.meta_keywords = metaKeywords;
+                if (status) updateData.status = status;
+                updateData.featured = featured;
+                updateData.updated_at = new Date().toISOString();
+                
+                // Handle image upload if present
+                if (image && image.size > 0) {
+                    console.log(`[DEBUG PUT] Uploading new image for product ${productId}`);
+                    
+                    const fileName = `product-${productId}-${Date.now()}.webp`;
+                    const { data: uploadData, error: uploadError } = await supabaseService.storage
+                        .from('product-images')
+                        .upload(fileName, image, {
+                            contentType: 'image/webp',
+                            upsert: true
+                        });
+                    
+                    if (uploadError) {
+                        console.error('Error uploading image:', uploadError);
+                        return new Response(
+                            JSON.stringify({ 
+                                error: true, 
+                                message: 'Failed to upload product image.',
+                                details: uploadError.message
+                            }),
+                            { headers, status: 500 }
+                        );
+                    }
+                    
+                    // Get public URL for the uploaded image
+                    const { data: urlData } = supabaseService.storage
+                        .from('product-images')
+                        .getPublicUrl(fileName);
+                    
+                    updateData.image = urlData.publicUrl;
+                    console.log(`[DEBUG PUT] Image uploaded successfully: ${updateData.image}`);
+                }
+                
+                console.log('[DEBUG PUT] Final update object:', JSON.stringify(updateData, null, 2));
+                
+                // Update product in database
+                const { data, error } = await supabaseService
+                    .from('products')
+                    .update(updateData)
+                    .eq('id', productId)
+                    .select()
+                    .single();
+                
+                if (error) {
+                    console.error('Error updating product in Supabase:', error);
+                    
+                    if (error.code === 'PGRST116') { // No rows updated
+                        return new Response(
+                            JSON.stringify({ 
+                                error: true, 
+                                message: 'Product not found.'
+                            }),
+                            { headers, status: 404 }
+                        );
+                    }
+                    
+                    return new Response(
+                        JSON.stringify({ 
+                            error: true, 
+                            message: 'Failed to update product in database.',
+                            details: error.message
+                        }),
+                        { headers, status: 500 }
+                    );
+                }
+                
+                console.log('Product updated successfully:', data);
+                
+                return new Response(
+                    JSON.stringify(data),
+                    { headers, status: 200 }
+                );
+                
+            } catch (error) {
+                console.error(`Error processing PUT /api/admin/products/${productId}:`, error);
+                return new Response(
+                    JSON.stringify({ 
+                        error: true, 
+                        message: 'Internal server error while updating product.',
+                        details: error.message
+                    }),
                     { headers, status: 500 }
                 );
             }
         }
 
-        // POST /api/products - Create new product (legacy route - redirect to admin route)        // POST /api/products - Create new product (legacy route - redirect to admin route)
+        // POST /api/products - Create new product (legacy route - redirect to admin route)// POST /api/products - Create new product (legacy route - redirect to admin route)
         if (req.method === 'POST' && route[0] === 'products' && route.length === 1) {
             console.log('[Route Handler] ⚠️  MATCHED POST /api/products (LEGACY route - should use /api/admin/products)');
             
