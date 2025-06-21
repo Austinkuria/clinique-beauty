@@ -554,14 +554,18 @@ function AdminProducts() {
                 fileInput.value = '';
             }
         }
-        setImagePreview(null);
-    };const handleSaveNewProduct = async () => {
+        setImagePreview(null);    };const handleSaveNewProduct = async () => {
         // Check required fields with proper field names
         if (!newProductData.name || !newProductData.description || !newProductData.price || !newProductData.category || !newProductData.stock_quantity) {
-            alert('Please fill in all required fields: Product Name, Description, Price, Category, and Stock Quantity.');
+            setSnackbar({
+                open: true,
+                message: 'Please fill in all required fields: Product Name, Description, Price, Category, and Stock Quantity.',
+                severity: 'error'
+            });
             return;
         }
 
+        setLoading(true);
         const formData = new FormData();
         formData.append('name', newProductData.name);
         formData.append('description', newProductData.description);        formData.append('price', newProductData.price);
@@ -584,19 +588,30 @@ function AdminProducts() {
             const response = await adminApi.createProduct(formData);
             console.log("Products.jsx: Product created successfully:", response);
 
-            // Assuming the response contains the newly created product data
-            // You might want to update your local state or refetch products here
-            // For now, just log and close the dialog
-            // Example: dispatch(fetchProducts()); // If using Redux or similar
+            // Add the new product to the current products list
+            if (response) {
+                setProducts(prev => [...prev, response]);
+            }
 
+            // Close dialog and reset form
             handleCloseAddProductDialog();
-            // Optionally, refresh the product list or show a success message
-            alert('Product added successfully!'); 
-            // TODO: Refresh product list - for now, we can manually refresh or implement a fetchProducts call
+            
+            // Show success message with better styling
+            setSnackbar({
+                open: true,
+                message: 'Product added successfully! 🎉',
+                severity: 'success'
+            });
 
         } catch (error) {
             console.error('Products.jsx: Error creating product:', error);
-            alert(`Failed to add product: ${error.message}`);
+            setSnackbar({
+                open: true,
+                message: `Failed to add product: ${error.message}`,
+                severity: 'error'
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
