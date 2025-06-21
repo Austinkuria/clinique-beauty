@@ -595,12 +595,12 @@ function AdminProducts() {
 
             // Close dialog and reset form
             handleCloseAddProductDialog();
-            
-            // Show success message with better styling
+              // Show success message with brand color option
             setSnackbar({
                 open: true,
-                message: 'Product added successfully! 🎉',
-                severity: 'success'
+                message: 'Product added successfully!',
+                severity: 'success' // Keep green for universal recognition
+                // Alternative: Use 'info' with custom styling for brand color alignment
             });
 
         } catch (error) {
