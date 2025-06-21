@@ -715,18 +715,19 @@ function AdminProducts() {
         } finally {
             setLoading(false);
         }
-    };
-
-    // SKU generation function
+    };    // SKU generation function
     const generateSKU = (productName, category, brand) => {
-        // Create SKU based on product attributes
-        const namePrefix = productName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '');
-        const categoryPrefix = category.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, '');
-        const brandPrefix = brand ? brand.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, '') : '';
-        const timestamp = Date.now().toString().slice(-4); // Last 4 digits of timestamp
-        const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        // Create SKU starting with category for better organization
+        const categoryPrefix = category.substring(0, 4).toUpperCase().replace(/[^A-Z]/g, '').padEnd(3, 'X'); // 3-4 chars
+        const namePrefix = productName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '').padEnd(3, 'X'); // 3 chars
+        const brandPrefix = brand ? brand.substring(0, 2).toUpperCase().replace(/[^A-Z]/g, '') : ''; // 2 chars
+        const timestamp = Date.now().toString().slice(-3); // Last 3 digits of timestamp
+        const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0'); // 2 digits
         
-        return `${namePrefix}${categoryPrefix}${brandPrefix}${timestamp}${randomSuffix}`.substring(0, 12);
+        // Format: CATEGORY-PRODUCT-BRAND-TIMESTAMP-RANDOM
+        // Example: SKIN-LIP-MAC-123-45 for Skincare > Lipstick > MAC brand
+        const sku = `${categoryPrefix}-${namePrefix}${brandPrefix ? `-${brandPrefix}` : ''}-${timestamp}${randomSuffix}`;
+        return sku.substring(0, 15); // Keep it reasonable length
     };
 
     // Auto-generate SKU when product details change
@@ -1071,23 +1072,22 @@ function AdminProducts() {
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        <Avatar 
+                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>                                                        <Avatar 
                                                             src={product.image} 
-                                                            alt={product.name}
+                                                            alt={product.name || 'Product'}
                                                             variant="rounded"
                                                             sx={{ width: 40, height: 40, mr: 2 }}
                                                             onError={(e) => { e.target.src = defaultProductImage; }}
                                                         />
                                                         <Box>
-                                                            <Typography variant="body2">{product.name}</Typography>
+                                                            <Typography variant="body2">{product.name || 'Unnamed Product'}</Typography>
                                                             <Typography variant="caption" color="textSecondary">
-                                                                SKU: {product.sku}
+                                                                SKU: {product.sku || 'No SKU'}
                                                             </Typography>
                                                         </Box>
                                                     </Box>
                                                 </TableCell>
-                                                <TableCell>{product.category}</TableCell>
+                                                <TableCell>{product.category || 'Uncategorized'}</TableCell>
                                                 <TableCell>
                                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                                         {product.tags?.map((tag, index) => (
@@ -1110,24 +1110,21 @@ function AdminProducts() {
                                                                     textDecoration: 'line-through',
                                                                     color: 'text.secondary',
                                                                     mr: 1
-                                                                }}
-                                                            >
-                                                                ${product.price.toFixed(2)}
+                                                                }}                                                            >
+                                                                ${product.price ? product.price.toFixed(2) : '0.00'}
                                                             </Typography>
                                                             <Typography variant="body2" component="span" color="error">
-                                                                ${product.salePrice.toFixed(2)}
+                                                                ${product.salePrice ? product.salePrice.toFixed(2) : '0.00'}
                                                             </Typography>
-                                                        </Box>
-                                                    ) : (
+                                                        </Box>                                                    ) : (
                                                         <Typography variant="body2">
-                                                            ${product.price.toFixed(2)}
+                                                            ${product.price ? product.price.toFixed(2) : '0.00'}
                                                         </Typography>
                                                     )}
-                                                </TableCell>
-                                                <TableCell align="right">{product.stock}</TableCell>
+                                                </TableCell>                                                <TableCell align="right">{product.stock || 0}</TableCell>
                                                 <TableCell>
                                                     <Chip 
-                                                        label={product.status} 
+                                                        label={product.status || 'Unknown'} 
                                                         size="small"
                                                         sx={{
                                                             bgcolor: 
@@ -1139,10 +1136,9 @@ function AdminProducts() {
                                                             color: 'white'
                                                         }}
                                                     />
-                                                </TableCell>
-                                                <TableCell>
+                                                </TableCell>                                                <TableCell>
                                                     <Chip 
-                                                        label={product.approvalStatus} 
+                                                        label={product.approvalStatus || 'Pending'} 
                                                         size="small"
                                                         sx={{
                                                             bgcolor: 
