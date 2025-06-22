@@ -1,7 +1,6 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { CircularProgress, Box, Typography } from '@mui/material';
-import { toast } from 'react-hot-toast';
 import App from './App.jsx';
 import Home from './features/home/Home.jsx';
 import Cart from './features/cart/Cart.jsx';
@@ -25,13 +24,18 @@ import AdminSetup from './features/admin/pages/AdminSetup';
 import AdminInventory from './features/admin/pages/Inventory';
 import Suppliers from './features/admin/pages/Suppliers';
 import AdminGuard from './components/AdminGuard';
+import SellerGuard from './components/SellerGuard';
+import SellerLayout from './features/seller/layout/SellerLayout';
+import SellerDashboard from './features/seller/pages/Dashboard';
+import SellerProducts from './features/seller/pages/Products';
+import SellerOrders from './features/seller/pages/Orders';
+import SellerFinancials from './features/seller/pages/Financials';
 import RevenueAnalytics from './features/admin/pages/analytics/RevenueAnalytics';
 import ProductAnalytics from './features/admin/pages/analytics/ProductAnalytics';
 import CustomerAnalytics from './features/admin/pages/analytics/CustomerAnalytics';
 import GeographicalAnalytics from './features/admin/pages/analytics/GeographicalAnalytics';
 import StockAlertsReport from './features/admin/pages/analytics/StockAlertsReport';
 import InventoryForecast from './features/admin/pages/analytics/InventoryForecast';
-import { useTheme } from '@mui/material/styles';
 import SellerManagement from './features/admin/sellers/SellerManagement';
 import SellerDetail from './features/admin/sellers/SellerDetail';
 import SellerEdit from './features/admin/sellers/SellerEdit';
@@ -154,10 +158,29 @@ export const router = createBrowserRouter([
                             { path: 'campaigns/:id', element: <CampaignDetail /> },
                             { path: 'campaigns/edit/:id', element: <CampaignDetail /> }, // Add specific route for editing campaigns
                             { path: 'discounts', element: <DiscountCodes /> },
-                            { path: 'email-campaigns', element: <EmailCampaigns /> },
-                            { path: 'ab-testing', element: <ABTestingTool /> } // Add A/B Testing route
+                            { path: 'email-campaigns', element: <EmailCampaigns /> },                            { path: 'ab-testing', element: <ABTestingTool /> } // Add A/B Testing route
                         ]
                     }
+                ]
+            },
+            // Seller Routes with SellerGuard
+            {
+                path: '/seller',
+                element: <SellerGuard><SellerLayout /></SellerGuard>,
+                children: [
+                    { index: true, element: <SellerDashboard /> },
+                    { path: 'products', element: <SellerProducts /> },
+                    { path: 'orders', element: <SellerOrders /> },
+                    { path: 'financials', element: <SellerFinancials /> },
+                    // TODO: Add remaining seller routes as components are created
+                    // { path: 'analytics', element: <SellerAnalytics /> },
+                    // { path: 'marketing', element: <SellerMarketing /> },
+                    // { path: 'customers', element: <SellerCustomers /> },
+                    // { path: 'reports', element: <SellerReports /> },
+                    // { path: 'settings', element: <SellerSettings /> },
+                    // { path: 'products/new', element: <SellerProductCreate /> },
+                    // { path: 'products/:id', element: <SellerProductDetail /> },
+                    // { path: 'products/:id/edit', element: <SellerProductEdit /> },
                 ]
             },
         ]

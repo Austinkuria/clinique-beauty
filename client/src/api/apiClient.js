@@ -176,8 +176,7 @@ export const useAdminApi = () => {
     error,
     // Dashboard
     getDashboardData,
-    // Users
-    getUsers,
+    // Users    getUsers,
     getUserDetails,
     updateUserRole,    // Products
     getProducts,
@@ -189,6 +188,167 @@ export const useAdminApi = () => {
     getOrders,
     getOrderDetails,
     updateOrderStatus,
+  };
+};
+
+// Seller API for authenticated seller requests
+export const useSellerApi = () => {
+  const { getToken } = useClerkAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Helper function for authenticated API calls
+  const fetchWithAuth = async (endpoint, options = {}) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const token = await getToken();
+      
+      // Log the full URL being requested for debugging
+      const fullUrl = `${API_BASE_URL}${endpoint}`;
+      console.log(`[SellerAPI] Making request to: ${fullUrl}`);
+      console.log(`[SellerAPI] With token: ${token ? 'Present' : 'Missing'}`);
+        const headers = {
+        'Authorization': `Bearer ${token}`,
+        'X-User-Role': 'seller', // Add role header for backend routing
+        ...options.headers
+      };
+      
+      // Don't set Content-Type for FormData, let the browser set it with boundary
+      if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+      
+      const response = await fetch(fullUrl, {
+        ...options,
+        headers
+      });
+      
+      console.log(`[SellerAPI] Response status: ${response.status}`);
+      
+      if (!response.ok) {
+        const responseText = await response.text();
+        console.error(`[SellerAPI] Error response: ${responseText}`);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch {
+          errorData = { message: `API error: ${response.status} - ${responseText.substring(0, 100)}...` };
+        }
+        
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    } catch (err) {
+      const errorMessage = err.message || 'Network error occurred';
+      console.error(`[SellerAPI] Error: ${errorMessage}`);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Product management methods for sellers
+  const getProducts = async () => {
+    const response = await fetchWithAuth('/seller/products');
+    return response.data || [];
+  };
+
+  const createProduct = async (formData) => {
+    if (!(formData instanceof FormData)) {
+      console.error("useSellerApi.createProduct expects FormData.");
+      throw new Error("Product data must be FormData for file uploads.");
+    }
+    
+    const response = await fetchWithAuth('/seller/products', {
+      method: 'POST',
+      body: formData
+    });
+    return response.data;
+  };
+
+  const updateProduct = async (productId, formData) => {
+    if (!(formData instanceof FormData)) {
+      console.error("useSellerApi.updateProduct expects FormData.");
+      throw new Error("Product data must be FormData for file uploads.");
+    }
+    
+    const response = await fetchWithAuth(`/seller/products/${productId}`, {
+      method: 'PUT',
+      body: formData
+    });
+    return response.data;
+  };
+
+  const deleteProduct = async (productId) => {
+    const response = await fetchWithAuth(`/seller/products/${productId}`, {
+      method: 'DELETE'
+    });
+    return response.data;
+  };
+
+  // Order management for sellers
+  const getOrders = async () => {
+    const response = await fetchWithAuth('/seller/orders');
+    return response.data || [];
+  };
+
+  const getOrderDetails = async (orderId) => {
+    const response = await fetchWithAuth(`/seller/orders/${orderId}`);
+    return response.data;
+  };
+
+  const updateOrderStatus = async (orderId, status) => {
+    const response = await fetchWithAuth(`/seller/orders/${orderId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+    return response.data;
+  };
+
+  // Analytics and reporting for sellers
+  const getAnalytics = async (timeframe = '30d') => {
+    const response = await fetchWithAuth(`/seller/analytics?timeframe=${timeframe}`);
+    return response.data || {};
+  };
+
+  const getFinancials = async (timeframe = '30d') => {
+    const response = await fetchWithAuth(`/seller/financials?timeframe=${timeframe}`);
+    return response.data || {};
+  };
+  // User profile methods
+  const getUserProfile = async () => {
+    const response = await fetchWithAuth('/user/profile');
+    return response.data || {};
+  };
+  
+  const getSellerProfile = async () => {
+    const response = await fetchWithAuth('/seller/profile');
+    return response.data || {};
+  };
+
+  return {
+    loading,
+    error,
+    // User & Seller Profile
+    getUserProfile,
+    getSellerProfile,
+    // Products
+    getProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    // Orders
+    getOrders,
+    getOrderDetails,
+    updateOrderStatus,
+    // Analytics
+    getAnalytics,
+    getFinancials,
   };
 };
 
