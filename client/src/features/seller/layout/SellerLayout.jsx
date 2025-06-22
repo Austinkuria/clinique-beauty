@@ -12,7 +12,6 @@ import {
   ListItemText, 
   ListItemButton,
   Divider,
-  useTheme,
   Avatar,
   Button,
   IconButton,
@@ -33,13 +32,16 @@ import {
   Assessment as ReportsIcon
 } from '@mui/icons-material';
 import { useUser, useClerk } from '@clerk/clerk-react';
-import { useTheme as useCustomTheme } from '../../../context/ThemeContext';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
+// Import theme when needed
+// import { useTheme as useAppTheme } from '../../../context/ThemeContext';
 
 const drawerWidth = 260;
 
 const SellerLayout = () => {
-  const theme = useTheme();
-  const { theme: _ } = useCustomTheme();
+  const theme = useMuiTheme();
+  // We can access app theme if needed later
+  // const appTheme = useAppTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useUser();

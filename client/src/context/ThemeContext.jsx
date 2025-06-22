@@ -1,7 +1,10 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { createTheme } from '@mui/material/styles';
 
 export const ThemeContext = createContext();
+
+// Custom hook for using the theme context
+export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
     const [mode, setMode] = useState('light');
