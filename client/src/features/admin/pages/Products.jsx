@@ -1704,7 +1704,8 @@ function AdminProducts() {
                     variant="filled"
                 >
                     {snackbar.message}
-                </Alert>            </Snackbar>
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
