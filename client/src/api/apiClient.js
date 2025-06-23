@@ -197,6 +197,10 @@ export const useSellerApi = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Use Express server URL for seller operations since they're not in Supabase Functions
+  const EXPRESS_SERVER_URL = import.meta.env.VITE_EXPRESS_SERVER_URL || 'http://localhost:5000';
+  const SELLER_API_BASE_URL = `${EXPRESS_SERVER_URL}/api`;
+
   // Helper function for authenticated API calls
   const fetchWithAuth = async (endpoint, options = {}) => {
     setLoading(true);
@@ -206,7 +210,7 @@ export const useSellerApi = () => {
       const token = await getToken();
       
       // Log the full URL being requested for debugging
-      const fullUrl = `${API_BASE_URL}${endpoint}`;
+      const fullUrl = `${SELLER_API_BASE_URL}${endpoint}`;
       console.log(`[SellerAPI] Making request to: ${fullUrl}`);
       console.log(`[SellerAPI] With token: ${token ? 'Present' : 'Missing'}`);
         const headers = {

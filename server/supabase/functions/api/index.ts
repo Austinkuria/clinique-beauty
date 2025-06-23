@@ -2426,8 +2426,234 @@ serve(async (req: Request) => {
                 registrationDate: seller.registration_date,
                 productCategories: seller.product_categories
             }));
+              return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
+        }
+
+        // --- SELLER APPLICATION ROUTES ---
+        // POST /api/seller/apply - Submit seller application
+        if (req.method === 'POST' && route[0] === 'seller' && route[1] === 'apply' && route.length === 2) {
+            console.log('[Route Handler] Matched POST /api/seller/apply');
             
-            return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
+            // Authentication required
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Invalid or expired token' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            try {
+                // Get user profile
+                const { data: userProfile, error: userError } = await supabase
+                    .from('user_profiles')
+                    .select('clerk_id, email')
+                    .eq('id', supabaseUserId)
+                    .single();
+                    
+                if (userError || !userProfile) {
+                    console.error('[Route Handler POST /api/seller/apply] User profile not found:', userError);
+                    return new Response(
+                        JSON.stringify({ message: 'User profile not found' }),
+                        { headers, status: 404 }
+                    );
+                }
+                
+                // Check if user already has a seller application
+                const { data: existingSeller, error: existingError } = await supabase
+                    .from('sellers')
+                    .select('id, status')
+                    .eq('clerk_id', userProfile.clerk_id)
+                    .single();
+                    
+                if (existingSeller) {
+                    return new Response(
+                        JSON.stringify({ 
+                            message: 'Seller application already exists',
+                            status: existingSeller.status
+                        }),
+                        { headers, status: 409 }
+                    );
+                }
+                
+                // Parse form data
+                const formData = await req.formData();
+                
+                // Extract form fields
+                const applicationData = {
+                    business_name: formData.get('businessName'),
+                    business_type: formData.get('businessType'),
+                    contact_name: formData.get('contactName'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    address: formData.get('address'),
+                    city: formData.get('city'),
+                    state: formData.get('state'),
+                    zip: formData.get('zip'),
+                    country: formData.get('country'),
+                    registration_number: formData.get('registrationNumber'),
+                    tax_id: formData.get('taxId'),
+                    categories: JSON.parse(formData.get('categories') || '[]'),
+                    bank_info: {
+                        bank_name: formData.get('bankName'),
+                        account_number: formData.get('accountNumber'),
+                        routing_number: formData.get('routingNumber'),
+                        account_holder: formData.get('accountHolder')
+                    },
+                    clerk_id: userProfile.clerk_id,
+                    status: 'pending',
+                    registration_date: new Date().toISOString(),
+                    location: `${formData.get('city')}, ${formData.get('country')}`
+                };
+                
+                // Validate required fields
+                const requiredFields = ['business_name', 'business_type', 'contact_name', 'email', 'phone', 'address', 'city', 'country'];
+                const missingFields = requiredFields.filter(field => !applicationData[field]);
+                
+                if (missingFields.length > 0) {
+                    return new Response(
+                        JSON.stringify({ 
+                            message: 'Missing required fields',
+                            missingFields 
+                        }),
+                        { headers, status: 400 }
+                    );
+                }
+                
+                // Handle document uploads (for now, just log them)
+                const documents = [];
+                for (const [key, value] of formData.entries()) {
+                    if (key.startsWith('document_') && value instanceof File) {
+                        documents.push({
+                            name: value.name,
+                            size: value.size,
+                            type: value.type
+                        });
+                    }
+                }
+                
+                if (documents.length > 0) {
+                    applicationData.documents = documents;
+                }
+                
+                // Insert seller application
+                const { data: newSeller, error: insertError } = await supabase
+                    .from('sellers')
+                    .insert(applicationData)
+                    .select()
+                    .single();
+                    
+                if (insertError) {
+                    console.error('[Route Handler POST /api/seller/apply] Error inserting seller:', insertError);
+                    throw insertError;
+                }
+                
+                console.log('[Route Handler POST /api/seller/apply] Seller application created successfully:', newSeller.id);
+                
+                return new Response(
+                    JSON.stringify({ 
+                        message: 'Seller application submitted successfully',
+                        sellerId: newSeller.id,
+                        status: 'pending'
+                    }),
+                    { headers, status: 201 }
+                );
+                
+            } catch (error) {
+                console.error('[Route Handler POST /api/seller/apply] Error:', error);
+                return new Response(
+                    JSON.stringify({ message: error.message || 'Failed to submit seller application' }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+        
+        // GET /api/seller/status - Get current user's seller application status
+        if (req.method === 'GET' && route[0] === 'seller' && route[1] === 'status' && route.length === 2) {
+            console.log('[Route Handler] Matched GET /api/seller/status');
+            
+            // Authentication required
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Invalid or expired token' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            try {
+                // Get user profile
+                const { data: userProfile, error: userError } = await supabase
+                    .from('user_profiles')
+                    .select('clerk_id')
+                    .eq('id', supabaseUserId)
+                    .single();
+                    
+                if (userError || !userProfile) {
+                    console.error('[Route Handler GET /api/seller/status] User profile not found:', userError);
+                    return new Response(
+                        JSON.stringify({ message: 'User profile not found' }),
+                        { headers, status: 404 }
+                    );
+                }
+                
+                // Get seller application
+                const { data: seller, error: sellerError } = await supabase
+                    .from('sellers')
+                    .select('id, status, business_name, registration_date, verification_date, rejection_reason')
+                    .eq('clerk_id', userProfile.clerk_id)
+                    .single();
+                    
+                if (sellerError) {
+                    if (sellerError.code === 'PGRST116') {
+                        // No application found
+                        return new Response(
+                            JSON.stringify({ 
+                                hasApplication: false,
+                                message: 'No seller application found'
+                            }),
+                            { headers, status: 200 }
+                        );
+                    }
+                    throw sellerError;
+                }
+                
+                return new Response(
+                    JSON.stringify({
+                        hasApplication: true,
+                        application: {
+                            id: seller.id,
+                            status: seller.status,
+                            businessName: seller.business_name,
+                            registrationDate: seller.registration_date,
+                            verificationDate: seller.verification_date,
+                            rejectionReason: seller.rejection_reason
+                        }
+                    }),
+                    { headers, status: 200 }
+                );
+                
+            } catch (error) {
+                console.error('[Route Handler GET /api/seller/status] Error:', error);
+                return new Response(
+                    JSON.stringify({ message: error.message || 'Failed to get seller status' }),
+                    { headers, status: 500 }
+                );
+            }
         }
 
         // --- Fallback for unhandled routes ---
