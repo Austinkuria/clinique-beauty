@@ -192,6 +192,7 @@ export const useAdminApi = () => {
 };
 
 // Seller API for authenticated seller requests
+// Updated: 2025-06-23 - Fixed seller API methods
 export const useSellerApi = () => {
   const { getToken } = useClerkAuth();
   const [loading, setLoading] = useState(false);
@@ -345,18 +346,18 @@ export const useSellerApi = () => {
   
   // Get seller application status
   const getSellerStatus = async () => {
-    const response = await fetchWithAuth('/seller/status');
-    return response; // Return the full response, not response.data
+    const response = await fetchWithAuth('/seller/status');    return response; // Return the full response, not response.data
   };
+
   return {
     loading,
     error,
     // User & Seller Profile
     getUserProfile,
     getSellerProfile,
-    // Seller Application
+    // Seller Application - Updated to use correct method names
     applyAsSeller,
-    getSellerStatus,
+    getSellerStatus, // Renamed from getSellerApplicationStatus
     // Products
     getProducts,
     createProduct,
