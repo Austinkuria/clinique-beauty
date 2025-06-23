@@ -211,11 +211,9 @@ export const useSellerApi = () => {
       
       // Log the full URL being requested for debugging
       const fullUrl = `${SELLER_API_BASE_URL}${endpoint}`;
-      console.log(`[SellerAPI] Making request to: ${fullUrl}`);
-      console.log(`[SellerAPI] With token: ${token ? 'Present' : 'Missing'}`);
-        const headers = {
-        'Authorization': `Bearer ${token}`,
-        'X-User-Role': 'seller', // Add role header for backend routing
+      console.log(`[SellerAPI] Making request to: ${fullUrl}`);      console.log(`[SellerAPI] With token: ${token ? 'Present' : 'Missing'}`);
+      const headers = {
+        'authorization': `Bearer ${token}`,
         ...options.headers
       };
       
