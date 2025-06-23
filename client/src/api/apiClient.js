@@ -320,6 +320,7 @@ export const useSellerApi = () => {
     const response = await fetchWithAuth(`/seller/financials?timeframe=${timeframe}`);
     return response.data || {};
   };
+  
   // User profile methods
   const getUserProfile = async () => {
     const response = await fetchWithAuth('/user/profile');
@@ -331,12 +332,30 @@ export const useSellerApi = () => {
     return response.data || {};
   };
 
+  // Seller application method
+  const applyAsSeller = async (formData) => {
+    const response = await fetchWithAuth('/seller/apply', {
+      method: 'POST',
+      body: formData // This should be FormData for file uploads
+    });
+    return response.data || {};
+  };
+  
+  // Get seller application status
+  const getSellerApplicationStatus = async () => {
+    const response = await fetchWithAuth('/seller/application/status');
+    return response.data || {};
+  };
+
   return {
     loading,
     error,
     // User & Seller Profile
     getUserProfile,
     getSellerProfile,
+    // Seller Application
+    applyAsSeller,
+    getSellerApplicationStatus,
     // Products
     getProducts,
     createProduct,

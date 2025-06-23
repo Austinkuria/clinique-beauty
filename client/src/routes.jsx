@@ -55,6 +55,8 @@ import ABTestingTool from './features/admin/marketing/ABTestingTool';
 const Login = React.lazy(() => import('./features/auth/Login.jsx'));
 const Register = React.lazy(() => import('./features/auth/Register.jsx'));
 const ClerkVerification = React.lazy(() => import('./features/auth/ClerkVerification.jsx'));
+const SellerApply = React.lazy(() => import('./features/seller/pages/Apply.jsx'));
+const SellerStatus = React.lazy(() => import('./features/seller/pages/Status.jsx'));
 
 // Export the router instance directly
 export const router = createBrowserRouter([
@@ -111,10 +113,12 @@ export const router = createBrowserRouter([
                     { path: '/products/fragrance', element: <Fragrance /> },
                     { path: '/products/hair', element: <HairProducts /> },
                     // Correct path for product detail
-                    { path: '/product/:id', element: <ProductDetail /> },
-                    // Checkout routes
+                    { path: '/product/:id', element: <ProductDetail /> },                    // Checkout routes
                     { path: '/checkout', element: <RequireAuth><CheckoutPage /></RequireAuth> },
                     { path: '/checkout/confirmation', element: <RequireAuth><CheckoutConfirmation /></RequireAuth> },
+                    // Seller application routes (public)
+                    { path: '/seller/apply', element: <SellerApply /> },
+                    { path: '/seller/status', element: <RequireAuth><SellerStatus /></RequireAuth> },
                 ]
             },
             // Admin Setup Route (protected but doesn't require admin role)

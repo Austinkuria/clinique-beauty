@@ -3,14 +3,13 @@
   "version": "1.0.0",
   "description": "Server for Clinique Beauty e-commerce platform",
   "main": "server.js",
-  "type": "module",
-  "scripts": {
+  "type": "module",  "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
     "setup-env": "node scripts/setup-env.js",
     "online": "node scripts/online.js",
     "ngrok": "node scripts/startNgrok.js",
-    "start-with-ngrok": "concurrently \"npm run dev\" \"npm run ngrok\"",
+    "start-with-ngrok": "concurrently \"pnpm run dev\" \"pnpm run ngrok\"",
     "install-ngrok": "node scripts/setup-ngrok.js",
     "ngrok:static": "node scripts/startNgrok.js --static",
     "ngrok:setup": "node scripts/setup-ngrok.js",
@@ -18,11 +17,13 @@
     "check:mpesa": "node scripts/checkMpesaCallback.js",
     "mpesa:ngrok": "node scripts/startMpesaNgrok.js",
     "mpesa:check": "node scripts/checkMpesaCallback.js",
-    "mpesa:dev": "concurrently \"npm run dev\" \"npm run mpesa:ngrok\"",
+    "mpesa:dev": "concurrently \"pnpm run dev\" \"pnpm run mpesa:ngrok\"",
     "mpesa:debug": "node scripts/debug-mpesa-token.js",
     "ngrok:kill": "node scripts/kill-ngrok.js",
-    "mpesa:ngrok:clean": "node scripts/kill-ngrok.js && npm run mpesa:ngrok",
-    "mpesa:verify-production": "node scripts/verify-mpesa-production.js"
+    "mpesa:ngrok:clean": "node scripts/kill-ngrok.js && pnpm run mpesa:ngrok",    "mpesa:verify-production": "node scripts/verify-mpesa-production.js",
+    "db:migrate": "node scripts/run-migration.js",
+    "migrate:seller": "powershell -ExecutionPolicy Bypass -File scripts/migrate-seller-fields.ps1",
+    "test:seller": "node scripts/test-seller-api.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.36.0",
