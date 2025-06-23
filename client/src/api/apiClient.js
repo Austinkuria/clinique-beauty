@@ -197,9 +197,8 @@ export const useSellerApi = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Use Express server URL for seller operations since they're not in Supabase Functions
-  const EXPRESS_SERVER_URL = import.meta.env.VITE_EXPRESS_SERVER_URL || 'http://localhost:5000';
-  const SELLER_API_BASE_URL = `${EXPRESS_SERVER_URL}/api`;
+  // Use Supabase Functions URL for all seller operations
+  const SELLER_API_BASE_URL = API_BASE_URL; // This uses the same base URL as other API calls
 
   // Helper function for authenticated API calls
   const fetchWithAuth = async (endpoint, options = {}) => {
@@ -335,22 +334,20 @@ export const useSellerApi = () => {
     const response = await fetchWithAuth('/seller/profile');
     return response.data || {};
   };
-
   // Seller application method
   const applyAsSeller = async (formData) => {
     const response = await fetchWithAuth('/seller/apply', {
       method: 'POST',
       body: formData // This should be FormData for file uploads
     });
-    return response.data || {};
+    return response; // Return the full response, not response.data
   };
   
   // Get seller application status
-  const getSellerApplicationStatus = async () => {
-    const response = await fetchWithAuth('/seller/application/status');
-    return response.data || {};
+  const getSellerStatus = async () => {
+    const response = await fetchWithAuth('/seller/status');
+    return response; // Return the full response, not response.data
   };
-
   return {
     loading,
     error,
@@ -359,7 +356,7 @@ export const useSellerApi = () => {
     getSellerProfile,
     // Seller Application
     applyAsSeller,
-    getSellerApplicationStatus,
+    getSellerStatus,
     // Products
     getProducts,
     createProduct,
@@ -376,12 +373,27 @@ export const useSellerApi = () => {
 };
 
 // Base URL for your API - Use the Supabase Functions URL + function name
+const DIRECT_API_URL = import.meta.env.VITE_API_URL;
 const SUPABASE_FUNCTIONS_BASE = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
-const API_FUNCTION_NAME = 'api'; // The name of your edge function
 
-// FIXED: Clean implementation to avoid URL construction issues
+console.log('Environment check:', {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  VITE_SUPABASE_FUNCTIONS_URL: import.meta.env.VITE_SUPABASE_FUNCTIONS_URL,
+  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL
+});
+
+// Use direct API URL if available, otherwise construct it
 const constructApiBaseUrl = () => {
+  // First try the direct API URL from env
+  if (DIRECT_API_URL) {
+    console.log('Using direct API URL from VITE_API_URL:', DIRECT_API_URL);
+    return DIRECT_API_URL;
+  }
+  
+  console.log('constructApiBaseUrl called with SUPABASE_FUNCTIONS_BASE:', SUPABASE_FUNCTIONS_BASE);
+  
   if (!SUPABASE_FUNCTIONS_BASE) {
+    console.warn('SUPABASE_FUNCTIONS_BASE is not defined, falling back to localhost');
     return `http://localhost:5000/api`; // Fallback to Express server
   }
   
@@ -393,9 +405,13 @@ const constructApiBaseUrl = () => {
   
   // Check if the URL already contains "functions/v1"
   if (baseUrl.includes('/functions/v1')) {
-    return `${baseUrl}/api`; // Already has the path
+    const finalUrl = `${baseUrl}/api`;
+    console.log("Final API URL (already has functions/v1):", finalUrl);
+    return finalUrl; // Already has the path
   } else {
-    return `${baseUrl}/functions/v1/api`; // Add the full path
+    const finalUrl = `${baseUrl}/functions/v1/api`;
+    console.log("Final API URL (added functions/v1):", finalUrl);
+    return finalUrl; // Add the full path
   }
 };
 

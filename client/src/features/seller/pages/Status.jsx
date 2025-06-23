@@ -43,8 +43,7 @@ const SellerStatus = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await sellerApi.getSellerApplicationStatus();
+        const response = await sellerApi.getSellerStatus();
       setApplicationData(response);
       
     } catch (err) {
