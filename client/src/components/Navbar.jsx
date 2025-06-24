@@ -44,7 +44,7 @@ function Navbar() {
     const { user } = useUser();
     const isAdmin = isSignedIn && user?.publicMetadata?.role === 'admin';
     
-    // Use cart context directly, with fallback if not available
+    // Use cart context directly to avoid hook rule violations
     const cartContext = useContext(CartContext);
     const itemCount = cartContext?.itemCount || 0;
     const cartLoading = cartContext?.loading || false;

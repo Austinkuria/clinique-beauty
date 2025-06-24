@@ -3,7 +3,7 @@ import { useAuth, useUser } from '@clerk/clerk-react';
 import toast from 'react-hot-toast';
 import { useApi } from '../api/apiClient';
 
-const CartContext = createContext();
+export const CartContext = createContext();
 
 export const useCart = () => {
     const context = useContext(CartContext);
