@@ -121,6 +121,7 @@ router.post('/apply', upload.array('documents', 5), async (req, res) => {
             phone,
             location: JSON.stringify({ address, city, state, zip, country }),
             product_categories: parsedCategories,
+            categories: parsedCategories, // Adding both columns to ensure compatibility
             registration_number: registrationNumber || null,
             tax_id: taxId || null,
             bank_info: {
@@ -173,6 +174,7 @@ router.post('/apply', upload.array('documents', 5), async (req, res) => {
         phone,
         location: JSON.stringify({ address, city, state, zip, country }),
         product_categories: parsedCategories,
+        categories: parsedCategories, // Adding both columns to ensure compatibility
         registration_number: registrationNumber || null,
         tax_id: taxId || null,
         bank_info: {

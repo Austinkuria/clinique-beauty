@@ -33,7 +33,7 @@ import {
     Security as SecurityIcon,
 } from '@mui/icons-material';
 import { UserButton, useAuth, useUser } from '@clerk/clerk-react';
-import { useCart } from '../context/CartContext';
+import { CartContext } from '../context/CartContext';
 
 function Navbar() {
     const { theme, toggleTheme, colors, colorValues } = useContext(ThemeContext);
@@ -43,8 +43,11 @@ function Navbar() {
     const { isSignedIn } = useAuth();
     const { user } = useUser();
     const isAdmin = isSignedIn && user?.publicMetadata?.role === 'admin';
-    const cartContext = useCart() || {};
-    const { itemCount = 0, loading: cartLoading = false } = cartContext;
+    
+    // Use cart context directly, with fallback if not available
+    const cartContext = useContext(CartContext);
+    const itemCount = cartContext?.itemCount || 0;
+    const cartLoading = cartContext?.loading || false;
 
     // Navigation items without the cart and without Profile button
     const navItems = [
