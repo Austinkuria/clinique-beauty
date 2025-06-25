@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from 'react'; // Import useMemo
-import { useAuth, useUser } from '@clerk/clerk-react';
+import { useUser } from '@clerk/clerk-react';
 import toast from 'react-hot-toast';
 import { useApi } from '../api/apiClient';
 
@@ -15,7 +15,7 @@ export const useCart = () => {
         // Return a default object with expected properties to prevent destructuring errors
         return { 
             cartItems: [], 
-            itemCount: 0, q
+            itemCount: 0,
             cartTotal: 0,
             loading: false, 
             error: null,
@@ -242,7 +242,7 @@ export const CartProvider = ({ children }) => {
                     try {
                         const errorBody = await error.response.json();
                         console.error("[CartContext Load Effect] API Error Response Body:", errorBody);
-                    } catch (parseErr) {
+                    } catch {
                         console.error("[CartContext Load Effect] Could not parse API error response body.");
                     }
                 }
@@ -442,7 +442,7 @@ const showStockLimitToast = (message) => {
                     try {
                         console.log(`[CartContext Add] Retrying with adjusted quantity ${availableStock}`);
                         
-                        const result = await api.addToCart({
+                        await api.addToCart({
                             productId: product.id,
                             quantity: availableStock,
                             shade: product.selectedShade?.name || null
