@@ -15,7 +15,7 @@ export const useCart = () => {
         // Return a default object with expected properties to prevent destructuring errors
         return { 
             cartItems: [], 
-            itemCount: 0, 
+            itemCount: 0, q
             cartTotal: 0,
             loading: false, 
             error: null,
