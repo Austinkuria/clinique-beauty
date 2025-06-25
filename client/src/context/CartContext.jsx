@@ -67,11 +67,10 @@ export const CartProvider = ({ children }) => {
             selectedShade: item.selectedShade || null,
             description: item.description || '',
             category: item.category || '',
-            stock: item.stock, // Ensure stock is included
-            // Add any other fields needed for display or logic
+            stock: item.stock,
         };
     };
-
+``
 
     // Fetch cart when auth state changes
     useEffect(() => {
