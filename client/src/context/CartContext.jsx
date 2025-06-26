@@ -50,7 +50,6 @@ export const CartProvider = ({ children }) => {
     }, [cartItems]); // Recalculate whenever cartItems changes
     // --- End Calculation ---
 
-
     // Helper function to format cart items consistently
     const formatCartItem = (item) => {
         if (!item || typeof item !== 'object') {
