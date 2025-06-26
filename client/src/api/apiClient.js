@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import mockUsers from '../data/mockUserData';
 
@@ -202,7 +202,7 @@ export const useSellerApi = () => {
   const SELLER_API_BASE_URL = API_BASE_URL; // This uses the same base URL as other API calls
 
   // Helper function for authenticated API calls
-  const fetchWithAuth = async (endpoint, options = {}) => {
+  const fetchWithAuth = useCallback(async (endpoint, options = {}) => {
     setLoading(true);
     setError(null);
     
@@ -252,7 +252,7 @@ export const useSellerApi = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken, SELLER_API_BASE_URL]); // Close useCallback with dependencies
 
   // Product management methods for sellers
   const getProducts = async () => {
@@ -344,7 +344,8 @@ export const useSellerApi = () => {
   
   // Get seller application status
   const getSellerStatus = async () => {
-    const response = await fetchWithAuth('/seller/status');    return response; // Return the full response, not response.data
+    const response = await fetchWithAuth('/seller/status');
+    return response; // Return the full response, not response.data
   };
 
   return {

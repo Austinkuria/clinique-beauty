@@ -38,27 +38,34 @@ const SellerStatus = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [applicationData, setApplicationData] = useState(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  const fetchApplicationStatus = React.useCallback(async () => {
+  const fetchApplicationStatus = async () => {
     try {
       setLoading(true);
       setError(null);
-        const response = await sellerApi.getSellerStatus();
+      const response = await sellerApi.getSellerStatus();
       setApplicationData(response);
-      
     } catch (err) {
       setError(err.message || 'Failed to fetch application status');
       console.error('Error fetching application status:', err);
     } finally {
       setLoading(false);
     }
-  }, [sellerApi]);
+  };
+
+  const handleRefresh = () => {
+    setHasInitialized(false); // Reset initialization flag
+    fetchApplicationStatus();
+  };
 
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
+    if (isLoaded && isSignedIn && !hasInitialized) {
       fetchApplicationStatus();
+      setHasInitialized(true);
     }
-  }, [isLoaded, isSignedIn, fetchApplicationStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, isSignedIn, hasInitialized]); // Only run when these specific values change
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -143,7 +150,7 @@ const SellerStatus = () => {
           <Typography variant="h6" gutterBottom>Error</Typography>
           <Typography>{error}</Typography>
         </Alert>
-        <Button variant="outlined" onClick={fetchApplicationStatus}>
+        <Button variant="outlined" onClick={handleRefresh}>
           Try Again
         </Button>
       </Container>
@@ -174,7 +181,17 @@ const SellerStatus = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>Seller Application Status</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4">Seller Application Status</Typography>
+        <Button 
+          variant="outlined" 
+          onClick={handleRefresh}
+          disabled={loading}
+          size="small"
+        >
+          {loading ? 'Refreshing...' : 'Refresh Status'}
+        </Button>
+      </Box>
       
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
