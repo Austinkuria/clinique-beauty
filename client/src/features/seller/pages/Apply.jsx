@@ -36,6 +36,7 @@ const SellerApply = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [checkingExisting, setCheckingExisting] = useState(true);
   
   const [formData, setFormData] = useState({
     businessName: '',
@@ -69,6 +70,32 @@ const SellerApply = () => {
       }));
     }
   }, [isLoaded, isSignedIn, user]);
+
+  // Check for existing application
+  useEffect(() => {
+    const checkExistingApplication = async () => {
+      if (isLoaded && isSignedIn) {
+        try {
+          const response = await sellerApi.getSellerStatus();
+          if (response && response.status) {
+            // User already has an application, redirect to status page
+            navigate('/seller/status', { 
+              replace: true,
+              state: { message: 'You already have a seller application. Check your status below.' }
+            });
+            return;
+          }
+        } catch {
+          // If error getting status (likely no application exists), continue with form
+          console.log('No existing application found, proceeding with form');
+        } finally {
+          setCheckingExisting(false);
+        }
+      }
+    };
+
+    checkExistingApplication();
+  }, [isLoaded, isSignedIn, navigate, sellerApi]);
 
   const validateStep = (step) => {
     const errors = {};
@@ -179,8 +206,18 @@ const SellerApply = () => {
       }, 3000);
       
     } catch (err) {
-      setError(err.message || 'Failed to submit seller application. Please try again.');
-      console.error(err);
+      console.error('Seller application error:', err);
+      
+      // Handle specific error cases
+      if (err.message?.includes('already exists') || err.message?.includes('already have')) {
+        // If application already exists, redirect to status page
+        setError('You already have a pending seller application. Redirecting to status page...');
+        setTimeout(() => {
+          navigate('/seller/status');
+        }, 2000);
+      } else {
+        setError(err.message || 'Failed to submit seller application. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -465,11 +502,14 @@ const SellerApply = () => {
     }
   };
 
-  if (!isLoaded) {
+  if (!isLoaded || checkingExisting) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 5 }}>
           <CircularProgress />
+          <Typography variant="body2" sx={{ mt: 2 }}>
+            {checkingExisting ? 'Checking existing application...' : 'Loading...'}
+          </Typography>
         </Box>
       </Container>
     );

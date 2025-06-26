@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import {
   Typography,
@@ -33,6 +33,7 @@ import { useSellerApi } from '../../../api/apiClient';
 
 const SellerStatus = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isSignedIn, isLoaded } = useUser();
   const sellerApi = useSellerApi();
   const [loading, setLoading] = useState(true);
@@ -192,6 +193,13 @@ const SellerStatus = () => {
           {loading ? 'Refreshing...' : 'Refresh Status'}
         </Button>
       </Box>
+      
+      {/* Show redirect message if coming from Apply page */}
+      {location.state?.message && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          {location.state.message}
+        </Alert>
+      )}
       
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
