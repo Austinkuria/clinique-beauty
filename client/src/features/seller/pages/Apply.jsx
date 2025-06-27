@@ -36,7 +36,8 @@ const SellerApply = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
-  const [checkingExisting, setCheckingExisting] = useState(true);
+  const [checkingExisting, setCheckingExisting] = useState(false);
+  const [hasCheckedExisting, setHasCheckedExisting] = useState(false);
   
   const [formData, setFormData] = useState({
     businessName: '',
@@ -74,20 +75,31 @@ const SellerApply = () => {
   // Check for existing application
   useEffect(() => {
     const checkExistingApplication = async () => {
-      if (isLoaded && isSignedIn) {
+      if (isLoaded && isSignedIn && !hasCheckedExisting) {
+        setCheckingExisting(true);
+        setHasCheckedExisting(true);
+        
         try {
           const response = await sellerApi.getSellerStatus();
-          if (response && response.status) {
-            // User already has an application, redirect to status page
+          console.log('[Apply] Checking existing application:', response);
+          
+          // Check if user has any application (pending, approved, or rejected)
+          // The server returns { success: true, hasApplied: true, status: "pending", ... }
+          if (response && response.success && response.hasApplied && response.status) {
+            console.log('[Apply] Found existing application with status:', response.status);
+            
+            // Redirect to status page for any existing application
             navigate('/seller/status', { 
               replace: true,
-              state: { message: 'You already have a seller application. Check your status below.' }
+              state: { 
+                message: `You already have a seller application with status: ${response.status}. Check your details below.`
+              }
             });
             return;
           }
-        } catch {
+        } catch (error) {
           // If error getting status (likely no application exists), continue with form
-          console.log('No existing application found, proceeding with form');
+          console.log('[Apply] No existing application found or error occurred:', error.message);
         } finally {
           setCheckingExisting(false);
         }
@@ -95,7 +107,8 @@ const SellerApply = () => {
     };
 
     checkExistingApplication();
-  }, [isLoaded, isSignedIn, navigate, sellerApi]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, isSignedIn, hasCheckedExisting]); // Only run when these specific values change
 
   const validateStep = (step) => {
     const errors = {};
@@ -502,7 +515,7 @@ const SellerApply = () => {
     }
   };
 
-  if (!isLoaded || checkingExisting) {
+  if (!isLoaded || (isSignedIn && checkingExisting)) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 5 }}>

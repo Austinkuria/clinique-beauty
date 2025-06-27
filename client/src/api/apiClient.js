@@ -343,10 +343,10 @@ export const useSellerApi = () => {
   };
   
   // Get seller application status
-  const getSellerStatus = async () => {
-    const response = await fetchWithAuth('/seller/status');
+  const getSellerStatus = useCallback(async () => {
+    const response = await fetchWithAuth('/seller/application/status');
     return response; // Return the full response, not response.data
-  };
+  }, [fetchWithAuth]);
 
   return {
     loading,
