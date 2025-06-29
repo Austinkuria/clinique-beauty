@@ -338,4 +338,196 @@ router.get('/profile', async (req, res) => {
   }
 });
 
+// Admin route to get all seller applications (requires admin role)
+router.get('/', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Check if user is admin
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('clerk_id', userId)
+      .single();
+    
+    if (userError || !userData || userData.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    // Get query parameters for filtering
+    const { status, search } = req.query;
+    
+    // Build query
+    let query = supabase.from('sellers').select('*');
+    
+    // Apply filters
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+    
+    if (search) {
+      query = query.or(`business_name.ilike.%${search}%,contact_name.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+    
+    // Order by creation date, newest first
+    query = query.order('created_at', { ascending: false });
+    
+    const { data: sellers, error: sellersError } = await query;
+    
+    if (sellersError) {
+      throw sellersError;
+    }
+    
+    res.json({
+      success: true,
+      data: sellers || []
+    });
+  } catch (error) {
+    console.error('Error fetching sellers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch sellers',
+      error: error.message
+    });
+  }
+});
+
+// Admin route to get pending verification requests
+router.get('/verification/pending', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Check if user is admin
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('clerk_id', userId)
+      .single();
+    
+    if (userError || !userData || userData.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    // Get pending seller applications
+    const { data: pendingApplications, error: applicationsError } = await supabase
+      .from('sellers')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    
+    if (applicationsError) {
+      throw applicationsError;
+    }
+    
+    res.json({
+      success: true,
+      data: pendingApplications || []
+    });
+  } catch (error) {
+    console.error('Error fetching pending verification requests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pending verification requests',
+      error: error.message
+    });
+  }
+});
+
+// Admin route to update seller verification status
+router.patch('/:id/verification', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const sellerId = req.params.id;
+    const { status, notes } = req.body;
+    
+    // Check if user is admin
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('clerk_id', userId)
+      .single();
+    
+    if (userError || !userData || userData.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    // Validate status
+    const validStatuses = ['pending', 'approved', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be one of: pending, approved, rejected'
+      });
+    }
+
+    // Update seller status
+    const updateData = {
+      status,
+      updated_at: new Date(),
+      verification_date: status === 'approved' ? new Date() : null
+    };
+
+    // Add rejection reason if status is rejected
+    if (status === 'rejected' && notes) {
+      updateData.rejection_reason = notes;
+    } else if (status !== 'rejected') {
+      updateData.rejection_reason = null;
+    }
+
+    const { data: updatedSeller, error: updateError } = await supabase
+      .from('sellers')
+      .update(updateData)
+      .eq('id', sellerId)
+      .select()
+      .single();
+    
+    if (updateError) {
+      throw updateError;
+    }
+
+    if (!updatedSeller) {
+      return res.status(404).json({
+        success: false,
+        message: 'Seller not found'
+      });
+    }
+
+    // Update user role if seller is approved
+    if (status === 'approved') {
+      await supabase
+        .from('users')
+        .update({ role: 'seller' })
+        .eq('email', updatedSeller.email);
+    } else if (status === 'rejected') {
+      // Reset user role to customer if rejected
+      await supabase
+        .from('users')
+        .update({ role: 'customer' })
+        .eq('email', updatedSeller.email);
+    }
+    
+    res.json({
+      success: true,
+      message: `Seller application ${status} successfully`,
+      data: updatedSeller
+    });
+  } catch (error) {
+    console.error('Error updating seller verification status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update seller verification status',
+      error: error.message
+    });
+  }
+});
+
 export default router;

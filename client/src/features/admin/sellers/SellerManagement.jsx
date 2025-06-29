@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Container, Box, Grid, Paper, Typography, Tab, Tabs, Alert, Badge
 } from '@mui/material';
-import { sellerApi } from '../../../data/sellerApi';
+import { useSellerApi } from '../../../data/sellerApi';
 import SellerVerification from './SellerVerification';
 import SellerOnboarding from './SellerOnboarding';
 import SellerList from './SellerList';
@@ -13,41 +13,54 @@ const SellerManagement = () => {
   const [pendingVerifications, setPendingVerifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
+  const { getSellers, getVerificationRequests } = useSellerApi();
+
+  // Memoize the fetch function to prevent infinite re-renders
+  const fetchSellerData = useCallback(async () => {
+    if (hasInitialized) return; // Prevent multiple calls
+    
+    try {
+      setLoading(true);
+      setHasInitialized(true);
+      console.log('Fetching seller data...');
+      
+      const [sellersData, verificationData] = await Promise.all([
+        getSellers(),
+        getVerificationRequests()
+      ]);
+      
+      console.log('Sellers data received:', sellersData);
+      console.log('Verification data received:', verificationData);
+      
+      setSellers(Array.isArray(sellersData) ? sellersData : []); // Ensure it's an array
+      setPendingVerifications(Array.isArray(verificationData) ? verificationData : []);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load seller data. Please try again.');
+      console.error('Error in fetchSellerData:', err);
+      // Set empty arrays on error to prevent further issues
+      setSellers([]);
+      setPendingVerifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [getSellers, getVerificationRequests, hasInitialized]);
 
   useEffect(() => {
-    const fetchSellerData = async () => {
-      try {
-        setLoading(true);
-        const [sellersData, verificationData] = await Promise.all([
-          sellerApi.getSellers(),
-          sellerApi.getVerificationRequests()
-        ]);
-        setSellers(Array.isArray(sellersData) ? sellersData : []); // Ensure it's an array
-        setPendingVerifications(Array.isArray(verificationData) ? verificationData : []);
-        setError(null);
-      } catch (err) {
-        setError('Failed to load seller data. Please try again.');
-        console.error(err);
-        // Set empty arrays on error to prevent further issues
-        setSellers([]);
-        setPendingVerifications([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchSellerData();
-  }, []);
+  }, [fetchSellerData]);
 
-  const handleVerificationComplete = async () => {
+  const handleVerificationComplete = useCallback(async () => {
     // Refresh the verification requests
     try {
-      const verificationData = await sellerApi.getVerificationRequests();
-      setPendingVerifications(verificationData);
+      const verificationData = await getVerificationRequests();
+      setPendingVerifications(Array.isArray(verificationData) ? verificationData : []);
     } catch (err) {
       console.error('Failed to refresh verification requests:', err);
     }
-  };
+  }, [getVerificationRequests]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
