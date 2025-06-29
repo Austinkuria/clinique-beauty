@@ -5,7 +5,15 @@
 			"label": "Start Client Dev Server",
 			"type": "shell",
 			"command": "cd client && npm run dev",
-			"group": "development",
+			"group": "none",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Server",
+			"type": "shell",
+			"command": "cd server && npm run dev",
+			"group": "none",
 			"isBackground": true,
 			"problemMatcher": []
 		}

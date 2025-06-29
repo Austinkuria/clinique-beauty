@@ -2656,6 +2656,88 @@ serve(async (req: Request) => {
             }
         }
 
+        // GET /api/seller/application/status - Get current user's seller application status (alternative endpoint)
+        if (req.method === 'GET' && route[0] === 'seller' && route[1] === 'application' && route[2] === 'status' && route.length === 3) {
+            console.log('[Route Handler] Matched GET /api/seller/application/status');
+            
+            // Authentication required
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Invalid or expired token' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            try {
+                // Get user profile
+                const { data: userProfile, error: userError } = await supabase
+                    .from('user_profiles')
+                    .select('clerk_id')
+                    .eq('id', supabaseUserId)
+                    .single();
+                    
+                if (userError || !userProfile) {
+                    console.error('[Route Handler GET /api/seller/application/status] User profile not found:', userError);
+                    return new Response(
+                        JSON.stringify({ message: 'User profile not found' }),
+                        { headers, status: 404 }
+                    );
+                }
+                
+                // Get seller application
+                const { data: seller, error: sellerError } = await supabase
+                    .from('sellers')
+                    .select('id, status, business_name, registration_date, verification_date, rejection_reason, created_at, updated_at')
+                    .eq('clerk_id', userProfile.clerk_id)
+                    .single();
+                    
+                if (sellerError) {
+                    if (sellerError.code === 'PGRST116') {
+                        // No application found
+                        return new Response(
+                            JSON.stringify({ 
+                                success: false,
+                                hasApplied: false,
+                                message: 'No seller application found'
+                            }),
+                            { headers, status: 404 }
+                        );
+                    }
+                    throw sellerError;
+                }
+                
+                return new Response(
+                    JSON.stringify({
+                        success: true,
+                        hasApplied: true,
+                        status: seller.status,
+                        applicationDate: seller.created_at,
+                        updateDate: seller.updated_at,
+                        rejectionReason: seller.rejection_reason
+                    }),
+                    { headers, status: 200 }
+                );
+                
+            } catch (error) {
+                console.error('[Route Handler GET /api/seller/application/status] Error:', error);
+                return new Response(
+                    JSON.stringify({ 
+                        success: false,
+                        message: error.message || 'Failed to get seller application status' 
+                    }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+
         // --- Fallback for unhandled routes ---
         console.warn(`[Route Handler] Route not found: ${req.method} ${url.pathname}`);
         return new Response(JSON.stringify({ message: 'Route not found' }), { headers, status: 404 });

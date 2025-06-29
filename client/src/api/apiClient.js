@@ -191,17 +191,21 @@ export const useAdminApi = () => {
   };
 };
 
+// Helper function to get the Express server URL (for seller operations)
+const getExpressServerUrl = () => {
+  const expressUrl = import.meta.env.VITE_EXPRESS_SERVER_URL || 'http://localhost:5000';
+  console.log('[apiClient] Using Express server URL for seller operations:', expressUrl);
+  return expressUrl;
+};
+
 // Seller API for authenticated seller requests
-// Updated: 2025-06-23 - Fixed seller API methods
+// Updated: 2025-06-27 - Modified to use Supabase Functions instead of direct Express server
 export const useSellerApi = () => {
   const { getToken } = useClerkAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Use Supabase Functions URL for all seller operations
-  const SELLER_API_BASE_URL = API_BASE_URL; // This uses the same base URL as other API calls
-
-  // Helper function for authenticated API calls
+  
+  // Helper function for authenticated API calls to Supabase Functions
   const fetchWithAuth = useCallback(async (endpoint, options = {}) => {
     setLoading(true);
     setError(null);
@@ -209,11 +213,15 @@ export const useSellerApi = () => {
     try {
       const token = await getToken();
       
-      // Log the full URL being requested for debugging
-      const fullUrl = `${SELLER_API_BASE_URL}${endpoint}`;
-      console.log(`[SellerAPI] Making request to: ${fullUrl}`);      console.log(`[SellerAPI] With token: ${token ? 'Present' : 'Missing'}`);
+      // Ensure endpoint starts with '/'
+      const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+      
+      // Use API_BASE_URL which points to Supabase Functions
+      const fullUrl = `${API_BASE_URL}${cleanEndpoint}`;
+      console.log(`[SellerAPI] Making request to: ${fullUrl}`);
+      
       const headers = {
-        'authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,
         ...options.headers
       };
       
@@ -230,147 +238,75 @@ export const useSellerApi = () => {
       console.log(`[SellerAPI] Response status: ${response.status}`);
       
       if (!response.ok) {
-        const responseText = await response.text();
-        console.error(`[SellerAPI] Error response: ${responseText}`);
-        
+        const errorText = await response.text();
         let errorData;
         try {
-          errorData = JSON.parse(responseText);
+          errorData = JSON.parse(errorText);
         } catch {
-          errorData = { message: `API error: ${response.status} - ${responseText.substring(0, 100)}...` };
+          errorData = { message: errorText || `Server error: ${response.status}` };
         }
         
-        throw new Error(errorData.message || `HTTP ${response.status}`);
+        const error = new Error(errorData.message || 'API request failed');
+        error.status = response.status;
+        error.data = errorData;
+        throw error;
       }
       
-      return response.json();
+      // Try to parse the response as JSON, but handle text responses too
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+      
+      setError(null);
+      return data;
     } catch (err) {
-      const errorMessage = err.message || 'Network error occurred';
-      console.error(`[SellerAPI] Error: ${errorMessage}`);
-      setError(errorMessage);
+      console.error('API Error:', err);
+      setError(err.message || 'Failed to fetch data');
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [getToken, SELLER_API_BASE_URL]); // Close useCallback with dependencies
-
-  // Product management methods for sellers
-  const getProducts = async () => {
-    const response = await fetchWithAuth('/seller/products');
-    return response.data || [];
-  };
-
-  const createProduct = async (formData) => {
-    if (!(formData instanceof FormData)) {
-      console.error("useSellerApi.createProduct expects FormData.");
-      throw new Error("Product data must be FormData for file uploads.");
-    }
-    
-    const response = await fetchWithAuth('/seller/products', {
-      method: 'POST',
-      body: formData
-    });
-    return response.data;
-  };
-
-  const updateProduct = async (productId, formData) => {
-    if (!(formData instanceof FormData)) {
-      console.error("useSellerApi.updateProduct expects FormData.");
-      throw new Error("Product data must be FormData for file uploads.");
-    }
-    
-    const response = await fetchWithAuth(`/seller/products/${productId}`, {
-      method: 'PUT',
-      body: formData
-    });
-    return response.data;
-  };
-
-  const deleteProduct = async (productId) => {
-    const response = await fetchWithAuth(`/seller/products/${productId}`, {
-      method: 'DELETE'
-    });
-    return response.data;
-  };
-
-  // Order management for sellers
-  const getOrders = async () => {
-    const response = await fetchWithAuth('/seller/orders');
-    return response.data || [];
-  };
-
-  const getOrderDetails = async (orderId) => {
-    const response = await fetchWithAuth(`/seller/orders/${orderId}`);
-    return response.data;
-  };
-
-  const updateOrderStatus = async (orderId, status) => {
-    const response = await fetchWithAuth(`/seller/orders/${orderId}/status`, {
-      method: 'PUT',
-      body: JSON.stringify({ status })
-    });
-    return response.data;
-  };
-
-  // Analytics and reporting for sellers
-  const getAnalytics = async (timeframe = '30d') => {
-    const response = await fetchWithAuth(`/seller/analytics?timeframe=${timeframe}`);
-    return response.data || {};
-  };
-
-  const getFinancials = async (timeframe = '30d') => {
-    const response = await fetchWithAuth(`/seller/financials?timeframe=${timeframe}`);
-    return response.data || {};
-  };
+  }, [getToken]);
   
-  // User profile methods
-  const getUserProfile = async () => {
-    const response = await fetchWithAuth('/user/profile');
-    return response.data || {};
-  };
-  
-  const getSellerProfile = async () => {
-    const response = await fetchWithAuth('/seller/profile');
-    return response.data || {};
-  };
-  // Seller application method
+  // Apply as seller
   const applyAsSeller = async (formData) => {
+    console.log('[apiClient] Submitting seller application to Supabase Function: /seller/apply');
     const response = await fetchWithAuth('/seller/apply', {
       method: 'POST',
-      body: formData // This should be FormData for file uploads
+      body: formData
     });
-    return response; // Return the full response, not response.data
+    console.log('[apiClient] Seller application submission response:', response);
+    return response;
   };
   
   // Get seller application status
   const getSellerStatus = useCallback(async () => {
+    console.log('[apiClient] Requesting seller application status from Supabase Function: /seller/application/status');
     const response = await fetchWithAuth('/seller/application/status');
-    return response; // Return the full response, not response.data
+    console.log('[apiClient] Seller application status response:', response);
+    return response;
+  }, [fetchWithAuth]);
+  
+  // Get seller profile
+  const getSellerProfile = useCallback(async () => {
+    const response = await fetchWithAuth('/seller/profile');
+    return response;
   }, [fetchWithAuth]);
 
   return {
     loading,
     error,
     // User & Seller Profile
-    getUserProfile,
-    getSellerProfile,
-    // Seller Application - Updated to use correct method names
     applyAsSeller,
-    getSellerStatus, // Renamed from getSellerApplicationStatus
-    // Products
-    getProducts,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    // Orders
-    getOrders,
-    getOrderDetails,
-    updateOrderStatus,
-    // Analytics
-    getAnalytics,
-    getFinancials,
+    getSellerStatus,
+    getSellerProfile
   };
 };
+
 
 // Base URL for your API - Use the Supabase Functions URL + function name
 const DIRECT_API_URL = import.meta.env.VITE_API_URL;

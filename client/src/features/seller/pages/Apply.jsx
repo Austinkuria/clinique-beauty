@@ -80,11 +80,13 @@ const SellerApply = () => {
         setHasCheckedExisting(true);
         
         try {
+          // Log the API call for troubleshooting
+          console.log('[Apply] About to check seller application status using Supabase Functions');
+          
           const response = await sellerApi.getSellerStatus();
-          console.log('[Apply] Checking existing application:', response);
+          console.log('[Apply] Checking existing application response:', response);
           
           // Check if user has any application (pending, approved, or rejected)
-          // The server returns { success: true, hasApplied: true, status: "pending", ... }
           if (response && response.success && response.hasApplied && response.status) {
             console.log('[Apply] Found existing application with status:', response.status);
             
@@ -99,7 +101,13 @@ const SellerApply = () => {
           }
         } catch (error) {
           // If error getting status (likely no application exists), continue with form
+          console.error('[Apply] Error checking application:', error);
           console.log('[Apply] No existing application found or error occurred:', error.message);
+          
+          // Show error message if it's not a 404 (which just means no application found)
+          if (error.status !== 404) {
+            setError(`Error checking application status: ${error.message}`);
+          }
         } finally {
           setCheckingExisting(false);
         }

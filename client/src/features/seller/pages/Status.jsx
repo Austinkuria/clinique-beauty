@@ -45,11 +45,13 @@ const SellerStatus = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('[Status] Fetching seller application status using Supabase Functions');
       const response = await sellerApi.getSellerStatus();
+      console.log('[Status] Application status response:', response);
       setApplicationData(response);
     } catch (err) {
+      console.error('[Status] Error fetching application status:', err);
       setError(err.message || 'Failed to fetch application status');
-      console.error('Error fetching application status:', err);
     } finally {
       setLoading(false);
     }
