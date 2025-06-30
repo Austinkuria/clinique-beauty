@@ -15,7 +15,7 @@ import {
   Divider,
   Link
 } from '@mui/material';
-import { sellerApi } from '../../../data/sellerApi';
+import { sellerApi, useSellerApi } from '../../../data/sellerApi';
 
 const modalStyle = {
   position: 'absolute',
@@ -36,6 +36,7 @@ const SellerVerification = ({ requests, loading, onVerificationComplete }) => {
   const [verificationNotes, setVerificationNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const { downloadSellerDocument } = useSellerApi();
 
   const handleReview = (request) => {
     setSelectedRequest(request);
@@ -69,6 +70,26 @@ const SellerVerification = ({ requests, loading, onVerificationComplete }) => {
       console.error(err);
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleDownloadDocument = async (doc) => {
+    try {
+      const response = await downloadSellerDocument(selectedRequest.id, doc.filename);
+      
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.originalName || doc.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading document:', err);
+      setError('Failed to download document. Please try again.');
     }
   };
 
@@ -160,13 +181,50 @@ const SellerVerification = ({ requests, loading, onVerificationComplete }) => {
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>Documents</Typography>
                 <Grid container spacing={2}>
-                  {selectedRequest.documents.map((doc, index) => (
-                    <Grid item key={index}>
-                      <Link href={doc.url} target="_blank" rel="noreferrer">
-                        {doc.type} Document
-                      </Link>
+                  {selectedRequest.documents && selectedRequest.documents.length > 0 ? (
+                    selectedRequest.documents.map((doc, index) => (
+                      <Grid item key={index} xs={12} sm={6}>
+                        <Box sx={{ 
+                          p: 2, 
+                          border: 1, 
+                          borderColor: 'grey.300', 
+                          borderRadius: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 1
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                              {doc.originalName || doc.filename}
+                            </Typography>
+                            <Chip 
+                              label={doc.storage === 'supabase' ? 'Cloud' : 'Legacy'} 
+                              size="small" 
+                              color={doc.storage === 'supabase' ? 'success' : 'warning'}
+                              variant="outlined"
+                            />
+                          </Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Type: {doc.mimetype || 'Unknown'} • Size: {doc.size ? `${Math.round(doc.size / 1024)}KB` : 'Unknown'}
+                          </Typography>
+                          <Button 
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleDownloadDocument(doc)}
+                            fullWidth
+                          >
+                            Download Document
+                          </Button>
+                        </Box>
+                      </Grid>
+                    ))
+                  ) : (
+                    <Grid item>
+                      <Typography variant="body2" color="text.secondary">
+                        No documents uploaded
+                      </Typography>
                     </Grid>
-                  ))}
+                  )}
                 </Grid>
               </Box>
               

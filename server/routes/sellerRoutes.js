@@ -4,28 +4,12 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../config/db.js';
+import { SupabaseStorageHelper, DocumentHelper } from '../utils/supabaseStorageHelper.js';
 
 const router = express.Router();
 
-// Configure multer for handling file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'seller_documents');
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Create unique filename with original extension
-    const fileExt = path.extname(file.originalname);
-    const fileName = `${Date.now()}-${uuidv4()}${fileExt}`;
-    cb(null, fileName);
-  }
-});
+// Configure multer for handling file uploads in memory (for Supabase Storage)
+const storage = multer.memoryStorage(); // Store files in memory for Supabase upload
 
 // Initialize multer upload
 const upload = multer({
@@ -88,15 +72,39 @@ router.post('/apply', upload.array('documents', 5), async (req, res) => {
       parsedCategories = [];
     }
 
-    // Get uploaded files information
+    // Ensure Supabase Storage bucket exists
+    await SupabaseStorageHelper.ensureBucketExists();
+
+    // Upload documents to Supabase Storage using helper
     const documents = req.files || [];
-    const documentPaths = documents.map(file => ({
-      filename: file.filename,
-      originalName: file.originalname,
-      path: file.path,
-      mimetype: file.mimetype,
-      size: file.size
-    }));
+    const uploadedDocs = [];
+    
+    for (const file of documents) {
+      try {
+        // Validate file
+        const validation = DocumentHelper.validateFile(file);
+        if (!validation.isValid) {
+          console.error(`File validation failed for ${file.originalname}:`, validation.errors);
+          continue; // Skip invalid files
+        }
+        
+        console.log(`Uploading file ${file.originalname} to Supabase Storage...`);
+        
+        // Upload using helper
+        const uploadResult = await SupabaseStorageHelper.uploadFile(userId, file);
+        
+        if (uploadResult.success) {
+          uploadedDocs.push(uploadResult.data);
+          console.log(`✅ Successfully uploaded ${file.originalname} to Supabase Storage`);
+        } else {
+          console.error(`❌ Failed to upload ${file.originalname}:`, uploadResult.error);
+          // Continue with other files, but log the error
+        }
+      } catch (uploadError) {
+        console.error(`Failed to upload ${file.originalname}:`, uploadError);
+        // Continue with other files, but log the error
+      }
+    }
 
     // Check if seller application already exists
     const { data: existingSeller, error: lookupError } = await supabase
@@ -130,7 +138,7 @@ router.post('/apply', upload.array('documents', 5), async (req, res) => {
               routing_number: routingNumber,
               account_holder: accountHolder
             },
-            documents: documentPaths,
+            documents: uploadedDocs,
             status: 'pending',
             rejection_reason: null,
             updated_at: new Date()
@@ -183,7 +191,7 @@ router.post('/apply', upload.array('documents', 5), async (req, res) => {
           routing_number: routingNumber,
           account_holder: accountHolder
         },
-        documents: documentPaths,
+        documents: uploadedDocs,
         status: 'pending',
         clerk_id: userId
       })
@@ -525,6 +533,107 @@ router.patch('/:id/verification', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update seller verification status',
+      error: error.message
+    });
+  }
+});
+
+// Admin route to download seller documents (requires admin role)
+router.get('/documents/:sellerId/:filename', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { sellerId, filename } = req.params;
+    
+    // Check if user is admin
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('clerk_id', userId)
+      .single();
+    
+    if (userError || !userData || userData.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    // Verify that the document belongs to the specified seller
+    const { data: sellerData, error: sellerError } = await supabase
+      .from('sellers')
+      .select('documents')
+      .eq('id', sellerId)
+      .single();
+    
+    if (sellerError || !sellerData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Seller not found'
+      });
+    }
+
+    // Check if the filename exists in the seller's documents
+    const documents = sellerData.documents || [];
+    const document = documents.find(doc => doc.filename === filename);
+    
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    // Handle different storage types (Supabase Storage vs Legacy local storage)
+    if (document.storage === 'supabase' || document.url) {
+      // New Supabase Storage documents - redirect to public URL or create signed URL
+      try {
+        let downloadUrl = document.url;
+        
+        // If no public URL stored, generate it
+        if (!downloadUrl) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('seller-documents')
+            .getPublicUrl(document.path);
+          downloadUrl = publicUrl;
+        }
+        
+        // For secure downloads, you might want to create a signed URL instead
+        // const { data: { signedUrl } } = await supabase.storage
+        //   .from('seller-documents')
+        //   .createSignedUrl(document.path, 3600); // 1 hour expiry
+        
+        return res.redirect(downloadUrl);
+      } catch (storageError) {
+        console.error('Error accessing Supabase Storage:', storageError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to access document in storage'
+        });
+      }
+    } else {
+      // Legacy local storage documents
+      const filePath = document.path || path.join(process.cwd(), 'uploads', 'seller_documents', filename);
+      
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({
+          success: false,
+          message: 'File not found on server'
+        });
+      }
+
+      // Set appropriate headers for download
+      res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
+      res.setHeader('Content-Type', document.mimetype || 'application/octet-stream');
+      
+      // Send the file
+      return res.sendFile(path.resolve(filePath));
+    }
+  } catch (error) {
+    console.error('Error downloading seller document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to download document',
       error: error.message
     });
   }

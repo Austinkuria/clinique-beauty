@@ -2,11 +2,8 @@ import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
 import { useCallback } from 'react';
 
-// Define API base URLs
+// Define API base URLs - Use only Supabase Functions
 const SUPABASE_API_URL = 'https://zdbfjwienzjdjpawcnuc.supabase.co/functions/v1/api';
-const EXPRESS_API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000/api'  // Development - Express server
-  : 'http://localhost:5000/api'; // Production - you'll need to update this with your production Express server URL
 
 // Helper to get auth token from Clerk (for use outside of React components)
 const getAuthHeader = async () => {
@@ -25,7 +22,7 @@ const getAuthHeader = async () => {
 };
 
 export const sellerApi = {
-  // Get all sellers with optional filters - Use Supabase Functions for admin operations
+  // Get all sellers with optional filters - Use Supabase Functions
   getSellers: async (filters = {}) => {
     try {
       // Build query string for filters
@@ -90,9 +87,9 @@ export const sellerApi = {
       console.log(`Updating seller ${id} to status: ${status}${notes ? ' with notes' : ''}`);
       console.log('Using authorization headers:', headers.Authorization ? 'Bearer token present' : 'No bearer token');
       
-      const response = await axios.patch(
+      const response = await axios.post(
         `${SUPABASE_API_URL}/sellers/${id}/verification`, 
-        { status, notes },
+        { status, notes, action: 'update' },
         { headers }
       );
       
@@ -133,6 +130,53 @@ export const sellerApi = {
       // Return empty array instead of falling back to mock data
       return [];
     }
+  },
+
+  // Download seller document (admin only) - Use Supabase Functions
+  downloadSellerDocument: async (sellerId, filename) => {
+    try {
+      // Get auth headers for authenticated requests (token required)
+      const headers = await getAuthHeader();
+      if (!headers.Authorization) {
+        throw new Error('Authentication required for this operation');
+      }
+      
+      // Try to get document metadata/URL from Supabase Functions
+      const metadataResponse = await axios.get(
+        `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`,
+        { headers }
+      );
+      
+      // If we got a redirect (document is in Supabase Storage), follow it
+      if (metadataResponse.status === 302) {
+        const downloadUrl = metadataResponse.headers.location;
+        if (downloadUrl) {
+          // Fetch the actual file from Supabase Storage
+          const fileResponse = await axios.get(downloadUrl, { responseType: 'blob' });
+          return fileResponse;
+        }
+      }
+      
+      // If document metadata contains a URL, use it directly
+      if (metadataResponse.data?.document?.url) {
+        const fileResponse = await axios.get(metadataResponse.data.document.url, { 
+          responseType: 'blob' 
+        });
+        return fileResponse;
+      }
+      
+      // If no direct download URL, return the metadata response
+      return metadataResponse;
+      
+    } catch (error) {
+      console.error('Error downloading seller document:', error);
+      throw error;
+    }
+  },
+
+  // Get document download URL for seller documents
+  getDocumentDownloadUrl: (sellerId, filename) => {
+    return `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`;
   }
 };
 
@@ -189,9 +233,9 @@ export const useSellerApi = () => {
       
       const headers = { Authorization: `Bearer ${token}` };
       
-      const response = await axios.patch(
+      const response = await axios.post(
         `${SUPABASE_API_URL}/sellers/${id}/verification`, 
-        { status, notes },
+        { status, notes, action: 'update' },
         { headers }
       );
       
@@ -205,9 +249,57 @@ export const useSellerApi = () => {
     }
   }, [getToken]);
 
+  const downloadSellerDocument = useCallback(async (sellerId, filename) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication required for this operation');
+      }
+      
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      // Try to get document metadata/URL from Supabase Functions
+      const metadataResponse = await axios.get(
+        `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`,
+        { headers }
+      );
+      
+      // If we got a redirect (document is in Supabase Storage), follow it
+      if (metadataResponse.status === 302) {
+        const downloadUrl = metadataResponse.headers.location;
+        if (downloadUrl) {
+          // Fetch the actual file from Supabase Storage
+          const fileResponse = await axios.get(downloadUrl, { responseType: 'blob' });
+          return fileResponse;
+        }
+      }
+      
+      // If document metadata contains a URL, use it directly
+      if (metadataResponse.data?.document?.url) {
+        const fileResponse = await axios.get(metadataResponse.data.document.url, { 
+          responseType: 'blob' 
+        });
+        return fileResponse;
+      }
+      
+      // If no direct download URL, return the metadata response
+      return metadataResponse;
+      
+    } catch (error) {
+      console.error('Error downloading seller document:', error);
+      throw error;
+    }
+  }, [getToken]);
+
+  const getDocumentDownloadUrl = useCallback((sellerId, filename) => {
+    return `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`;
+  }, []);
+
   return {
     getSellers,
     getVerificationRequests,
-    updateVerificationStatus
+    updateVerificationStatus,
+    downloadSellerDocument,
+    getDocumentDownloadUrl
   };
 };

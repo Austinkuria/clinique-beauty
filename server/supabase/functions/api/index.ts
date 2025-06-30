@@ -2831,6 +2831,120 @@ serve(async (req: Request) => {
             }
         }
 
+        // GET /api/seller/documents/:sellerId/:filename - Get document info (admin only)
+        if (req.method === 'GET' && route[0] === 'seller' && route[1] === 'documents' && route.length === 4) {
+            console.log('[Route Handler] Matched GET /api/seller/documents/:sellerId/:filename');
+            
+            const sellerId = route[2];
+            const filename = route[3];
+            
+            // Authentication required
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+
+            try {
+                // Get user ID from token
+                const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+                if (!supabaseUserId) {
+                    return new Response(
+                        JSON.stringify({ message: 'Invalid token or user not found' }),
+                        { headers, status: 401 }
+                    );
+                }
+
+                // Check if user is admin
+                const { data: userData, error: userError } = await supabase
+                    .from('user_profiles')
+                    .select('role')
+                    .eq('id', supabaseUserId)
+                    .single();
+
+                if (userError || !userData || userData.role !== 'admin') {
+                    return new Response(
+                        JSON.stringify({ message: 'Admin access required' }),
+                        { headers, status: 403 }
+                    );
+                }
+
+                // Get seller to verify document exists
+                const { data: seller, error: sellerError } = await supabase
+                    .from('sellers')
+                    .select('documents')
+                    .eq('id', sellerId)
+                    .single();
+
+                if (sellerError || !seller) {
+                    return new Response(
+                        JSON.stringify({ message: 'Seller not found' }),
+                        { headers, status: 404 }
+                    );
+                }
+
+                // Check if the requested file exists in the seller's documents
+                const documents = seller.documents || [];
+                const requestedDoc = documents.find(doc => doc.filename === filename);
+
+                if (!requestedDoc) {
+                    return new Response(
+                        JSON.stringify({ message: 'Document not found' }),
+                        { headers, status: 404 }
+                    );
+                }
+
+                // Handle different storage types (Supabase Storage vs Legacy)
+                if (requestedDoc.storage === 'supabase' || requestedDoc.url) {
+                    // New Supabase Storage documents - redirect to public URL
+                    let downloadUrl = requestedDoc.url;
+                    
+                    // If no public URL stored, generate it
+                    if (!downloadUrl && requestedDoc.path) {
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('seller-documents')
+                            .getPublicUrl(requestedDoc.path);
+                        downloadUrl = publicUrl;
+                    }
+                    
+                    if (downloadUrl) {
+                        // Return redirect response to the public URL
+                        return new Response(null, {
+                            status: 302,
+                            headers: {
+                                ...headers,
+                                'Location': downloadUrl
+                            }
+                        });
+                    }
+                }
+                
+                // Return document metadata for legacy files or if no URL available
+                return new Response(JSON.stringify({
+                    success: true,
+                    document: {
+                        filename: requestedDoc.filename,
+                        originalName: requestedDoc.originalName,
+                        mimetype: requestedDoc.mimetype,
+                        size: requestedDoc.size,
+                        storage: requestedDoc.storage || 'legacy',
+                        url: requestedDoc.url || null,
+                        message: requestedDoc.storage === 'supabase' 
+                            ? 'Document available in Supabase Storage' 
+                            : 'Legacy document - consider migrating to Supabase Storage'
+                    }
+                }), { headers, status: 200 });
+
+            } catch (error) {
+                console.error('[Route Handler GET /api/seller/documents] Error:', error);
+                return new Response(
+                    JSON.stringify({ message: error.message || 'Internal server error while fetching document' }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+
         // --- Fallback for unhandled routes ---
         console.warn(`[Route Handler] Route not found: ${req.method} ${url.pathname}`);
         return new Response(JSON.stringify({ message: 'Route not found' }), { headers, status: 404 });

@@ -27,7 +27,13 @@
     "migrate:seller": "powershell -ExecutionPolicy Bypass -File scripts/migrate-seller-fields.ps1",
     "test:seller": "node scripts/test-seller-api.js",
     "deploy:functions": "powershell -ExecutionPolicy Bypass -File scripts/deploy-functions.ps1",
-    "test:supabase": "node scripts/test-supabase-seller.js"
+    "test:supabase": "node scripts/test-supabase-seller.js",
+    "storage:setup": "node scripts/migrate-to-supabase-storage.js setup",
+    "storage:migrate": "node scripts/migrate-to-supabase-storage.js migrate",
+    "storage:verify": "node scripts/migrate-to-supabase-storage.js verify",
+    "storage:full": "node scripts/migrate-to-supabase-storage.js full",
+    "storage:test": "node scripts/test-supabase-storage.js test",
+    "storage:stats": "node scripts/test-supabase-storage.js stats"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.36.0",
