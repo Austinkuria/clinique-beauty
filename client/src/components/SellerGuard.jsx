@@ -2,17 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { Box, CircularProgress, Typography, Alert, Button } from '@mui/material';
-import { useSellerApi } from '../api/apiClient';
+import { useSellerApi } from '../data/sellerApi';
 
 const SellerGuard = ({ children }) => {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const location = useLocation();
-  const sellerApi = useSellerApi();
+  const { getSellerById } = useSellerApi();
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState(null);
-  const [error, setError] = useState(null);
   const [sellerStatus, setSellerStatus] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Check if user has seller role in Clerk metadata
+  const checkSellerRole = () => {
+    if (!user || !isLoaded) {
+      return false;
+    }
+    
+    // Check all possible locations where seller role might be stored
+    const hasSellerRole = 
+      (user.unsafeMetadata?.role === 'seller') ||
+      (user.privateMetadata?.role === 'seller') ||
+      (user.publicMetadata?.role === 'seller');
+      
+    console.log("SellerGuard: Seller role check result:", hasSellerRole);
+    return hasSellerRole;
+  };
 
   useEffect(() => {
     const checkSellerAccess = async () => {
@@ -26,30 +41,36 @@ const SellerGuard = ({ children }) => {
       try {
         console.log('SellerGuard: Checking seller access for user:', user.id);
         
-        // Check if user has seller role and status
-        const userData = await sellerApi.getUserProfile();
+        // First check if user has seller role in Clerk metadata
+        const hasSellerRole = checkSellerRole();
         
-        console.log('SellerGuard: User data received:', userData);
-        
-        setUserRole(userData.role);
-        
-        // If user is a seller, check their seller status
-        if (userData.role === 'seller') {
-          try {            const sellerData = await sellerApi.getSellerProfile();
-            setSellerStatus(sellerData.status);
-            
-            console.log('SellerGuard: Seller status:', sellerData.status);
-            
-            // Only allow access if seller is approved
-            if (sellerData.status !== 'approved') {
-              setError(`Your seller account is ${sellerData.status}. Please wait for approval or contact support.`);
-            }
-          } catch (sellerError) {
-            console.error('SellerGuard: Error fetching seller profile:', sellerError);
-            setError('Unable to verify seller status. Please try again or contact support.');
-          }
-        } else {
+        if (!hasSellerRole) {
           setError('You do not have seller access. Please apply to become a seller.');
+          setLoading(false);
+          return;
+        }
+
+        // If user has seller role, check their seller status in Supabase
+        try {
+          const sellerData = await getSellerById(user.id);
+          
+          if (!sellerData) {
+            setError('Seller profile not found. Please contact support.');
+            setLoading(false);
+            return;
+          }
+          
+          setSellerStatus(sellerData.status);
+          console.log('SellerGuard: Seller status:', sellerData.status);
+          
+          // Only allow access if seller is approved
+          if (sellerData.status !== 'approved') {
+            setError(`Your seller account is ${sellerData.status}. Please wait for approval or contact support.`);
+          }
+          
+        } catch (sellerError) {
+          console.error('SellerGuard: Error fetching seller profile:', sellerError);
+          setError('Unable to verify seller status. Please try again or contact support.');
         }
         
       } catch (error) {
@@ -61,7 +82,7 @@ const SellerGuard = ({ children }) => {
     };
 
     checkSellerAccess();
-  }, [isLoaded, isSignedIn, user, sellerApi]);
+  }, [isLoaded, isSignedIn, user, getSellerById]);
 
   // Show loading spinner while checking authentication and permissions
   if (!isLoaded || loading) {
@@ -90,7 +111,9 @@ const SellerGuard = ({ children }) => {
   }
 
   // Show error if user doesn't have seller access or seller not approved
-  if (error || (userRole === 'seller' && sellerStatus !== 'approved')) {
+  if (error || (checkSellerRole() && sellerStatus !== 'approved')) {
+    const hasSellerRole = checkSellerRole();
+    
     return (
       <Box 
         sx={{ 
@@ -105,11 +128,11 @@ const SellerGuard = ({ children }) => {
         }}
       >
         <Alert 
-          severity={userRole === 'seller' && sellerStatus === 'pending' ? 'warning' : 'error'} 
+          severity={hasSellerRole && sellerStatus === 'pending' ? 'warning' : 'error'} 
           sx={{ mb: 3, width: '100%' }}
         >
           <Typography variant="h6" gutterBottom>
-            {userRole === 'seller' && sellerStatus === 'pending' ? 'Account Pending Approval' : 'Access Denied'}
+            {hasSellerRole && sellerStatus === 'pending' ? 'Account Pending Approval' : 'Access Denied'}
           </Typography>
           <Typography variant="body1">
             {error || 'You do not have permission to access the seller dashboard.'}
@@ -124,7 +147,7 @@ const SellerGuard = ({ children }) => {
             Go to Homepage
           </Button>
           
-          {userRole !== 'seller' && (
+          {!hasSellerRole && (
             <Button 
               variant="outlined" 
               onClick={() => window.location.href = '/seller/apply'}
@@ -133,7 +156,7 @@ const SellerGuard = ({ children }) => {
             </Button>
           )}
           
-          {userRole === 'seller' && sellerStatus !== 'approved' && (
+          {hasSellerRole && sellerStatus !== 'approved' && (
             <Button 
               variant="outlined" 
               onClick={() => window.location.href = '/seller/status'}
@@ -147,7 +170,7 @@ const SellerGuard = ({ children }) => {
   }
 
   // Allow access for approved sellers
-  if (userRole === 'seller' && sellerStatus === 'approved') {
+  if (checkSellerRole() && sellerStatus === 'approved') {
     return children;
   }
 
