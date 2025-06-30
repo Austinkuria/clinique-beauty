@@ -2148,28 +2148,52 @@ serve(async (req: Request) => {
                 }
                 
                 // Transform response to match frontend expectations
-                const formattedSellers = filteredSellers.map(seller => ({
-                    id: seller.id,
-                    businessName: seller.business_name,
-                    businessType: seller.business_type,
-                    contactName: seller.contact_name,
-                    email: seller.email,
-                    phone: seller.phone,
-                    location: seller.location,
-                    registrationDate: seller.created_at || seller.registration_date, // Use created_at if available, fallback to registration_date
-                    submittedAt: seller.created_at || seller.registration_date, // Add submittedAt for verification component
-                    status: seller.status,
-                    verificationDate: seller.verification_date,
-                    productCategories: seller.product_categories,
-                    categories: seller.categories, // Include both for compatibility
-                    rating: seller.rating,
-                    salesCount: seller.sales_count,
-                    rejectionReason: seller.rejection_reason,
-                    registrationNumber: seller.registration_number,
-                    taxId: seller.tax_id,
-                    bankInfo: seller.bank_info,
-                    documents: seller.documents
-                }));
+                const formattedSellers = filteredSellers.map(seller => {
+                    // Parse location if it's a JSON string
+                    let parsedLocation = seller.location;
+                    if (typeof seller.location === 'string') {
+                        try {
+                            parsedLocation = JSON.parse(seller.location);
+                        } catch (e) {
+                            // If parsing fails, keep as string
+                            parsedLocation = seller.location;
+                        }
+                    }
+
+                    // Format address from parsed location
+                    let formattedAddress = '';
+                    if (parsedLocation && typeof parsedLocation === 'object') {
+                        const { address, city, state, zip, country } = parsedLocation;
+                        const addressParts = [address, city, state, zip, country].filter(Boolean);
+                        formattedAddress = addressParts.join(', ');
+                    } else if (typeof parsedLocation === 'string') {
+                        formattedAddress = parsedLocation;
+                    }
+
+                    return {
+                        id: seller.id,
+                        businessName: seller.business_name,
+                        businessType: seller.business_type,
+                        contactName: seller.contact_name,
+                        email: seller.email,
+                        phone: seller.phone,
+                        location: formattedAddress,
+                        address: formattedAddress, // Add address field for compatibility
+                        registrationDate: seller.created_at || seller.registration_date, // Use created_at if available, fallback to registration_date
+                        submittedAt: seller.created_at || seller.registration_date, // Add submittedAt for verification component
+                        status: seller.status,
+                        verificationDate: seller.verification_date,
+                        productCategories: seller.product_categories,
+                        categories: seller.categories, // Include both for compatibility
+                        rating: seller.rating,
+                        salesCount: seller.sales_count,
+                        rejectionReason: seller.rejection_reason,
+                        registrationNumber: seller.registration_number,
+                        taxId: seller.tax_id,
+                        bankInfo: seller.bank_info,
+                        documents: seller.documents
+                    };
+                });
                 
                 return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
             } catch (error) {
@@ -2232,20 +2256,49 @@ serve(async (req: Request) => {
             }
             
             // Format response to match frontend expectations
+            // Parse location if it's a JSON string
+            let parsedLocation = seller.location;
+            if (typeof seller.location === 'string') {
+                try {
+                    parsedLocation = JSON.parse(seller.location);
+                } catch (e) {
+                    // If parsing fails, keep as string
+                    parsedLocation = seller.location;
+                }
+            }
+
+            // Format address from parsed location
+            let formattedAddress = '';
+            if (parsedLocation && typeof parsedLocation === 'object') {
+                const { address, city, state, zip, country } = parsedLocation;
+                const addressParts = [address, city, state, zip, country].filter(Boolean);
+                formattedAddress = addressParts.join(', ');
+            } else if (typeof parsedLocation === 'string') {
+                formattedAddress = parsedLocation;
+            }
+
             const formattedSeller = {
                 id: seller.id,
                 businessName: seller.business_name,
+                businessType: seller.business_type,
                 contactName: seller.contact_name,
                 email: seller.email,
                 phone: seller.phone,
-                location: seller.location,
-                registrationDate: seller.registration_date,
+                location: formattedAddress,
+                address: formattedAddress, // Add address field for compatibility
+                registrationDate: seller.created_at || seller.registration_date,
+                submittedAt: seller.created_at || seller.registration_date,
                 status: seller.status,
                 verificationDate: seller.verification_date,
                 productCategories: seller.product_categories,
+                categories: seller.categories,
                 rating: seller.rating,
                 salesCount: seller.sales_count,
-                rejectionReason: seller.rejection_reason
+                rejectionReason: seller.rejection_reason,
+                registrationNumber: seller.registration_number,
+                taxId: seller.tax_id,
+                bankInfo: seller.bank_info,
+                documents: seller.documents
             };
             
             return new Response(JSON.stringify(formattedSeller), { headers, status: 200 });
@@ -2423,25 +2476,49 @@ serve(async (req: Request) => {
             }
             
             // Format response
-            const formattedSellers = (pendingSellers || []).map(seller => ({
-                id: seller.id,
-                businessName: seller.business_name,
-                businessType: seller.business_type,
-                contactName: seller.contact_name,
-                email: seller.email,
-                phone: seller.phone,
-                location: seller.location,
-                registrationDate: seller.created_at || seller.registration_date,
-                submittedAt: seller.created_at || seller.registration_date,
-                status: seller.status,
-                productCategories: seller.product_categories,
-                categories: seller.categories,
-                registrationNumber: seller.registration_number,
-                taxId: seller.tax_id,
-                bankInfo: seller.bank_info,
-                documents: seller.documents,
-                rejectionReason: seller.rejection_reason
-            }));
+            const formattedSellers = (pendingSellers || []).map(seller => {
+                // Parse location if it's a JSON string
+                let parsedLocation = seller.location;
+                if (typeof seller.location === 'string') {
+                    try {
+                        parsedLocation = JSON.parse(seller.location);
+                    } catch (e) {
+                        // If parsing fails, keep as string
+                        parsedLocation = seller.location;
+                    }
+                }
+
+                // Format address from parsed location
+                let formattedAddress = '';
+                if (parsedLocation && typeof parsedLocation === 'object') {
+                    const { address, city, state, zip, country } = parsedLocation;
+                    const addressParts = [address, city, state, zip, country].filter(Boolean);
+                    formattedAddress = addressParts.join(', ');
+                } else if (typeof parsedLocation === 'string') {
+                    formattedAddress = parsedLocation;
+                }
+
+                return {
+                    id: seller.id,
+                    businessName: seller.business_name,
+                    businessType: seller.business_type,
+                    contactName: seller.contact_name,
+                    email: seller.email,
+                    phone: seller.phone,
+                    location: formattedAddress,
+                    address: formattedAddress, // Add address field for compatibility
+                    registrationDate: seller.created_at || seller.registration_date,
+                    submittedAt: seller.created_at || seller.registration_date,
+                    status: seller.status,
+                    productCategories: seller.product_categories,
+                    categories: seller.categories,
+                    registrationNumber: seller.registration_number,
+                    taxId: seller.tax_id,
+                    bankInfo: seller.bank_info,
+                    documents: seller.documents,
+                    rejectionReason: seller.rejection_reason
+                };
+            });
               return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
         }
 
