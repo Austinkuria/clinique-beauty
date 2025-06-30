@@ -2304,6 +2304,162 @@ serve(async (req: Request) => {
             return new Response(JSON.stringify(formattedSeller), { headers, status: 200 });
         }
         
+        // PATCH /api/sellers/:id - Update seller information (admin only)
+        if (req.method === 'PATCH' && route[0] === 'sellers' && route.length === 2) {
+            console.log('[Route Handler] Matched PATCH /api/sellers/:id');
+            const sellerId = route[1];
+            
+            // Validate seller ID
+            if (!isValidUUID(sellerId)) {
+                return new Response(
+                    JSON.stringify({ error: 'Invalid seller ID format. Must be a valid UUID.' }),
+                    { headers, status: 400 }
+                );
+            }
+            
+            // Check if user is admin
+            let isAdmin = false;
+            let adminUserId = null;
+            
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            adminUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!adminUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Unauthorized' }),
+                    { headers, status: 401 }
+                );
+            }
+            
+            // Verify admin role
+            const { data: userData, error: userError } = await supabase
+                .from('user_profiles')
+                .select('role')
+                .eq('id', adminUserId)
+                .single();
+                
+            if (userError || !userData || userData.role !== 'admin') {
+                console.error('[Route Handler PATCH /api/sellers/:id] Admin verification failed:', userError);
+                return new Response(
+                    JSON.stringify({ message: 'Admin access required' }),
+                    { headers, status: 403 }
+                );
+            }
+            
+            isAdmin = true;
+            console.log('[Route Handler PATCH /api/sellers/:id] Admin access confirmed');
+            
+            try {
+                // Parse request body
+                const body = await req.json();
+                console.log('[Route Handler PATCH /api/sellers/:id] Request body:', body);
+                
+                // Validate required fields
+                if (!body.businessName || !body.contactName || !body.email || !body.status) {
+                    return new Response(
+                        JSON.stringify({ message: 'Missing required fields: businessName, contactName, email, status' }),
+                        { headers, status: 400 }
+                    );
+                }
+                
+                // Validate status
+                const validStatuses = ['pending', 'approved', 'rejected'];
+                if (!validStatuses.includes(body.status)) {
+                    return new Response(
+                        JSON.stringify({ message: 'Invalid status. Must be one of: pending, approved, rejected' }),
+                        { headers, status: 400 }
+                    );
+                }
+                
+                // Prepare update data
+                const updateData: any = {
+                    business_name: body.businessName,
+                    contact_name: body.contactName,
+                    email: body.email,
+                    status: body.status,
+                    updated_at: new Date().toISOString()
+                };
+                
+                // Add optional fields if provided
+                if (body.phone !== undefined) {
+                    updateData.phone = body.phone;
+                }
+                if (body.location !== undefined) {
+                    updateData.location = body.location;
+                }
+                if (body.rejectionReason !== undefined) {
+                    updateData.rejection_reason = body.rejectionReason;
+                }
+                
+                // Set verification_date if status is being approved or rejected
+                if (body.status === 'approved' || body.status === 'rejected') {
+                    updateData.verification_date = new Date().toISOString();
+                }
+                
+                console.log('[Route Handler PATCH /api/sellers/:id] Updating seller with data:', updateData);
+                
+                // Update seller in database
+                const { data: updatedSeller, error: updateError } = await supabase
+                    .from('sellers')
+                    .update(updateData)
+                    .eq('id', sellerId)
+                    .select()
+                    .single();
+                
+                if (updateError) {
+                    console.error('[Route Handler PATCH /api/sellers/:id] Error updating seller:', updateError);
+                    return new Response(
+                        JSON.stringify({ message: 'Failed to update seller information' }),
+                        { headers, status: 500 }
+                    );
+                }
+                
+                if (!updatedSeller) {
+                    return new Response(
+                        JSON.stringify({ message: 'Seller not found' }),
+                        { headers, status: 404 }
+                    );
+                }
+                
+                console.log('[Route Handler PATCH /api/sellers/:id] Seller updated successfully:', updatedSeller.id);
+                
+                // Format response
+                const formattedSeller = {
+                    id: updatedSeller.id,
+                    businessName: updatedSeller.business_name,
+                    contactName: updatedSeller.contact_name,
+                    email: updatedSeller.email,
+                    phone: updatedSeller.phone,
+                    location: updatedSeller.location,
+                    status: updatedSeller.status,
+                    verificationDate: updatedSeller.verification_date,
+                    rejectionReason: updatedSeller.rejection_reason,
+                    createdAt: updatedSeller.created_at,
+                    updatedAt: updatedSeller.updated_at
+                };
+                
+                return new Response(
+                    JSON.stringify({ 
+                        success: true, 
+                        message: 'Seller information updated successfully',
+                        seller: formattedSeller
+                    }),
+                    { headers, status: 200 }
+                );
+            } catch (error) {
+                console.error('[Route Handler PATCH /api/sellers/:id] Error:', error);
+                return new Response(
+                    JSON.stringify({ message: error.message || 'Internal server error while updating seller' }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+        
         // PATCH /api/sellers/:id/verification - Update seller verification status (admin only)
         if (req.method === 'PATCH' && route[0] === 'sellers' && route.length === 3 && route[2] === 'verification') {
             console.log('[Route Handler] Matched PATCH /api/sellers/:id/verification');

@@ -9,12 +9,18 @@ const SUPABASE_API_URL = 'https://zdbfjwienzjdjpawcnuc.supabase.co/functions/v1/
 const getAuthHeader = async () => {
   // Try to get token from the current Clerk session if available
   try {
-    // This is a fallback - ideally we should pass the token from the component
-    const clerk = window.Clerk;
-    if (clerk && clerk.session) {
-      const token = await clerk.session.getToken();
-      return token ? { Authorization: `Bearer ${token}` } : {};
+    // Check if Clerk is properly loaded
+    if (typeof window !== 'undefined' && window.Clerk) {
+      const clerk = window.Clerk;
+      
+      // Check if user is signed in and has a session
+      if (clerk.user && clerk.session) {
+        const token = await clerk.session.getToken();
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      }
     }
+    
+    console.warn('Clerk not available or user not authenticated');
   } catch (error) {
     console.warn('Could not get Clerk token:', error);
   }
@@ -80,8 +86,8 @@ export const sellerApi = {
       // Get auth headers for authenticated requests (token required)
       const headers = await getAuthHeader();
       if (!headers.Authorization) {
-        console.error('No authorization token found. This operation requires authentication.');
-        throw new Error('Authentication required for this operation');
+        console.error('No authorization token found. Please ensure you are logged in.');
+        throw new Error('Authentication token not found. Please try logging in again.');
       }
       
       console.log(`Updating seller ${id} to status: ${status}${notes ? ' with notes' : ''}`);
@@ -97,6 +103,45 @@ export const sellerApi = {
       return response.data;
     } catch (error) {
       console.error('Error updating verification status:', error);
+      
+      // Enhanced error logging
+      if (error.response) {
+        console.error('Server error details:', error.response.data);
+        console.error('Status code:', error.response.status);
+        
+        // If the server returns a specific error message, use it
+        if (error.response.data && error.response.data.message) {
+          throw new Error(error.response.data.message);
+        }
+      }
+      
+      throw error;
+    }
+  },
+
+  // Update seller information (admin only) - Use Supabase Functions
+  updateSeller: async (id, sellerData) => {
+    try {
+      // Get auth headers for authenticated requests (token required)
+      const headers = await getAuthHeader();
+      if (!headers.Authorization) {
+        console.error('No authorization token found. Please ensure you are logged in.');
+        throw new Error('Authentication token not found. Please try logging in again.');
+      }
+      
+      console.log(`Updating seller ${id} information`);
+      console.log('Using authorization headers:', headers.Authorization ? 'Bearer token present' : 'No bearer token');
+      
+      const response = await axios.patch(
+        `${SUPABASE_API_URL}/sellers/${id}`, 
+        sellerData,
+        { headers }
+      );
+      
+      console.log('Server response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating seller:', error);
       
       // Enhanced error logging
       if (error.response) {
@@ -211,6 +256,19 @@ export const useSellerApi = () => {
     }
   }, [getToken]);
   
+  const getSellerById = useCallback(async (id) => {
+    try {
+      const token = await getToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      const response = await axios.get(`${SUPABASE_API_URL}/sellers/${id}`, { headers });
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching seller ${id}:`, error);
+      return null;
+    }
+  }, [getToken]);
+  
   const getVerificationRequests = useCallback(async () => {
     try {
       const token = await getToken();
@@ -228,7 +286,7 @@ export const useSellerApi = () => {
     try {
       const token = await getToken();
       if (!token) {
-        throw new Error('Authentication required for this operation');
+        throw new Error('Authentication token not found. Please try logging in again.');
       }
       
       const headers = { Authorization: `Bearer ${token}` };
@@ -242,6 +300,31 @@ export const useSellerApi = () => {
       return response.data;
     } catch (error) {
       console.error('Error updating verification status:', error);
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  }, [getToken]);
+
+  const updateSeller = useCallback(async (id, sellerData) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not found. Please try logging in again.');
+      }
+      
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const response = await axios.patch(
+        `${SUPABASE_API_URL}/sellers/${id}`, 
+        sellerData,
+        { headers }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error updating seller:', error);
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }
@@ -297,8 +380,10 @@ export const useSellerApi = () => {
 
   return {
     getSellers,
+    getSellerById,
     getVerificationRequests,
     updateVerificationStatus,
+    updateSeller,
     downloadSellerDocument,
     getDocumentDownloadUrl
   };

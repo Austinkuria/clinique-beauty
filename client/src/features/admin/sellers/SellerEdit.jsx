@@ -17,7 +17,7 @@ import {
   FormHelperText
 } from '@mui/material';
 import { ArrowBack as BackIcon, Save as SaveIcon } from '@mui/icons-material';
-import { sellerApi } from '../../../data/sellerApi';
+import { useSellerApi } from '../../../data/sellerApi';
 import { 
   validateEmail, 
   validatePhone, 
@@ -29,6 +29,7 @@ import {
 const SellerEdit = () => {
   const { sellerId } = useParams();
   const navigate = useNavigate();
+  const { getSellerById, updateSeller } = useSellerApi();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -61,7 +62,7 @@ const SellerEdit = () => {
     const fetchSellerData = async () => {
       try {
         setLoading(true);
-        const data = await sellerApi.getSellerById(sellerId);
+        const data = await getSellerById(sellerId);
         if (!data) {
           setError('Seller not found');
           return;
@@ -89,7 +90,7 @@ const SellerEdit = () => {
     };
 
     fetchSellerData();
-  }, [sellerId]);
+  }, [sellerId, getSellerById]);
 
   // Validate form field using shared validation utilities
   const validateField = (name, value) => {
@@ -206,35 +207,23 @@ const SellerEdit = () => {
     try {
       setSaving(true);
       
-      // Check if auth token is available before proceeding
-      const token = window.localStorage.getItem('clerk-db-jwt');
-      if (!token) {
-        setSnackbar({
-          open: true,
-          message: 'Authentication token not found. Please try logging in again.',
-          severity: 'error'
-        });
-        return;
-      }
-      
-      console.log('Submitting form data with authentication token');
+      console.log('Submitting form data with authentication via Clerk hook');
       
       // Sanitize the entire form data object before submission
       const sanitizedFormData = sanitizeObject(formData);
       
-      console.log(`Updating seller ${sellerId} status from ${originalData.status} to ${sanitizedFormData.status}`);
+      console.log(`Updating seller ${sellerId} information and status from ${originalData.status} to ${sanitizedFormData.status}`);
       
-      const result = await sellerApi.updateVerificationStatus(
+      const result = await updateSeller(
         sellerId, 
-        sanitizedFormData.status, 
-        sanitizedFormData.status === 'rejected' ? sanitizedFormData.rejectionReason : ''
+        sanitizedFormData
       );
       
       console.log('Update result:', result);
       
       setSnackbar({
         open: true,
-        message: `Seller status updated to ${sanitizedFormData.status}`,
+        message: `Seller information updated successfully`,
         severity: 'success'
       });
       
