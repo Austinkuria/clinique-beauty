@@ -261,7 +261,13 @@ export const useSellerApi = () => {
       const token = await getToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const response = await axios.get(`${SUPABASE_API_URL}/sellers/${id}`, { headers });
+      // Check if the ID is a Clerk user ID (starts with 'user_') or a UUID
+      const isClerkId = id && id.startsWith('user_');
+      const endpoint = isClerkId 
+        ? `${SUPABASE_API_URL}/sellers/by-clerk-id/${id}`
+        : `${SUPABASE_API_URL}/sellers/${id}`;
+      
+      const response = await axios.get(endpoint, { headers });
       return response.data;
     } catch (error) {
       console.error(`Error fetching seller ${id}:`, error);
@@ -378,9 +384,23 @@ export const useSellerApi = () => {
     return `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`;
   }, []);
 
+  const getSellerByClerkId = useCallback(async (clerkId) => {
+    try {
+      const token = await getToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      const response = await axios.get(`${SUPABASE_API_URL}/sellers/by-clerk-id/${clerkId}`, { headers });
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching seller by Clerk ID ${clerkId}:`, error);
+      return null;
+    }
+  }, [getToken]);
+
   return {
     getSellers,
     getSellerById,
+    getSellerByClerkId,
     getVerificationRequests,
     updateVerificationStatus,
     updateSeller,

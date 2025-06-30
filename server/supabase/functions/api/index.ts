@@ -2574,6 +2574,112 @@ serve(async (req: Request) => {
             );
         }
         
+        // GET /api/sellers/by-clerk-id/:clerkId - Get seller by Clerk user ID
+        if (req.method === 'GET' && route[0] === 'sellers' && route[1] === 'by-clerk-id' && route.length === 3) {
+            console.log('[Route Handler] Matched GET /api/sellers/by-clerk-id/:clerkId');
+            const clerkId = route[2];
+            
+            // Validate Clerk ID format (should start with user_)
+            if (!clerkId || !clerkId.startsWith('user_')) {
+                return new Response(
+                    JSON.stringify({ error: 'Invalid Clerk user ID format. Must start with "user_".' }),
+                    { headers, status: 400 }
+                );
+            }
+
+            // Check if user is admin or if the seller is approved
+            let isAdmin = false;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+                if (supabaseUserId) {
+                    const { data: userData } = await supabase
+                        .from('user_profiles')
+                        .select('role')
+                        .eq('id', supabaseUserId)
+                        .single();
+                    
+                    isAdmin = userData?.role === 'admin';
+                }
+            }
+
+            // Get seller data by clerk_id
+            let query = supabase.from('sellers').select('*').eq('clerk_id', clerkId);
+            
+            // Non-admins can only see approved sellers
+            if (!isAdmin) {
+                query = query.eq('status', 'approved');
+            }
+
+            const { data: seller, error } = await query.maybeSingle();
+
+            if (error) {
+                console.error('[Route Handler GET /api/sellers/by-clerk-id/:clerkId] Error fetching seller:', error);
+                throw error;
+            }
+
+            if (!seller) {
+                return new Response(
+                    JSON.stringify({ message: 'Seller not found or not accessible' }),
+                    { headers, status: 404 }
+                );
+            }
+
+            // Format response to match frontend expectations
+            // Parse location if it's a JSON string
+            let parsedLocation = seller.location;
+            if (typeof seller.location === 'string') {
+                try {
+                    parsedLocation = JSON.parse(seller.location);
+                } catch (e) {
+                    // If parsing fails, keep as string
+                    parsedLocation = seller.location;
+                }
+            }
+
+            // Format address from parsed location
+            let formattedAddress = '';
+            if (parsedLocation && typeof parsedLocation === 'object') {
+                const { address, city, state, zip, country } = parsedLocation;
+                const addressParts = [address, city, state, zip, country].filter(Boolean);
+                formattedAddress = addressParts.join(', ');
+            } else if (typeof parsedLocation === 'string') {
+                formattedAddress = parsedLocation;
+            }
+
+            const formattedSeller = {
+                id: seller.id,
+                businessName: seller.business_name,
+                contactName: seller.contact_name,
+                email: seller.email,
+                phone: seller.phone,
+                location: parsedLocation,
+                address: formattedAddress,
+                registrationDate: seller.registration_date,
+                status: seller.status,
+                verificationDate: seller.verification_date,
+                productCategories: seller.product_categories,
+                rating: seller.rating,
+                salesCount: seller.sales_count,
+                rejectionReason: seller.rejection_reason,
+                createdAt: seller.created_at,
+                updatedAt: seller.updated_at,
+                clerkId: seller.clerk_id,
+                businessType: seller.business_type,
+                businessAddress: seller.address,
+                city: seller.city,
+                state: seller.state,
+                zip: seller.zip,
+                country: seller.country,
+                registrationNumber: seller.registration_number,
+                taxId: seller.tax_id
+            };
+
+            return new Response(
+                JSON.stringify(formattedSeller),
+                { headers, status: 200 }
+            );
+        }
+        
         // GET /api/verification/pending - Get all pending verification requests (admin only)
         if (req.method === 'GET' && route[0] === 'verification' && route[1] === 'pending') {
             console.log('[Route Handler] Matched GET /api/verification/pending');
