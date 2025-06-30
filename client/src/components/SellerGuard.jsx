@@ -8,11 +8,26 @@ const SellerGuard = ({ children }) => {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const location = useLocation();
-  const { getSellers } = useSellerApi();
+  const { getSellerById } = useSellerApi();
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState(null);
   const [sellerStatus, setSellerStatus] = useState(null);
   const [error, setError] = useState(null);
+
+  // Check if user has seller role in Clerk metadata
+  const checkSellerRole = () => {
+    if (!user || !isLoaded) {
+      return false;
+    }
+    
+    // Check all possible locations where seller role might be stored
+    const hasSellerRole = 
+      (user.unsafeMetadata?.role === 'seller') ||
+      (user.privateMetadata?.role === 'seller') ||
+      (user.publicMetadata?.role === 'seller');
+      
+    console.log("SellerGuard: Seller role check result:", hasSellerRole);
+    return hasSellerRole;
+  };
 
   useEffect(() => {
     const checkSellerAccess = async () => {
@@ -26,17 +41,10 @@ const SellerGuard = ({ children }) => {
       try {
         console.log('SellerGuard: Checking seller access for user:', user.id);
         
-        // Check if user has seller role in Clerk metadata (similar to admin check)
-        const userRole = user.unsafeMetadata?.role || 
-                        user.publicMetadata?.role || 
-                        user.privateMetadata?.role || 
-                        null;
+        // First check if user has seller role in Clerk metadata
+        const hasSellerRole = checkSellerRole();
         
-        console.log('SellerGuard: Seller role check result:', userRole === 'seller');
-        
-        setUserRole(userRole);
-        
-        if (userRole !== 'seller') {
+        if (!hasSellerRole) {
           setError('You do not have seller access. Please apply to become a seller.');
           setLoading(false);
           return;
@@ -44,17 +52,7 @@ const SellerGuard = ({ children }) => {
 
         // If user has seller role, check their seller status in Supabase
         try {
-          // Get all sellers and find the one matching this Clerk user
-          const allSellers = await getSellers();
-          console.log('SellerGuard: All sellers:', allSellers);
-          
-          const sellerData = allSellers.find(seller => 
-            seller.clerk_id === user.id || 
-            seller.clerkId === user.id ||
-            seller.email === user.primaryEmailAddress?.emailAddress
-          );
-          
-          console.log('SellerGuard: Found seller data:', sellerData);
+          const sellerData = await getSellerById(user.id);
           
           if (!sellerData) {
             setError('Seller profile not found. Please contact support.');
@@ -84,7 +82,7 @@ const SellerGuard = ({ children }) => {
     };
 
     checkSellerAccess();
-  }, [isLoaded, isSignedIn, user, getSellers]);
+  }, [isLoaded, isSignedIn, user, getSellerById]);
 
   // Show loading spinner while checking authentication and permissions
   if (!isLoaded || loading) {
@@ -113,7 +111,8 @@ const SellerGuard = ({ children }) => {
   }
 
   // Show error if user doesn't have seller access or seller not approved
-  if (error || (userRole === 'seller' && sellerStatus !== 'approved')) {
+  if (error || (checkSellerRole() && sellerStatus !== 'approved')) {
+    const hasSellerRole = checkSellerRole();
     
     return (
       <Box 
@@ -129,11 +128,11 @@ const SellerGuard = ({ children }) => {
         }}
       >
         <Alert 
-          severity={userRole === 'seller' && sellerStatus === 'pending' ? 'warning' : 'error'} 
+          severity={hasSellerRole && sellerStatus === 'pending' ? 'warning' : 'error'} 
           sx={{ mb: 3, width: '100%' }}
         >
           <Typography variant="h6" gutterBottom>
-            {userRole === 'seller' && sellerStatus === 'pending' ? 'Account Pending Approval' : 'Access Denied'}
+            {hasSellerRole && sellerStatus === 'pending' ? 'Account Pending Approval' : 'Access Denied'}
           </Typography>
           <Typography variant="body1">
             {error || 'You do not have permission to access the seller dashboard.'}
@@ -148,7 +147,7 @@ const SellerGuard = ({ children }) => {
             Go to Homepage
           </Button>
           
-          {userRole !== 'seller' && (
+          {!hasSellerRole && (
             <Button 
               variant="outlined" 
               onClick={() => window.location.href = '/seller/apply'}
@@ -157,7 +156,7 @@ const SellerGuard = ({ children }) => {
             </Button>
           )}
           
-          {userRole === 'seller' && sellerStatus !== 'approved' && (
+          {hasSellerRole && sellerStatus !== 'approved' && (
             <Button 
               variant="outlined" 
               onClick={() => window.location.href = '/seller/status'}
@@ -171,7 +170,7 @@ const SellerGuard = ({ children }) => {
   }
 
   // Allow access for approved sellers
-  if (userRole === 'seller' && sellerStatus === 'approved') {
+  if (checkSellerRole() && sellerStatus === 'approved') {
     return children;
   }
 

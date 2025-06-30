@@ -30,7 +30,6 @@ import SellerDashboard from './features/seller/pages/Dashboard';
 import SellerProducts from './features/seller/pages/Products';
 import SellerOrders from './features/seller/pages/Orders';
 import SellerFinancials from './features/seller/pages/Financials';
-import SellerSettings from './features/seller/pages/Settings';
 import RevenueAnalytics from './features/admin/pages/analytics/RevenueAnalytics';
 import ProductAnalytics from './features/admin/pages/analytics/ProductAnalytics';
 import CustomerAnalytics from './features/admin/pages/analytics/CustomerAnalytics';
@@ -177,7 +176,6 @@ export const router = createBrowserRouter([
                     { path: 'products', element: <SellerProducts /> },
                     { path: 'orders', element: <SellerOrders /> },
                     { path: 'financials', element: <SellerFinancials /> },
-                    { path: 'settings', element: <SellerSettings /> },
                     // TODO: Add remaining seller routes as components are created
                     // { path: 'analytics', element: <SellerAnalytics /> },
                     // { path: 'marketing', element: <SellerMarketing /> },
