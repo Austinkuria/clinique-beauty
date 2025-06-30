@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
 import { useCallback } from 'react';
 
-// Define API base URLs - Use only Supabase Functions (Updated: 2025-06-30)
+// Define API base URLs - Use only Supabase Functions
 const SUPABASE_API_URL = 'https://zdbfjwienzjdjpawcnuc.supabase.co/functions/v1/api';
 
 // Helper to get auth token from Clerk (for use outside of React components)
