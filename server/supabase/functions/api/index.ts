@@ -2151,17 +2151,24 @@ serve(async (req: Request) => {
                 const formattedSellers = filteredSellers.map(seller => ({
                     id: seller.id,
                     businessName: seller.business_name,
+                    businessType: seller.business_type,
                     contactName: seller.contact_name,
                     email: seller.email,
                     phone: seller.phone,
                     location: seller.location,
-                    registrationDate: seller.registration_date,
+                    registrationDate: seller.created_at || seller.registration_date, // Use created_at if available, fallback to registration_date
+                    submittedAt: seller.created_at || seller.registration_date, // Add submittedAt for verification component
                     status: seller.status,
                     verificationDate: seller.verification_date,
                     productCategories: seller.product_categories,
+                    categories: seller.categories, // Include both for compatibility
                     rating: seller.rating,
                     salesCount: seller.sales_count,
-                    rejectionReason: seller.rejection_reason
+                    rejectionReason: seller.rejection_reason,
+                    registrationNumber: seller.registration_number,
+                    taxId: seller.tax_id,
+                    bankInfo: seller.bank_info,
+                    documents: seller.documents
                 }));
                 
                 return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
@@ -2408,7 +2415,7 @@ serve(async (req: Request) => {
                 .from('sellers')
                 .select('*')
                 .eq('status', 'pending')
-                .order('registration_date', { ascending: false });
+                .order('created_at', { ascending: false });
                 
             if (error) {
                 console.error('[Route Handler GET /api/verification/pending] Error fetching pending sellers:', error);
@@ -2419,12 +2426,21 @@ serve(async (req: Request) => {
             const formattedSellers = (pendingSellers || []).map(seller => ({
                 id: seller.id,
                 businessName: seller.business_name,
+                businessType: seller.business_type,
                 contactName: seller.contact_name,
                 email: seller.email,
                 phone: seller.phone,
                 location: seller.location,
-                registrationDate: seller.registration_date,
-                productCategories: seller.product_categories
+                registrationDate: seller.created_at || seller.registration_date,
+                submittedAt: seller.created_at || seller.registration_date,
+                status: seller.status,
+                productCategories: seller.product_categories,
+                categories: seller.categories,
+                registrationNumber: seller.registration_number,
+                taxId: seller.tax_id,
+                bankInfo: seller.bank_info,
+                documents: seller.documents,
+                rejectionReason: seller.rejection_reason
             }));
               return new Response(JSON.stringify(formattedSellers), { headers, status: 200 });
         }

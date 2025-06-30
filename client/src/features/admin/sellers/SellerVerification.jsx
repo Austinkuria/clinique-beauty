@@ -97,7 +97,11 @@ const SellerVerification = ({ requests, loading, onVerificationComplete }) => {
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Chip 
-                    label={`Submitted: ${new Date(request.submittedAt).toLocaleDateString()}`} 
+                    label={`Submitted: ${
+                      request.submittedAt || request.registrationDate 
+                        ? new Date(request.submittedAt || request.registrationDate).toLocaleDateString()
+                        : 'Unknown Date'
+                    }`} 
                     color="info"
                     size="small"
                   />
@@ -111,7 +115,8 @@ const SellerVerification = ({ requests, loading, onVerificationComplete }) => {
                 <Box>
                   <Typography variant="body2"><strong>Contact Email:</strong> {request.email}</Typography>
                   <Typography variant="body2"><strong>Contact Phone:</strong> {request.phone}</Typography>
-                  <Typography variant="body2"><strong>Business Type:</strong> {request.businessType}</Typography>
+                  <Typography variant="body2"><strong>Business Type:</strong> {request.businessType || 'Not specified'}</Typography>
+                  <Typography variant="body2"><strong>Status:</strong> {request.status || 'pending'}</Typography>
                 </Box>
               </CardContent>
             </Card>
