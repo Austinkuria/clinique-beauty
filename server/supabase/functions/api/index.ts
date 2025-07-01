@@ -105,6 +105,52 @@ async function getSupabaseUserIdFromClerkToken(supabaseAnonClient: SupabaseClien
     }
 }
 
+// Helper function to get Clerk user ID directly from token
+async function getClerkUserIdFromToken(req: Request): Promise<string | null> {
+    console.log('[getClerkUserIdFromToken] Attempting to extract Clerk user ID from token...');
+    const authHeader = req.headers.get('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.log('[getClerkUserIdFromToken] No Bearer token found.');
+        return null;
+    }
+
+    const token = authHeader.substring(7);
+    
+    try {
+        // Split the token into header, payload, and signature
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            console.error('[getClerkUserIdFromToken] Invalid token format');
+            return null;
+        }
+        
+        // Decode the payload (second part)
+        const payloadBase64 = parts[1];
+        const payload = JSON.parse(
+            new TextDecoder().decode(
+                base64UrlToUint8Array(payloadBase64)
+            )
+        );
+        
+        console.log('[getClerkUserIdFromToken] Successfully extracted token payload');
+        
+        // Extract the Clerk User ID from the 'sub' claim
+        const clerkUserId = payload.sub;
+        if (!clerkUserId || typeof clerkUserId !== 'string') {
+            console.error('[getClerkUserIdFromToken] No valid sub (user ID) found in token');
+            return null;
+        }
+        
+        console.log(`[getClerkUserIdFromToken] Extracted Clerk User ID: ${clerkUserId}`);
+        return clerkUserId;
+        
+    } catch (error) {
+        console.error('[getClerkUserIdFromToken] Error processing token:', error);
+        return null;
+    }
+}
+
 // Helper function to convert base64url to Uint8Array
 function base64UrlToUint8Array(base64Url: string): Uint8Array {
     // Replace non-URL compatible chars with standard base64 characters
@@ -3220,28 +3266,45 @@ serve(async (req: Request) => {
                 );
             }
 
-            // Get user ID from token
-            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
-            if (!supabaseUserId) {
+            // Get Clerk user ID from token
+            const clerkUserId = await getClerkUserIdFromToken(req);
+            if (!clerkUserId) {
                 return new Response(
                     JSON.stringify({ message: 'Invalid token or user not found' }),
                     { headers, status: 401 }
                 );
             }
 
-            // Get the seller ID associated with this user
+            console.log(`[Route Handler GET /api/seller/products] Looking for seller with clerk_id: ${clerkUserId}`);
+
+            // Get the seller ID associated with this Clerk user
             const { data: sellerData, error: sellerError } = await supabase
                 .from('sellers')
-                .select('id')
-                .eq('clerk_id', supabaseUserId)
+                .select('id, clerk_id, store_name')
+                .eq('clerk_id', clerkUserId)
                 .single();
 
             if (sellerError || !sellerData) {
+                console.error('[Route Handler GET /api/seller/products] Seller lookup error:', sellerError);
+                console.log('[Route Handler GET /api/seller/products] Attempting to debug seller table...');
+                
+                // Debug query to see what sellers exist
+                const { data: allSellers, error: debugError } = await supabase
+                    .from('sellers')
+                    .select('id, clerk_id, store_name')
+                    .limit(5);
+                    
+                if (!debugError && allSellers) {
+                    console.log('[Route Handler GET /api/seller/products] Found sellers in database:', allSellers);
+                }
+                
                 return new Response(
                     JSON.stringify({ message: 'Seller not found or not authorized' }),
                     { headers, status: 403 }
                 );
             }
+
+            console.log(`[Route Handler GET /api/seller/products] Found seller: ${sellerData.store_name} (ID: ${sellerData.id})`);
 
             // Get products for this seller
             const { data: products, error: productsError } = await supabase
@@ -3275,20 +3338,20 @@ serve(async (req: Request) => {
                 );
             }
 
-            // Get user ID from token
-            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
-            if (!supabaseUserId) {
+            // Get Clerk user ID from token
+            const clerkUserId = await getClerkUserIdFromToken(req);
+            if (!clerkUserId) {
                 return new Response(
                     JSON.stringify({ message: 'Invalid token or user not found' }),
                     { headers, status: 401 }
                 );
             }
 
-            // Get the seller ID associated with this user
+            // Get the seller ID associated with this Clerk user
             const { data: sellerData, error: sellerError } = await supabase
                 .from('sellers')
                 .select('id, status')
-                .eq('clerk_id', supabaseUserId)
+                .eq('clerk_id', clerkUserId)
                 .single();
 
             if (sellerError || !sellerData) {
@@ -3382,20 +3445,20 @@ serve(async (req: Request) => {
                 );
             }
 
-            // Get user ID from token
-            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
-            if (!supabaseUserId) {
+            // Get Clerk user ID from token
+            const clerkUserId = await getClerkUserIdFromToken(req);
+            if (!clerkUserId) {
                 return new Response(
                     JSON.stringify({ message: 'Invalid token or user not found' }),
                     { headers, status: 401 }
                 );
             }
 
-            // Get the seller ID associated with this user
+            // Get the seller ID associated with this Clerk user
             const { data: sellerData, error: sellerError } = await supabase
                 .from('sellers')
                 .select('id')
-                .eq('clerk_id', supabaseUserId)
+                .eq('clerk_id', clerkUserId)
                 .single();
 
             if (sellerError || !sellerData) {
@@ -3488,20 +3551,20 @@ serve(async (req: Request) => {
                 );
             }
 
-            // Get user ID from token
-            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
-            if (!supabaseUserId) {
+            // Get Clerk user ID from token
+            const clerkUserId = await getClerkUserIdFromToken(req);
+            if (!clerkUserId) {
                 return new Response(
                     JSON.stringify({ message: 'Invalid token or user not found' }),
                     { headers, status: 401 }
                 );
             }
 
-            // Get the seller ID associated with this user
+            // Get the seller ID associated with this Clerk user
             const { data: sellerData, error: sellerError } = await supabase
                 .from('sellers')
                 .select('id')
-                .eq('clerk_id', supabaseUserId)
+                .eq('clerk_id', clerkUserId)
                 .single();
 
             if (sellerError || !sellerData) {
