@@ -297,13 +297,55 @@ export const useSellerApi = () => {
     return response;
   }, [fetchWithAuth]);
 
+  // Product Management Functions
+  const getSellerProducts = useCallback(async () => {
+    console.log('[apiClient] Fetching seller products from Supabase Function: /seller/products');
+    const response = await fetchWithAuth('/seller/products');
+    console.log('[apiClient] Seller products response:', response);
+    return response;
+  }, [fetchWithAuth]);
+
+  const createProduct = useCallback(async (productData) => {
+    console.log('[apiClient] Creating product via Supabase Function: /seller/products');
+    const response = await fetchWithAuth('/seller/products', {
+      method: 'POST',
+      body: productData instanceof FormData ? productData : JSON.stringify(productData)
+    });
+    console.log('[apiClient] Create product response:', response);
+    return response;
+  }, [fetchWithAuth]);
+
+  const updateProduct = useCallback(async (productId, productData) => {
+    console.log(`[apiClient] Updating product ${productId} via Supabase Function: /seller/products/${productId}`);
+    const response = await fetchWithAuth(`/seller/products/${productId}`, {
+      method: 'PUT',
+      body: productData instanceof FormData ? productData : JSON.stringify(productData)
+    });
+    console.log('[apiClient] Update product response:', response);
+    return response;
+  }, [fetchWithAuth]);
+
+  const deleteProduct = useCallback(async (productId) => {
+    console.log(`[apiClient] Deleting product ${productId} via Supabase Function: /seller/products/${productId}`);
+    const response = await fetchWithAuth(`/seller/products/${productId}`, {
+      method: 'DELETE'
+    });
+    console.log('[apiClient] Delete product response:', response);
+    return response;
+  }, [fetchWithAuth]);
+
   return {
     loading,
     error,
     // User & Seller Profile
     applyAsSeller,
     getSellerStatus,
-    getSellerProfile
+    getSellerProfile,
+    // Product Management
+    getSellerProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct
   };
 };
 
