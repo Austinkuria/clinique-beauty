@@ -148,108 +148,54 @@ const SellerProducts = () => {
   useEffect(() => {
     const loadProducts = async () => {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockProducts = [
-        {
-          id: 1,
-          name: 'Vitamin C Brightening Serum',
-          category: 'Skincare',
-          subcategory: 'Serums',
-          price: 45.99,
-          stock: 25,
-          status: 'Active',
-          approvalStatus: 'Approved',
-          featured: true,
-          image: '/api/placeholder/200/200',
-          sku: 'VCS-001',
-          created: '2024-01-10',
-          sales: 45,
-          revenue: 2069.55,
-          rating: 4.8,
-          reviews: 23
-        },
-        {
-          id: 2,
-          name: 'Hydrating Face Cream',
-          category: 'Skincare',
-          subcategory: 'Moisturizers',
-          price: 35.99,
-          stock: 15,
-          status: 'Low Stock',
-          approvalStatus: 'Approved',
-          featured: false,
-          image: '/api/placeholder/200/200',
-          sku: 'HFC-002',
-          created: '2024-01-08',
-          sales: 38,
-          revenue: 1367.62,
-          rating: 4.6,
-          reviews: 18
-        },
-        {
-          id: 3,
-          name: 'Gentle Cleansing Oil',
-          category: 'Skincare',
-          subcategory: 'Cleansers',
-          price: 28.99,
-          stock: 32,
-          status: 'Active',
-          approvalStatus: 'Pending',
-          featured: false,
-          image: '/api/placeholder/200/200',
-          sku: 'GCO-003',
-          created: '2024-01-15',
-          sales: 32,
-          revenue: 927.68,
-          rating: 4.5,
-          reviews: 15
-        },
-        {
-          id: 4,
-          name: 'SPF 50 Sunscreen Lotion',
-          category: 'Skincare',
-          subcategory: 'Sun Protection',
-          price: 32.99,
-          stock: 0,
-          status: 'Out of Stock',
-          approvalStatus: 'Approved',
-          featured: false,
-          image: '/api/placeholder/200/200',
-          sku: 'SPF-004',
-          created: '2024-01-05',
-          sales: 28,
-          revenue: 923.72,
-          rating: 4.7,
-          reviews: 12
-        },
-        {
-          id: 5,
-          name: 'Anti-Aging Night Cream',
-          category: 'Skincare',
-          subcategory: 'Anti-Aging',
-          price: 65.99,
-          stock: 18,
-          status: 'Active',
-          approvalStatus: 'Rejected',
-          featured: false,
-          image: '/api/placeholder/200/200',
-          sku: 'ANC-005',
-          created: '2024-01-12',
-          sales: 12,
-          revenue: 791.88,
-          rating: 4.3,
-          reviews: 8
-        }
-      ];
-      
-      setProducts(mockProducts);
-      setLoading(false);
+      try {
+        console.log('Loading seller products from API...');
+        const productsData = await sellerApi.getSellerProducts();
+        console.log('Loaded products:', productsData);
+        
+        // Transform the API data to match the component's expected format
+        const transformedProducts = productsData.map(product => ({
+          id: product.id,
+          name: product.name,
+          category: product.category,
+          subcategory: product.subcategory,
+          price: product.price,
+          stock: product.stock,
+          status: product.status === 'active' ? 'Active' : 
+                  product.stock === 0 ? 'Out of Stock' :
+                  product.stock < 10 ? 'Low Stock' : 'Active',
+          approvalStatus: product.approval_status === 'approved' ? 'Approved' :
+                         product.approval_status === 'pending' ? 'Pending' : 'Rejected',
+          featured: product.featured,
+          image: product.image || '/api/placeholder/200/200',
+          sku: product.sku,
+          created: new Date(product.created_at).toLocaleDateString(),
+          sales: 0, // TODO: Add sales tracking
+          revenue: 0, // TODO: Calculate revenue
+          rating: product.rating || 0,
+          reviews: product.reviews_count || 0,
+          description: product.description,
+          brand: product.brand,
+          tags: product.tags || []
+        }));
+        
+        setProducts(transformedProducts);
+      } catch (error) {
+        console.error('Error loading products:', error);
+        setSnackbar({
+          open: true,
+          message: `Failed to load products: ${error.message}`,
+          severity: 'error'
+        });
+        // Keep products as empty array on error instead of using mock data
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadProducts();
-  }, []);
+  }, [sellerApi]);
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = !search || 
@@ -306,9 +252,27 @@ const SellerProducts = () => {
 
   const handleDeleteProduct = async () => {
     if (selectedProduct) {
-      setProducts(products.filter(p => p.id !== selectedProduct.id));
-      setDeleteDialogOpen(false);
-      setSelectedProduct(null);
+      try {
+        setLoading(true);
+        await sellerApi.deleteProduct(selectedProduct.id);
+        setProducts(products.filter(p => p.id !== selectedProduct.id));
+        setSnackbar({
+          open: true,
+          message: 'Product deleted successfully',
+          severity: 'success'
+        });
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        setSnackbar({
+          open: true,
+          message: `Error deleting product: ${error.message}`,
+          severity: 'error'
+        });
+      } finally {
+        setLoading(false);
+        setDeleteDialogOpen(false);
+        setSelectedProduct(null);
+      }
     }
   };
 
@@ -455,29 +419,48 @@ const SellerProducts = () => {
     formData.append('description', newProductData.description);
     formData.append('price', newProductData.price);
     formData.append('category', newProductData.category);
-    formData.append('brand', newProductData.brand);
+    if (newProductData.subcategory) formData.append('subcategory', newProductData.subcategory);
+    if (newProductData.brand) formData.append('brand', newProductData.brand);
     formData.append('stock_quantity', newProductData.stock_quantity);
     formData.append('tags', JSON.stringify(newProductData.tags));
-    formData.append('image', newProductData.image);
+    if (newProductData.image) formData.append('image', newProductData.image);
     if (productSKU) formData.append('sku', productSKU);
-    if (newProductData.weight) formData.append('weight', newProductData.weight);
-    if (newProductData.dimensions) formData.append('dimensions', newProductData.dimensions);
-    if (newProductData.color) formData.append('color', newProductData.color);
-    if (newProductData.material) formData.append('material', newProductData.material);
-    if (newProductData.manufacturer) formData.append('manufacturer', newProductData.manufacturer);
-    if (newProductData.releaseDate) formData.append('releaseDate', newProductData.releaseDate);
+    if (newProductData.meta_title) formData.append('meta_title', newProductData.meta_title);
+    if (newProductData.meta_description) formData.append('meta_description', newProductData.meta_description);
+    if (newProductData.meta_keywords) formData.append('meta_keywords', JSON.stringify(newProductData.meta_keywords.split(',').map(k => k.trim())));
 
     try {
-      console.log("SellerProducts: Attempting to create product with formData:", Object.fromEntries(formData.entries()));
+      console.log("SellerProducts: Attempting to create product with formData");
       
-      // Use the sellerApi to create the product (seller creates pending products)
+      // Use the sellerApi to create the product
       const response = await sellerApi.createProduct(formData);
       console.log("SellerProducts: Product created successfully:", response);
 
-      // Add the new product to the current products list
-      if (response) {
-        setProducts(prev => [...prev, response]);
-      }
+      // Transform the response to match component format and add to products list
+      const newProduct = {
+        id: response.id,
+        name: response.name,
+        category: response.category,
+        subcategory: response.subcategory,
+        price: response.price,
+        stock: response.stock,
+        status: response.status === 'active' ? 'Active' : 'Draft',
+        approvalStatus: response.approval_status === 'approved' ? 'Approved' :
+                       response.approval_status === 'pending' ? 'Pending' : 'Rejected',
+        featured: response.featured,
+        image: response.image || '/api/placeholder/200/200',
+        sku: response.sku,
+        created: new Date(response.created_at).toLocaleDateString(),
+        sales: 0,
+        revenue: 0,
+        rating: response.rating || 0,
+        reviews: response.reviews_count || 0,
+        description: response.description,
+        brand: response.brand,
+        tags: response.tags || []
+      };
+
+      setProducts(prev => [newProduct, ...prev]);
 
       // Close dialog and reset form
       handleCloseAddProductDialog();
@@ -552,7 +535,9 @@ const SellerProducts = () => {
       Object.keys(editProductData).forEach(key => {
         if (key === 'tags' && Array.isArray(editProductData[key])) {
           formData.append(key, JSON.stringify(editProductData[key]));
-        } else {
+        } else if (key === 'meta_keywords' && typeof editProductData[key] === 'string') {
+          formData.append(key, JSON.stringify(editProductData[key].split(',').map(k => k.trim())));
+        } else if (editProductData[key] !== null && editProductData[key] !== undefined && editProductData[key] !== '') {
           formData.append(key, editProductData[key]);
         }
       });
@@ -564,9 +549,34 @@ const SellerProducts = () => {
 
       const updatedProduct = await sellerApi.updateProduct(selectedProduct.id, formData);
       
-      // Update the products list
+      // Transform the response and update the products list
+      const transformedProduct = {
+        id: updatedProduct.id,
+        name: updatedProduct.name,
+        category: updatedProduct.category,
+        subcategory: updatedProduct.subcategory,
+        price: updatedProduct.price,
+        stock: updatedProduct.stock,
+        status: updatedProduct.status === 'active' ? 'Active' : 
+                updatedProduct.stock === 0 ? 'Out of Stock' :
+                updatedProduct.stock < 10 ? 'Low Stock' : 'Active',
+        approvalStatus: updatedProduct.approval_status === 'approved' ? 'Approved' :
+                       updatedProduct.approval_status === 'pending' ? 'Pending' : 'Rejected',
+        featured: updatedProduct.featured,
+        image: updatedProduct.image || '/api/placeholder/200/200',
+        sku: updatedProduct.sku,
+        created: new Date(updatedProduct.created_at).toLocaleDateString(),
+        sales: 0, // TODO: Add sales tracking
+        revenue: 0, // TODO: Calculate revenue
+        rating: updatedProduct.rating || 0,
+        reviews: updatedProduct.reviews_count || 0,
+        description: updatedProduct.description,
+        brand: updatedProduct.brand,
+        tags: updatedProduct.tags || []
+      };
+
       setProducts(products.map(p => 
-        p.id === selectedProduct.id ? updatedProduct : p
+        p.id === selectedProduct.id ? transformedProduct : p
       ));
 
       setSnackbar({

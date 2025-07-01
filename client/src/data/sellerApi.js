@@ -222,6 +222,126 @@ export const sellerApi = {
   // Get document download URL for seller documents
   getDocumentDownloadUrl: (sellerId, filename) => {
     return `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`;
+  },
+
+  // --- SELLER PRODUCT MANAGEMENT ---
+  
+  getSellerProducts: async () => {
+    try {
+      // Get auth headers for authenticated requests
+      const headers = await getAuthHeader();
+      
+      const response = await axios.get(`${SUPABASE_API_URL}/seller/products`, { headers });
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching seller products:', error);
+      // Return empty array instead of falling back to mock data
+      return [];
+    }
+  },
+
+  // Create a new product - Use Supabase Functions
+  createProduct: async (productData) => {
+    try {
+      // Get auth headers for authenticated requests (token required)
+      const headers = await getAuthHeader();
+      if (!headers.Authorization) {
+        console.error('No authorization token found. Please ensure you are logged in.');
+        throw new Error('Authentication token not found. Please try logging in again.');
+      }
+      
+      const response = await axios.post(
+        `${SUPABASE_API_URL}/seller/products`, 
+        productData,
+        { headers }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error creating product:', error);
+      
+      // Enhanced error logging
+      if (error.response) {
+        console.error('Server error details:', error.response.data);
+        console.error('Status code:', error.response.status);
+        
+        // If the server returns a specific error message, use it
+        if (error.response.data && error.response.data.message) {
+          throw new Error(error.response.data.message);
+        }
+      }
+      
+      throw error;
+    }
+  },
+
+  // Update an existing product - Use Supabase Functions
+  updateProduct: async (productId, productData) => {
+    try {
+      // Get auth headers for authenticated requests (token required)
+      const headers = await getAuthHeader();
+      if (!headers.Authorization) {
+        console.error('No authorization token found. Please ensure you are logged in.');
+        throw new Error('Authentication token not found. Please try logging in again.');
+      }
+      
+      const response = await axios.put(
+        `${SUPABASE_API_URL}/seller/products/${productId}`, 
+        productData,
+        { headers }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      
+      // Enhanced error logging
+      if (error.response) {
+        console.error('Server error details:', error.response.data);
+        console.error('Status code:', error.response.status);
+        
+        // If the server returns a specific error message, use it
+        if (error.response.data && error.response.data.message) {
+          throw new Error(error.response.data.message);
+        }
+      }
+      
+      throw error;
+    }
+  },
+
+  // Delete a product - Use Supabase Functions
+  deleteProduct: async (productId) => {
+    try {
+      // Get auth headers for authenticated requests (token required)
+      const headers = await getAuthHeader();
+      if (!headers.Authorization) {
+        console.error('No authorization token found. Please ensure you are logged in.');
+        throw new Error('Authentication token not found. Please try logging in again.');
+      }
+      
+      const response = await axios.delete(
+        `${SUPABASE_API_URL}/seller/products/${productId}`, 
+        { headers }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      
+      // Enhanced error logging
+      if (error.response) {
+        console.error('Server error details:', error.response.data);
+        console.error('Status code:', error.response.status);
+        
+        // If the server returns a specific error message, use it
+        if (error.response.data && error.response.data.message) {
+          throw new Error(error.response.data.message);
+        }
+      }
+      
+      throw error;
+    }
   }
 };
 
@@ -397,6 +517,102 @@ export const useSellerApi = () => {
     }
   }, [getToken]);
 
+  // --- SELLER PRODUCT MANAGEMENT ---
+  
+  const getSellerProducts = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not found. Please try logging in again.');
+      }
+      
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const response = await axios.get(`${SUPABASE_API_URL}/seller/products`, { headers });
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching seller products:', error);
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  }, [getToken]);
+
+  const createProduct = useCallback(async (productFormData) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not found. Please try logging in again.');
+      }
+      
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const response = await axios.post(
+        `${SUPABASE_API_URL}/seller/products`,
+        productFormData,
+        { headers }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error creating product:', error);
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  }, [getToken]);
+
+  const updateProduct = useCallback(async (productId, productFormData) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not found. Please try logging in again.');
+      }
+      
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const response = await axios.put(
+        `${SUPABASE_API_URL}/seller/products/${productId}`,
+        productFormData,
+        { headers }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  }, [getToken]);
+
+  const deleteProduct = useCallback(async (productId) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not found. Please try logging in again.');
+      }
+      
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const response = await axios.delete(
+        `${SUPABASE_API_URL}/seller/products/${productId}`,
+        { headers }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  }, [getToken]);
+
   return {
     getSellers,
     getSellerById,
@@ -405,6 +621,10 @@ export const useSellerApi = () => {
     updateVerificationStatus,
     updateSeller,
     downloadSellerDocument,
-    getDocumentDownloadUrl
+    getDocumentDownloadUrl,
+    getSellerProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct
   };
 };

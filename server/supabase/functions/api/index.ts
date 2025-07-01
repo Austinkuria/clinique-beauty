@@ -3207,6 +3207,331 @@ serve(async (req: Request) => {
             }
         }
 
+        // --- SELLER PRODUCT ROUTES ---
+        
+        // GET /api/seller/products - Get products for the authenticated seller
+        if (req.method === 'GET' && route[0] === 'seller' && route[1] === 'products' && route.length === 2) {
+            console.log('[Route Handler] Matched GET /api/seller/products');
+            
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+
+            // Get user ID from token
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Invalid token or user not found' }),
+                    { headers, status: 401 }
+                );
+            }
+
+            // Get the seller ID associated with this user
+            const { data: sellerData, error: sellerError } = await supabase
+                .from('sellers')
+                .select('id')
+                .eq('clerk_id', supabaseUserId)
+                .single();
+
+            if (sellerError || !sellerData) {
+                return new Response(
+                    JSON.stringify({ message: 'Seller not found or not authorized' }),
+                    { headers, status: 403 }
+                );
+            }
+
+            // Get products for this seller
+            const { data: products, error: productsError } = await supabase
+                .from('products')
+                .select('*')
+                .eq('seller_id', sellerData.id)
+                .order('created_at', { ascending: false });
+
+            if (productsError) {
+                console.error('[Route Handler GET /api/seller/products] Error fetching products:', productsError);
+                return new Response(
+                    JSON.stringify({ message: 'Failed to fetch products' }),
+                    { headers, status: 500 }
+                );
+            }
+
+            return new Response(
+                JSON.stringify(products || []),
+                { headers, status: 200 }
+            );
+        }
+
+        // POST /api/seller/products - Create a new product for the authenticated seller
+        if (req.method === 'POST' && route[0] === 'seller' && route[1] === 'products' && route.length === 2) {
+            console.log('[Route Handler] Matched POST /api/seller/products');
+            
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+
+            // Get user ID from token
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Invalid token or user not found' }),
+                    { headers, status: 401 }
+                );
+            }
+
+            // Get the seller ID associated with this user
+            const { data: sellerData, error: sellerError } = await supabase
+                .from('sellers')
+                .select('id, status')
+                .eq('clerk_id', supabaseUserId)
+                .single();
+
+            if (sellerError || !sellerData) {
+                return new Response(
+                    JSON.stringify({ message: 'Seller not found or not authorized' }),
+                    { headers, status: 403 }
+                );
+            }
+
+            if (sellerData.status !== 'approved') {
+                return new Response(
+                    JSON.stringify({ message: 'Only approved sellers can create products' }),
+                    { headers, status: 403 }
+                );
+            }
+
+            // Parse the form data
+            const formData = await req.formData();
+            const productData = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                price: parseFloat(formData.get('price')),
+                category: formData.get('category'),
+                subcategory: formData.get('subcategory'),
+                brand: formData.get('brand'),
+                sku: formData.get('sku'),
+                stock: parseInt(formData.get('stock_quantity') || '0'),
+                seller_id: sellerData.id,
+                status: 'active',
+                approval_status: 'pending', // New products need approval
+                featured: false,
+                rating: 0,
+                reviews_count: 0,
+                tags: formData.get('tags') ? JSON.parse(formData.get('tags')) : [],
+                availability: 'in stock',
+                meta_title: formData.get('meta_title'),
+                meta_description: formData.get('meta_description'),
+                meta_keywords: formData.get('meta_keywords') ? JSON.parse(formData.get('meta_keywords')) : [],
+                image: '/api/placeholder/200/200', // TODO: Handle image upload
+                images: ['/api/placeholder/200/200'],
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // Validate required fields
+            if (!productData.name || !productData.description || !productData.price || !productData.category) {
+                return new Response(
+                    JSON.stringify({ message: 'Missing required fields: name, description, price, category' }),
+                    { headers, status: 400 }
+                );
+            }
+
+            // Insert the product
+            const { data: newProduct, error: insertError } = await supabase
+                .from('products')
+                .insert(productData)
+                .select()
+                .single();
+
+            if (insertError) {
+                console.error('[Route Handler POST /api/seller/products] Error creating product:', insertError);
+                return new Response(
+                    JSON.stringify({ message: 'Failed to create product', error: insertError.message }),
+                    { headers, status: 500 }
+                );
+            }
+
+            return new Response(
+                JSON.stringify(newProduct),
+                { headers, status: 201 }
+            );
+        }
+
+        // PUT /api/seller/products/:id - Update a product for the authenticated seller
+        if (req.method === 'PUT' && route[0] === 'seller' && route[1] === 'products' && route.length === 3) {
+            console.log('[Route Handler] Matched PUT /api/seller/products/:id');
+            const productId = route[2];
+            
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+
+            // Validate product ID format
+            if (!isValidUUID(productId)) {
+                return new Response(
+                    JSON.stringify({ error: 'Invalid product ID format. Must be a valid UUID.' }),
+                    { headers, status: 400 }
+                );
+            }
+
+            // Get user ID from token
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Invalid token or user not found' }),
+                    { headers, status: 401 }
+                );
+            }
+
+            // Get the seller ID associated with this user
+            const { data: sellerData, error: sellerError } = await supabase
+                .from('sellers')
+                .select('id')
+                .eq('clerk_id', supabaseUserId)
+                .single();
+
+            if (sellerError || !sellerData) {
+                return new Response(
+                    JSON.stringify({ message: 'Seller not found or not authorized' }),
+                    { headers, status: 403 }
+                );
+            }
+
+            // Check if the product belongs to this seller
+            const { data: existingProduct, error: productError } = await supabase
+                .from('products')
+                .select('id, seller_id')
+                .eq('id', productId)
+                .eq('seller_id', sellerData.id)
+                .single();
+
+            if (productError || !existingProduct) {
+                return new Response(
+                    JSON.stringify({ message: 'Product not found or not authorized to edit' }),
+                    { headers, status: 404 }
+                );
+            }
+
+            // Parse the form data
+            const formData = await req.formData();
+            const updateData = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                price: parseFloat(formData.get('price')),
+                category: formData.get('category'),
+                subcategory: formData.get('subcategory'),
+                brand: formData.get('brand'),
+                sku: formData.get('sku'),
+                stock: parseInt(formData.get('stock_quantity') || '0'),
+                tags: formData.get('tags') ? JSON.parse(formData.get('tags')) : [],
+                meta_title: formData.get('meta_title'),
+                meta_description: formData.get('meta_description'),
+                meta_keywords: formData.get('meta_keywords') ? JSON.parse(formData.get('meta_keywords')) : [],
+                updated_at: new Date().toISOString()
+            };
+
+            // Remove undefined values
+            Object.keys(updateData).forEach(key => {
+                if (updateData[key] === null || updateData[key] === undefined || updateData[key] === '') {
+                    delete updateData[key];
+                }
+            });
+
+            // Update the product
+            const { data: updatedProduct, error: updateError } = await supabase
+                .from('products')
+                .update(updateData)
+                .eq('id', productId)
+                .eq('seller_id', sellerData.id)
+                .select()
+                .single();
+
+            if (updateError) {
+                console.error('[Route Handler PUT /api/seller/products/:id] Error updating product:', updateError);
+                return new Response(
+                    JSON.stringify({ message: 'Failed to update product', error: updateError.message }),
+                    { headers, status: 500 }
+                );
+            }
+
+            return new Response(
+                JSON.stringify(updatedProduct),
+                { headers, status: 200 }
+            );
+        }
+
+        // DELETE /api/seller/products/:id - Delete a product for the authenticated seller
+        if (req.method === 'DELETE' && route[0] === 'seller' && route[1] === 'products' && route.length === 3) {
+            console.log('[Route Handler] Matched DELETE /api/seller/products/:id');
+            const productId = route[2];
+            
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(
+                    JSON.stringify({ message: 'Authentication required' }),
+                    { headers, status: 401 }
+                );
+            }
+
+            // Validate product ID format
+            if (!isValidUUID(productId)) {
+                return new Response(
+                    JSON.stringify({ error: 'Invalid product ID format. Must be a valid UUID.' }),
+                    { headers, status: 400 }
+                );
+            }
+
+            // Get user ID from token
+            const supabaseUserId = await getSupabaseUserIdFromClerkToken(supabase, req);
+            if (!supabaseUserId) {
+                return new Response(
+                    JSON.stringify({ message: 'Invalid token or user not found' }),
+                    { headers, status: 401 }
+                );
+            }
+
+            // Get the seller ID associated with this user
+            const { data: sellerData, error: sellerError } = await supabase
+                .from('sellers')
+                .select('id')
+                .eq('clerk_id', supabaseUserId)
+                .single();
+
+            if (sellerError || !sellerData) {
+                return new Response(
+                    JSON.stringify({ message: 'Seller not found or not authorized' }),
+                    { headers, status: 403 }
+                );
+            }
+
+            // Delete the product (only if it belongs to this seller)
+            const { error: deleteError } = await supabase
+                .from('products')
+                .delete()
+                .eq('id', productId)
+                .eq('seller_id', sellerData.id);
+
+            if (deleteError) {
+                console.error('[Route Handler DELETE /api/seller/products/:id] Error deleting product:', deleteError);
+                return new Response(
+                    JSON.stringify({ message: 'Failed to delete product', error: deleteError.message }),
+                    { headers, status: 500 }
+                );
+            }
+
+            return new Response(
+                JSON.stringify({ message: 'Product deleted successfully' }),
+                { headers, status: 200 }
+            );
+        }
+
         // --- Fallback for unhandled routes ---
         console.warn(`[Route Handler] Route not found: ${req.method} ${url.pathname}`);
         return new Response(JSON.stringify({ message: 'Route not found' }), { headers, status: 404 });
