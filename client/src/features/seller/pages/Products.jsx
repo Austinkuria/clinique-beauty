@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
   Box,
   Grid,
@@ -148,11 +148,30 @@ const SellerProducts = () => {
     { id: 6, name: 'Vegan' }
   ];
 
+  // Track if we've already fetched products to prevent multiple calls
+  const hasFetchedRef = useRef(false);
+  const sellerApiRef = useRef(sellerApi);
+  
+  // Update the ref when sellerApi changes
+  useEffect(() => {
+    sellerApiRef.current = sellerApi;
+  }, [sellerApi]);
+
   // Load products data
   useEffect(() => {
+    let isMounted = true;
+    
     const loadProducts = async () => {
+      // Prevent multiple simultaneous calls
+      if (hasFetchedRef.current) {
+        console.log('Skipping duplicate API call - already fetched');
+        return;
+      }
+      
+      hasFetchedRef.current = true;
       setLoading(true);
       setError(null); // Clear any previous errors
+      
       try {
         console.log('Loading seller products from API...');
         
@@ -168,9 +187,16 @@ const SellerProducts = () => {
           setTimeout(() => reject(new Error('API call timed out after 15 seconds')), 15000);
         });
         
-        const apiPromise = sellerApi.getSellerProducts();
+        // Use the ref to access the current sellerApi
+        const apiPromise = sellerApiRef.current.getSellerProducts();
         
         const productsData = await Promise.race([apiPromise, timeoutPromise]);
+        
+        // Check if component is still mounted
+        if (!isMounted) {
+          console.log('Component unmounted, skipping state update');
+          return;
+        }
         
         const endTime = Date.now();
         console.log(`[${new Date().toISOString()}] API call completed in ${endTime - startTime}ms`);
@@ -212,6 +238,12 @@ const SellerProducts = () => {
         console.log('Transformed products:', transformedProducts);
         setProducts(transformedProducts);
       } catch (error) {
+        // Only update state if component is still mounted
+        if (!isMounted) {
+          console.log('Component unmounted, skipping error state update');
+          return;
+        }
+        
         console.error('Error loading products:', error);
         console.error('Error details:', {
           message: error.message,
@@ -239,21 +271,31 @@ const SellerProducts = () => {
           severity: 'error'
         });
         setProducts([]);
+        
+        // Reset the fetch flag on error so retry can work
+        hasFetchedRef.current = false;
       } finally {
-        setLoading(false);
-        console.log('Loading state set to false');
+        if (isMounted) {
+          setLoading(false);
+          console.log('Loading state set to false');
+        }
       }
     };
 
-    // Add a slight delay to prevent immediate API calls on mount
+    // Only load on mount, with a small delay to ensure sellerApi is ready
     const timeoutId = setTimeout(loadProducts, 100);
     
-    // Cleanup timeout if component unmounts
-    return () => clearTimeout(timeoutId);
-  }, [sellerApi]);
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, []); // Empty dependency array - only run once on mount
 
   // Retry function for failed API calls
   const handleRetry = async () => {
+    // Reset the fetch flag to allow retry
+    hasFetchedRef.current = false;
     setLoading(true);
     setError(null);
     try {
@@ -265,7 +307,7 @@ const SellerProducts = () => {
         setTimeout(() => reject(new Error('API call timed out after 15 seconds')), 15000);
       });
       
-      const apiPromise = sellerApi.getSellerProducts();
+      const apiPromise = sellerApiRef.current.getSellerProducts();
       const productsData = await Promise.race([apiPromise, timeoutPromise]);
       
       const endTime = Date.now();
@@ -301,6 +343,7 @@ const SellerProducts = () => {
       }));
       
       setProducts(transformedProducts);
+      hasFetchedRef.current = true; // Mark as successfully fetched
       setSnackbar({
         open: true,
         message: 'Products loaded successfully!',
