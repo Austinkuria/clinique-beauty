@@ -3280,7 +3280,7 @@ serve(async (req: Request) => {
             // Get the seller ID associated with this Clerk user
             const { data: sellerData, error: sellerError } = await supabase
                 .from('sellers')
-                .select('id, clerk_id, store_name')
+                .select('id, clerk_id, business_name')
                 .eq('clerk_id', clerkUserId)
                 .single();
 
@@ -3291,7 +3291,7 @@ serve(async (req: Request) => {
                 // Debug query to see what sellers exist
                 const { data: allSellers, error: debugError } = await supabase
                     .from('sellers')
-                    .select('id, clerk_id, store_name')
+                    .select('id, clerk_id, business_name')
                     .limit(5);
                     
                 if (!debugError && allSellers) {
@@ -3304,7 +3304,7 @@ serve(async (req: Request) => {
                 );
             }
 
-            console.log(`[Route Handler GET /api/seller/products] Found seller: ${sellerData.store_name} (ID: ${sellerData.id})`);
+            console.log(`[Route Handler GET /api/seller/products] Found seller: ${sellerData.business_name} (ID: ${sellerData.id})`);
 
             // Get products for this seller
             const { data: products, error: productsError } = await supabase

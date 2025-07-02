@@ -229,11 +229,18 @@ export const useSellerApi = () => {
       if (!(options.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
       }
-      
+
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(fullUrl, {
         ...options,
-        headers
+        headers,
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
       
       console.log(`[SellerAPI] Response status: ${response.status}`);
       
@@ -265,6 +272,14 @@ export const useSellerApi = () => {
       return data;
     } catch (err) {
       console.error('API Error:', err);
+      
+      // Handle timeout errors
+      if (err.name === 'AbortError') {
+        const timeoutError = new Error('Request timed out. Please check your internet connection and try again.');
+        setError(timeoutError.message);
+        throw timeoutError;
+      }
+      
       setError(err.message || 'Failed to fetch data');
       throw err;
     } finally {

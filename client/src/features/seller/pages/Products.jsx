@@ -150,7 +150,16 @@ const SellerProducts = () => {
       setLoading(true);
       try {
         console.log('Loading seller products from API...');
+        console.log('API URL that will be called:', window.location.origin);
+        
+        // Add detailed logging
+        const startTime = Date.now();
+        console.log(`[${new Date().toISOString()}] Starting API call to getSellerProducts`);
+        
         const productsData = await sellerApi.getSellerProducts();
+        
+        const endTime = Date.now();
+        console.log(`[${new Date().toISOString()}] API call completed in ${endTime - startTime}ms`);
         console.log('Loaded products:', productsData);
         
         // Transform the API data to match the component's expected format
@@ -182,6 +191,11 @@ const SellerProducts = () => {
         setProducts(transformedProducts);
       } catch (error) {
         console.error('Error loading products:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          stack: error.stack
+        });
         setSnackbar({
           open: true,
           message: `Failed to load products: ${error.message}`,
