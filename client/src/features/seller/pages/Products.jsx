@@ -56,13 +56,16 @@ import {
   TrendingUp as TrendingUpIcon,
   Star as StarIcon,
   CloudUpload as CloudUploadIcon,
-  ContentCopy as DuplicateIcon
+  ContentCopy as DuplicateIcon,
+  Error as ErrorIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useSellerApi } from '../../../api/apiClient';
 import defaultProductImage from '../../../assets/images/placeholder.webp';
+import { debugSellerProducts } from '../../../debug/sellerProductsDebug';
 
 const SellerProducts = () => {
   const navigate = useNavigate();
@@ -73,6 +76,7 @@ const SellerProducts = () => {
   // State management
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState('');
@@ -148,22 +152,39 @@ const SellerProducts = () => {
   useEffect(() => {
     const loadProducts = async () => {
       setLoading(true);
+      setError(null); // Clear any previous errors
       try {
         console.log('Loading seller products from API...');
-        console.log('API URL that will be called:', window.location.origin);
+        
+        // Run debug helper
+        debugSellerProducts();
         
         // Add detailed logging
         const startTime = Date.now();
         console.log(`[${new Date().toISOString()}] Starting API call to getSellerProducts`);
         
-        const productsData = await sellerApi.getSellerProducts();
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('API call timed out after 15 seconds')), 15000);
+        });
+        
+        const apiPromise = sellerApi.getSellerProducts();
+        
+        const productsData = await Promise.race([apiPromise, timeoutPromise]);
         
         const endTime = Date.now();
         console.log(`[${new Date().toISOString()}] API call completed in ${endTime - startTime}ms`);
         console.log('Loaded products:', productsData);
         
+        // Handle different response formats
+        let actualProducts = Array.isArray(productsData) ? productsData : 
+                            productsData?.data ? productsData.data : 
+                            productsData?.products ? productsData.products : [];
+        
+        console.log('Actual products array:', actualProducts);
+        
         // Transform the API data to match the component's expected format
-        const transformedProducts = productsData.map(product => ({
+        const transformedProducts = actualProducts.map(product => ({
           id: product.id,
           name: product.name,
           category: product.category,
@@ -188,28 +209,127 @@ const SellerProducts = () => {
           tags: product.tags || []
         }));
         
+        console.log('Transformed products:', transformedProducts);
         setProducts(transformedProducts);
       } catch (error) {
         console.error('Error loading products:', error);
         console.error('Error details:', {
           message: error.message,
           status: error.status,
-          stack: error.stack
+          stack: error.stack,
+          name: error.name
         });
+        
+        // Show clear error message for all errors (no mock data fallback)
+        let errorMessage = `Failed to load products: ${error.message}`;
+        
+        // Provide more specific error messages for common issues
+        if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+          errorMessage = 'Unable to connect to the server. Please check your internet connection and ensure the backend server is running.';
+        } else if (error.message.includes('CORS')) {
+          errorMessage = 'CORS error detected. Please check the backend CORS configuration.';
+        } else if (error.message.includes('timed out')) {
+          errorMessage = 'Request timed out. The server may be slow or unavailable.';
+        }
+        
+        setError(errorMessage);
         setSnackbar({
           open: true,
-          message: `Failed to load products: ${error.message}`,
+          message: errorMessage,
           severity: 'error'
         });
-        // Keep products as empty array on error instead of using mock data
         setProducts([]);
       } finally {
         setLoading(false);
+        console.log('Loading state set to false');
       }
     };
 
-    loadProducts();
+    // Add a slight delay to prevent immediate API calls on mount
+    const timeoutId = setTimeout(loadProducts, 100);
+    
+    // Cleanup timeout if component unmounts
+    return () => clearTimeout(timeoutId);
   }, [sellerApi]);
+
+  // Retry function for failed API calls
+  const handleRetry = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('Retrying API call...');
+      const startTime = Date.now();
+      console.log(`[${new Date().toISOString()}] Retrying API call to getSellerProducts`);
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('API call timed out after 15 seconds')), 15000);
+      });
+      
+      const apiPromise = sellerApi.getSellerProducts();
+      const productsData = await Promise.race([apiPromise, timeoutPromise]);
+      
+      const endTime = Date.now();
+      console.log(`[${new Date().toISOString()}] Retry API call completed in ${endTime - startTime}ms`);
+      
+      let actualProducts = Array.isArray(productsData) ? productsData : 
+                          productsData?.data ? productsData.data : 
+                          productsData?.products ? productsData.products : [];
+      
+      const transformedProducts = actualProducts.map(product => ({
+        id: product.id,
+        name: product.name,
+        category: product.category,
+        subcategory: product.subcategory,
+        price: product.price,
+        stock: product.stock,
+        status: product.status === 'active' ? 'Active' : 
+                product.stock === 0 ? 'Out of Stock' :
+                product.stock < 10 ? 'Low Stock' : 'Active',
+        approvalStatus: product.approval_status === 'approved' ? 'Approved' :
+                       product.approval_status === 'pending' ? 'Pending' : 'Rejected',
+        featured: product.featured,
+        image: product.image || '/api/placeholder/200/200',
+        sku: product.sku,
+        created: new Date(product.created_at).toLocaleDateString(),
+        sales: 0,
+        revenue: 0,
+        rating: product.rating || 0,
+        reviews: product.reviews_count || 0,
+        description: product.description,
+        brand: product.brand,
+        tags: product.tags || []
+      }));
+      
+      setProducts(transformedProducts);
+      setSnackbar({
+        open: true,
+        message: 'Products loaded successfully!',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Retry failed:', error);
+      let errorMessage = `Failed to load products: ${error.message}`;
+      
+      if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection and ensure the backend server is running.';
+      } else if (error.message.includes('CORS')) {
+        errorMessage = 'CORS error detected. Please check the backend CORS configuration.';
+      } else if (error.message.includes('timed out')) {
+        errorMessage = 'Request timed out. The server may be slow or unavailable.';
+      }
+      
+      setError(errorMessage);
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
     const matchesSearch = !search || 
@@ -968,20 +1088,54 @@ const SellerProducts = () => {
       {/* Products Display */}
       {filteredProducts.length === 0 && !loading ? (
         <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            No products found
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {search || filterStatus || filterCategory
-              ? 'Try adjusting your search criteria'
-              : 'Start by adding your first product to your store'}
-          </Typography>          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleOpenAddProductDialog}
-          >
-            Add Product
-          </Button>
+          {error ? (
+            // Error state
+            <>
+              <ErrorIcon sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
+              <Typography variant="h6" color="error.main" gutterBottom>
+                Failed to Load Products
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
+                {error}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                <Button
+                  variant="contained"
+                  startIcon={<RefreshIcon />}
+                  onClick={handleRetry}
+                  color="primary"
+                >
+                  Try Again
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={handleOpenAddProductDialog}
+                >
+                  Add Product Manually
+                </Button>
+              </Box>
+            </>
+          ) : (
+            // Empty state (no products but no error)
+            <>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No products found
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {search || filterStatus || filterCategory
+                  ? 'Try adjusting your search criteria'
+                  : 'Start by adding your first product to your store'}
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenAddProductDialog}
+              >
+                Add Product
+              </Button>
+            </>
+          )}
         </Paper>
       ) : (
         <>

@@ -222,6 +222,7 @@ export const useSellerApi = () => {
       
       const headers = {
         'Authorization': `Bearer ${token}`,
+        'X-Requested-With': 'XMLHttpRequest', // Add this header for CORS
         ...options.headers
       };
       
@@ -237,7 +238,9 @@ export const useSellerApi = () => {
       const response = await fetch(fullUrl, {
         ...options,
         headers,
-        signal: controller.signal
+        signal: controller.signal,
+        mode: 'cors', // Explicitly set CORS mode
+        credentials: 'include' // Include credentials
       });
 
       clearTimeout(timeoutId);
@@ -315,9 +318,44 @@ export const useSellerApi = () => {
   // Product Management Functions
   const getSellerProducts = useCallback(async () => {
     console.log('[apiClient] Fetching seller products from Supabase Function: /seller/products');
-    const response = await fetchWithAuth('/seller/products');
-    console.log('[apiClient] Seller products response:', response);
-    return response;
+    
+    let lastError = null;
+    const maxRetries = 2;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[apiClient] Attempt ${attempt}/${maxRetries} for seller products`);
+        const response = await fetchWithAuth('/seller/products');
+        console.log('[apiClient] Seller products response:', response);
+        return response;
+      } catch (error) {
+        lastError = error;
+        console.error(`[apiClient] Attempt ${attempt} failed:`, error);
+        
+        // Don't retry on authentication errors
+        if (error.status === 401 || error.status === 403) {
+          console.log('[apiClient] Authentication error - not retrying');
+          break;
+        }
+        
+        // Don't retry on CORS errors
+        if (error.message.includes('CORS') || error.message.includes('NetworkError') || 
+            error.name === 'TypeError') {
+          console.log('[apiClient] CORS/Network error - not retrying');
+          break;
+        }
+        
+        // Wait before retrying (except on last attempt)
+        if (attempt < maxRetries) {
+          console.log(`[apiClient] Waiting 1 second before retry...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+    
+    // If all attempts failed, throw the last error
+    console.error('[apiClient] All attempts failed, throwing last error:', lastError);
+    throw lastError;
   }, [fetchWithAuth]);
 
   const createProduct = useCallback(async (productData) => {
@@ -663,12 +701,6 @@ const getCart = async () => {
       return cart;
     } catch (retryError) {
       console.error("Cart retry also failed:", retryError);
-      
-      // In development, return empty cart to keep app working
-      if (import.meta.env.DEV) {
-        console.log("DEV MODE: Returning empty cart");
-        return { items: [], total: 0 };
-      }
       
       throw retryError;
     }
