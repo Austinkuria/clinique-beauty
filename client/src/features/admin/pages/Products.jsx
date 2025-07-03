@@ -848,14 +848,22 @@ function AdminProducts() {
                                 }}
                             />
                         </Grid>
-                        <Grid item xs={12} md={2}>
-                            <FormControl fullWidth>
+                        <Grid item xs={12} sm={6} md={2}>
+                            <FormControl fullWidth size="small">
                                 <InputLabel id="category-filter-label">Category</InputLabel>
                                 <Select
                                     labelId="category-filter-label"
                                     value={filterCategory}
                                     onChange={handleCategoryFilterChange}
                                     label="Category"
+                                    MenuProps={{
+                                        PaperProps: {
+                                            style: {
+                                                maxHeight: 300,
+                                                width: 250,
+                                            },
+                                        },
+                                    }}
                                 >
                                     <MenuItem value="">All Categories</MenuItem>
                                     {categories.map((category) => (
@@ -866,14 +874,22 @@ function AdminProducts() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} md={2}>
-                            <FormControl fullWidth>
+                        <Grid item xs={12} sm={6} md={2}>
+                            <FormControl fullWidth size="small">
                                 <InputLabel id="tag-filter-label">Tag</InputLabel>
                                 <Select
                                     labelId="tag-filter-label"
                                     value={filterTag}
                                     onChange={handleTagFilterChange}
                                     label="Tag"
+                                    MenuProps={{
+                                        PaperProps: {
+                                            style: {
+                                                maxHeight: 300,
+                                                width: 200,
+                                            },
+                                        },
+                                    }}
                                 >
                                     <MenuItem value="">All Tags</MenuItem>
                                     {tags.map((tag) => (
@@ -884,14 +900,22 @@ function AdminProducts() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} md={2}>
-                            <FormControl fullWidth>
+                        <Grid item xs={12} sm={6} md={2}>
+                            <FormControl fullWidth size="small">
                                 <InputLabel id="status-filter-label">Status</InputLabel>
                                 <Select
                                     labelId="status-filter-label"
                                     value={filterStatus}
                                     onChange={handleStatusFilterChange}
                                     label="Status"
+                                    MenuProps={{
+                                        PaperProps: {
+                                            style: {
+                                                maxHeight: 300,
+                                                width: 180,
+                                            },
+                                        },
+                                    }}
                                 >
                                     <MenuItem value="">All Statuses</MenuItem>
                                     {productStatuses.map((status, index) => (
@@ -902,14 +926,22 @@ function AdminProducts() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} md={2}>
-                            <FormControl fullWidth>
+                        <Grid item xs={12} sm={6} md={2}>
+                            <FormControl fullWidth size="small">
                                 <InputLabel id="approval-filter-label">Approval</InputLabel>
                                 <Select
                                     labelId="approval-filter-label"
                                     value={filterApproval}
                                     onChange={handleApprovalFilterChange}
                                     label="Approval"
+                                    MenuProps={{
+                                        PaperProps: {
+                                            style: {
+                                                maxHeight: 300,
+                                                width: 180,
+                                            },
+                                        },
+                                    }}
                                 >
                                     <MenuItem value="">All</MenuItem>
                                     {approvalStatuses.map((status, index) => (
@@ -920,12 +952,13 @@ function AdminProducts() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} md={1}>
+                        <Grid item xs={12} sm={6} md={1}>
                             <Button
                                 variant="outlined"
                                 startIcon={<ClearIcon />}
                                 onClick={handleClearFilters}
-                                sx={{ width: '100%' }}
+                                sx={{ width: '100%', minWidth: '80px' }}
+                                size="small"
                             >
                                 Clear
                             </Button>
