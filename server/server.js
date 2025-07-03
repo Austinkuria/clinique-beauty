@@ -344,7 +344,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
           { year: '2020', revenue: 150000, growth: 25.0 },
           { year: '2021', revenue: 180000, growth: 20.0 },
           { year: '2022', revenue: 210000, growth: 16.7 },
-          { year: '2025', revenue: 250000, growth: 19.0 }
+          { year: '2023', revenue: 250000, growth: 19.0 }
         ]
       },
       
@@ -440,14 +440,14 @@ app.get('/api/admin/dashboard', async (req, res) => {
       
       // Recent orders with more details
       recentOrders: [
-        { id: 'ORD-1001', customer: 'Emma Watson', total: 89.99, status: 'Completed', date: '2025-09-15', items: 3, paymentMethod: 'Credit Card' },
-        { id: 'ORD-1002', customer: 'John Doe', total: 124.50, status: 'Processing', date: '2025-09-14', items: 4, paymentMethod: 'PayPal' },
-        { id: 'ORD-1003', customer: 'Alice Smith', total: 76.25, status: 'Shipped', date: '2025-09-14', items: 2, paymentMethod: 'Credit Card' },
-        { id: 'ORD-1004', customer: 'Robert Brown', total: 212.99, status: 'Processing', date: '2025-09-13', items: 6, paymentMethod: 'Credit Card' },
-        { id: 'ORD-1005', customer: 'Jane Cooper', total: 45.00, status: 'Completed', date: '2025-09-12', items: 1, paymentMethod: 'M-Pesa' },
-        { id: 'ORD-1006', customer: 'Michael Johnson', total: 156.75, status: 'Shipped', date: '2025-09-12', items: 3, paymentMethod: 'Credit Card' },
-        { id: 'ORD-1007', customer: 'Sarah Williams', total: 97.50, status: 'Completed', date: '2025-09-11', items: 2, paymentMethod: 'PayPal' },
-        { id: 'ORD-1008', customer: 'David Miller', total: 189.25, status: 'Delivered', date: '2025-09-10', items: 5, paymentMethod: 'Credit Card' }
+        { id: 'ORD-1001', customer: 'Emma Watson', total: 89.99, status: 'Completed', date: '2023-09-15', items: 3, paymentMethod: 'Credit Card' },
+        { id: 'ORD-1002', customer: 'John Doe', total: 124.50, status: 'Processing', date: '2023-09-14', items: 4, paymentMethod: 'PayPal' },
+        { id: 'ORD-1003', customer: 'Alice Smith', total: 76.25, status: 'Shipped', date: '2023-09-14', items: 2, paymentMethod: 'Credit Card' },
+        { id: 'ORD-1004', customer: 'Robert Brown', total: 212.99, status: 'Processing', date: '2023-09-13', items: 6, paymentMethod: 'Credit Card' },
+        { id: 'ORD-1005', customer: 'Jane Cooper', total: 45.00, status: 'Completed', date: '2023-09-12', items: 1, paymentMethod: 'M-Pesa' },
+        { id: 'ORD-1006', customer: 'Michael Johnson', total: 156.75, status: 'Shipped', date: '2023-09-12', items: 3, paymentMethod: 'Credit Card' },
+        { id: 'ORD-1007', customer: 'Sarah Williams', total: 97.50, status: 'Completed', date: '2023-09-11', items: 2, paymentMethod: 'PayPal' },
+        { id: 'ORD-1008', customer: 'David Miller', total: 189.25, status: 'Delivered', date: '2023-09-10', items: 5, paymentMethod: 'Credit Card' }
       ]
     };
     
