@@ -6,8 +6,8 @@
 // Valid admin codes
 const VALID_ADMIN_CODES = [
   'admin123',
-  'clinique-beauty-admin-2023',
-  'clinique-admin-2023'
+  'clinique-beauty-admin-2025',
+  'clinique-admin-2025'
 ];
 
 /**

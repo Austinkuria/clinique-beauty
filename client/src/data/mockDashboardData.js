@@ -73,7 +73,7 @@ export const mockDashboardData = {
       { year: '2020', revenue: 150000, growth: 25.0 },
       { year: '2021', revenue: 180000, growth: 20.0 },
       { year: '2022', revenue: 210000, growth: 16.7 },
-      { year: '2023', revenue: 250000, growth: 19.0 }
+      { year: '2025', revenue: 250000, growth: 19.0 }
     ]
   },
   
@@ -176,16 +176,16 @@ export const mockDashboardData = {
   
   // Recent orders with more details
   recentOrders: [
-    { id: 'ORD-1001', customer: 'Wangari Muchiri', total: 89.99, status: 'Completed', date: '2023-09-15', items: 3, paymentMethod: 'M-Pesa', currency: 'KSh' },
-    { id: 'ORD-1002', customer: 'John Kamau', total: 124.50, status: 'Processing', date: '2023-09-14', items: 4, paymentMethod: 'M-Pesa', currency: 'KSh' },
-    { id: 'ORD-1003', customer: 'Amina Mohamed', total: 76.25, status: 'Shipped', date: '2023-09-14', items: 2, paymentMethod: 'Credit Card', currency: 'KSh' },
-    { id: 'ORD-1004', customer: 'Robert Ouko', total: 212.99, status: 'Processing', date: '2023-09-13', items: 6, paymentMethod: 'M-Pesa', currency: 'KSh' },
-    { id: 'ORD-1005', customer: 'Jane Cooper', total: 45.00, status: 'Completed', date: '2023-09-12', items: 1, paymentMethod: 'M-Pesa', currency: 'KSh' },
-    { id: 'ORD-1006', customer: 'Michael Otieno', total: 156.75, status: 'Shipped', date: '2023-09-12', items: 3, paymentMethod: 'Credit Card', currency: 'KSh' },
-    { id: 'ORD-1007', customer: 'Faith Njeri', total: 97.50, status: 'Completed', date: '2023-09-11', items: 2, paymentMethod: 'M-Pesa', currency: 'KSh' },
-    { id: 'ORD-1008', customer: 'David Ndegwa', total: 189.25, status: 'Delivered', date: '2023-09-10', items: 5, paymentMethod: 'Credit Card', currency: 'KSh' },
-    { id: 'ORD-1009', customer: 'Lucy Wanjiku', total: 112.75, status: 'Completed', date: '2023-09-09', items: 3, paymentMethod: 'M-Pesa', currency: 'KSh' },
-    { id: 'ORD-1010', customer: 'Emmanuel Osei', total: 78.50, status: 'Shipped', date: '2023-09-08', items: 2, paymentMethod: 'Mobile Money', currency: 'KSh' }
+    { id: 'ORD-1001', customer: 'Wangari Muchiri', total: 89.99, status: 'Completed', date: '2025-09-15', items: 3, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1002', customer: 'John Kamau', total: 124.50, status: 'Processing', date: '2025-09-14', items: 4, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1003', customer: 'Amina Mohamed', total: 76.25, status: 'Shipped', date: '2025-09-14', items: 2, paymentMethod: 'Credit Card', currency: 'KSh' },
+    { id: 'ORD-1004', customer: 'Robert Ouko', total: 212.99, status: 'Processing', date: '2025-09-13', items: 6, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1005', customer: 'Jane Cooper', total: 45.00, status: 'Completed', date: '2025-09-12', items: 1, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1006', customer: 'Michael Otieno', total: 156.75, status: 'Shipped', date: '2025-09-12', items: 3, paymentMethod: 'Credit Card', currency: 'KSh' },
+    { id: 'ORD-1007', customer: 'Faith Njeri', total: 97.50, status: 'Completed', date: '2025-09-11', items: 2, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1008', customer: 'David Ndegwa', total: 189.25, status: 'Delivered', date: '2025-09-10', items: 5, paymentMethod: 'Credit Card', currency: 'KSh' },
+    { id: 'ORD-1009', customer: 'Lucy Wanjiku', total: 112.75, status: 'Completed', date: '2025-09-09', items: 3, paymentMethod: 'M-Pesa', currency: 'KSh' },
+    { id: 'ORD-1010', customer: 'Emmanuel Osei', total: 78.50, status: 'Shipped', date: '2025-09-08', items: 2, paymentMethod: 'Mobile Money', currency: 'KSh' }
   ]
 };
 

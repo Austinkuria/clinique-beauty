@@ -10,12 +10,12 @@ export const mockAbTestingData = {
       name: 'Homepage Banner Test',
       description: 'Testing different banner designs to increase click-through rate',
       status: 'active',
-      startDate: '2023-06-01',
-      endDate: '2023-06-30',
+      startDate: '2025-06-01',
+      endDate: '2025-06-30',
       testGoal: 'conversion_rate',
       target: 'all_users',
-      createdAt: '2023-05-29T10:15:00Z',
-      startedAt: '2023-06-01T00:00:00Z',
+      createdAt: '2025-05-29T10:15:00Z',
+      startedAt: '2025-06-01T00:00:00Z',
       participants: 5842,
       variants: [
         { name: 'Control', description: 'Current banner design', trafficAllocation: 33 },
@@ -54,25 +54,25 @@ export const mockAbTestingData = {
       confidence: 95,
       timeSeries: [
         {
-          date: '2023-06-01',
+          date: '2025-06-01',
           'Control': 2.2,
           'Variant A': 3.1,
           'Variant B': 2.9
         },
         {
-          date: '2023-06-08',
+          date: '2025-06-08',
           'Control': 2.5,
           'Variant A': 3.3,
           'Variant B': 3.1
         },
         {
-          date: '2023-06-15',
+          date: '2025-06-15',
           'Control': 2.6,
           'Variant A': 3.5,
           'Variant B': 3.2
         },
         {
-          date: '2023-06-22',
+          date: '2025-06-22',
           'Control': 2.7,
           'Variant A': 3.5,
           'Variant B': 3.2
@@ -84,11 +84,11 @@ export const mockAbTestingData = {
       name: 'Product Page Layout Test',
       description: 'Testing different product page layouts to improve conversion',
       status: 'scheduled',
-      startDate: '2023-07-01',
-      endDate: '2023-07-31',
+      startDate: '2025-07-01',
+      endDate: '2025-07-31',
       testGoal: 'conversion_rate',
       target: 'all_users',
-      createdAt: '2023-06-15T14:30:00Z',
+      createdAt: '2025-06-15T14:30:00Z',
       participants: 0,
       variants: [
         { name: 'Control', description: 'Current layout', trafficAllocation: 50 },
@@ -102,13 +102,13 @@ export const mockAbTestingData = {
       name: 'Checkout Flow Test',
       description: 'Testing simplified checkout flow vs. current checkout',
       status: 'completed',
-      startDate: '2023-05-01',
-      endDate: '2023-05-31',
+      startDate: '2025-05-01',
+      endDate: '2025-05-31',
       testGoal: 'conversion_rate',
       target: 'all_users',
-      createdAt: '2023-04-20T09:45:00Z',
-      startedAt: '2023-05-01T00:00:00Z',
-      completedAt: '2023-05-31T23:59:59Z',
+      createdAt: '2025-04-20T09:45:00Z',
+      startedAt: '2025-05-01T00:00:00Z',
+      completedAt: '2025-05-31T23:59:59Z',
       participants: 8934,
       variants: [
         { name: 'Control', description: 'Current checkout flow', trafficAllocation: 50 },
@@ -137,27 +137,27 @@ export const mockAbTestingData = {
       confidence: 99,
       timeSeries: [
         {
-          date: '2023-05-01',
+          date: '2025-05-01',
           'Control': 61.5,
           'Variant A': 72.8
         },
         {
-          date: '2023-05-08',
+          date: '2025-05-08',
           'Control': 62.1,
           'Variant A': 74.3
         },
         {
-          date: '2023-05-15',
+          date: '2025-05-15',
           'Control': 62.5,
           'Variant A': 76.2
         },
         {
-          date: '2023-05-22',
+          date: '2025-05-22',
           'Control': 62.4,
           'Variant A': 77.8
         },
         {
-          date: '2023-05-29',
+          date: '2025-05-29',
           'Control': 62.3,
           'Variant A': 78.1
         }
@@ -168,12 +168,12 @@ export const mockAbTestingData = {
       name: 'Email Subject Line Test',
       description: 'Testing different email subject lines for the summer campaign',
       status: 'active',
-      startDate: '2023-06-10',
-      endDate: '2023-06-25',
+      startDate: '2025-06-10',
+      endDate: '2025-06-25',
       testGoal: 'clicks',
       target: 'all_users',
-      createdAt: '2023-06-05T11:20:00Z',
-      startedAt: '2023-06-10T00:00:00Z',
+      createdAt: '2025-06-05T11:20:00Z',
+      startedAt: '2025-06-10T00:00:00Z',
       participants: 20000,
       variants: [
         { name: 'Control', description: 'Standard subject line', trafficAllocation: 25 },
@@ -222,21 +222,21 @@ export const mockAbTestingData = {
       confidence: 92,
       timeSeries: [
         {
-          date: '2023-06-10',
+          date: '2025-06-10',
           'Control': 3.8,
           'Variant A': 4.2,
           'Variant B': 4.1,
           'Variant C': 6.5
         },
         {
-          date: '2023-06-15',
+          date: '2025-06-15',
           'Control': 3.8,
           'Variant A': 4.2,
           'Variant B': 4.1,
           'Variant C': 6.6
         },
         {
-          date: '2023-06-20',
+          date: '2025-06-20',
           'Control': 3.8,
           'Variant A': 4.2,
           'Variant B': 4.1,
@@ -249,11 +249,11 @@ export const mockAbTestingData = {
       name: 'Free Shipping Threshold Test',
       description: 'Testing different free shipping thresholds to optimize AOV',
       status: 'draft',
-      startDate: '2023-07-15',
-      endDate: '2023-08-15',
+      startDate: '2025-07-15',
+      endDate: '2025-08-15',
       testGoal: 'avg_order_value',
       target: 'all_users',
-      createdAt: '2023-06-18T16:40:00Z',
+      createdAt: '2025-06-18T16:40:00Z',
       participants: 0,
       variants: [
         { name: 'Control', description: 'Current $50 threshold', trafficAllocation: 33 },

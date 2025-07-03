@@ -31,7 +31,7 @@ const ComplianceMonitoring = () => {
         name: 'Beauty Essentials Co', 
         complianceScore: 95,
         verificationStatus: 'verified',
-        lastAudit: '2023-09-15',
+        lastAudit: '2025-09-15',
         pendingIssues: 0,
         productCount: 78,
         nonCompliantProducts: 2
@@ -41,7 +41,7 @@ const ComplianceMonitoring = () => {
         name: 'Luxury Cosmetics', 
         complianceScore: 87,
         verificationStatus: 'verified',
-        lastAudit: '2023-08-22',
+        lastAudit: '2025-08-22',
         pendingIssues: 3,
         productCount: 45,
         nonCompliantProducts: 5
@@ -51,7 +51,7 @@ const ComplianceMonitoring = () => {
         name: 'Natural Beauty Products', 
         complianceScore: 98,
         verificationStatus: 'verified',
-        lastAudit: '2023-10-01',
+        lastAudit: '2025-10-01',
         pendingIssues: 0,
         productCount: 112,
         nonCompliantProducts: 1
@@ -61,7 +61,7 @@ const ComplianceMonitoring = () => {
         name: 'Skincare Specialists', 
         complianceScore: 72,
         verificationStatus: 'provisional',
-        lastAudit: '2023-09-05',
+        lastAudit: '2025-09-05',
         pendingIssues: 7,
         productCount: 38,
         nonCompliantProducts: 8
@@ -77,7 +77,7 @@ const ComplianceMonitoring = () => {
         severity: 'medium',
         description: 'Product claims are not substantiated with proper documentation',
         status: 'open',
-        createdAt: '2023-10-05',
+        createdAt: '2025-10-05',
         affectedProducts: ['Product X', 'Product Y']
       },
       {
@@ -88,7 +88,7 @@ const ComplianceMonitoring = () => {
         severity: 'high',
         description: 'Incomplete ingredient list for skincare products',
         status: 'open',
-        createdAt: '2023-10-02',
+        createdAt: '2025-10-02',
         affectedProducts: ['Product Z']
       },
       {
@@ -99,7 +99,7 @@ const ComplianceMonitoring = () => {
         severity: 'low',
         description: 'Shipping policy does not meet marketplace requirements',
         status: 'open',
-        createdAt: '2023-09-28',
+        createdAt: '2025-09-28',
         affectedProducts: []
       },
       {
@@ -110,7 +110,7 @@ const ComplianceMonitoring = () => {
         severity: 'critical',
         description: 'Product safety certificates not provided for new skincare line',
         status: 'open',
-        createdAt: '2023-10-01',
+        createdAt: '2025-10-01',
         affectedProducts: ['Brightening Serum', 'Anti-Aging Cream', 'Vitamin C Cleanser']
       },
       {
@@ -121,7 +121,7 @@ const ComplianceMonitoring = () => {
         severity: 'medium',
         description: 'Return policy is not consistent with marketplace standards',
         status: 'open',
-        createdAt: '2023-09-29',
+        createdAt: '2025-09-29',
         affectedProducts: []
       },
       {
@@ -132,7 +132,7 @@ const ComplianceMonitoring = () => {
         severity: 'low',
         description: 'Product images do not show all required angles',
         status: 'open',
-        createdAt: '2023-09-25',
+        createdAt: '2025-09-25',
         affectedProducts: ['Night Cream', 'Facial Toner', 'Clay Mask']
       },
       {
@@ -143,8 +143,8 @@ const ComplianceMonitoring = () => {
         severity: 'medium',
         description: 'Missing allergen warning for essential oil content',
         status: 'resolved',
-        createdAt: '2023-09-15',
-        resolvedAt: '2023-09-18',
+        createdAt: '2025-09-15',
+        resolvedAt: '2025-09-18',
         affectedProducts: ['Lavender Body Oil']
       },
       {
@@ -155,8 +155,8 @@ const ComplianceMonitoring = () => {
         severity: 'medium',
         description: 'Misleading efficacy claims',
         status: 'resolved',
-        createdAt: '2023-08-28',
-        resolvedAt: '2023-09-05',
+        createdAt: '2025-08-28',
+        resolvedAt: '2025-09-05',
         affectedProducts: ['Collagen Boosting Cream']
       }
     ];

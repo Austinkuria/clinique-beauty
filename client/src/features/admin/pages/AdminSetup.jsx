@@ -29,8 +29,8 @@ import { useAdmin } from '../../../context/AdminContext';
 // This is just for demo purposes - in production, never hard-code the admin code in the frontend
 const ADMIN_CODES = {
   dev: 'admin123', // Development code
-  prod: 'clinique-beauty-admin-2023', // Production code - matches database value
-  fallback: 'clinique-admin-2023' // Fallback code for backward compatibility
+  prod: 'clinique-beauty-admin-2025', // Production code - matches database value
+  fallback: 'clinique-admin-2025' // Fallback code for backward compatibility
 };
 
 function AdminSetup() {

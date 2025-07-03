@@ -129,7 +129,7 @@ function AdminUsers() {
                                 role: 'Customer',
                                 status: 'Active',
                                 verified: true,
-                                joinDate: '2023-01-15',
+                                joinDate: '2025-01-15',
                                 location: 'New York',
                                 ordersCount: 8,
                                 totalSpent: 425.75,

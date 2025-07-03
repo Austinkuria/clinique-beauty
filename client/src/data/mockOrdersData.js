@@ -7,7 +7,7 @@ export const mockOrders = [
         id: 'ORD-1001',
         customer: 'Wanjiku Kamau',
         email: 'wanjiku.kamau@gmail.com',
-        date: '2023-09-15',
+        date: '2025-09-15',
         total: 89.99,
         status: 'Delivered',
         paymentStatus: 'Paid',
@@ -22,7 +22,7 @@ export const mockOrders = [
         id: 'ORD-1002',
         customer: 'Omondi Otieno',
         email: 'omondi.otieno@yahoo.com',
-        date: '2023-09-14',
+        date: '2025-09-14',
         total: 124.50,
         status: 'Processing',
         paymentStatus: 'Paid',
@@ -38,7 +38,7 @@ export const mockOrders = [
         id: 'ORD-1003',
         customer: 'Njeri Mwangi',
         email: 'njeri.mwangi@gmail.com',
-        date: '2023-09-14',
+        date: '2025-09-14',
         total: 76.25,
         status: 'Shipped',
         paymentStatus: 'Paid',
@@ -53,7 +53,7 @@ export const mockOrders = [
         id: 'ORD-1004',
         customer: 'Kimani Njoroge',
         email: 'kimani.njoroge@outlook.com',
-        date: '2023-09-13',
+        date: '2025-09-13',
         total: 212.99,
         status: 'Processing',
         paymentStatus: 'Pending',
@@ -68,7 +68,7 @@ export const mockOrders = [
         id: 'ORD-1005',
         customer: 'Akinyi Ochieng',
         email: 'akinyi.ochieng@gmail.com',
-        date: '2023-09-12',
+        date: '2025-09-12',
         total: 45.00,
         status: 'Cancelled',
         paymentStatus: 'Refunded',
@@ -87,35 +87,35 @@ export const mockOrderHistory = {
     'ORD-1001': [
         { 
             id: 1, 
-            date: '2023-09-15T10:30:00', 
+            date: '2025-09-15T10:30:00', 
             status: 'Order Placed', 
             user: 'Customer', 
             note: 'Order placed by customer'
         },
         { 
             id: 2, 
-            date: '2023-09-15T10:35:00', 
+            date: '2025-09-15T10:35:00', 
             status: 'Payment Received', 
             user: 'System', 
             note: 'Payment confirmed via M-Pesa'
         },
         { 
             id: 3, 
-            date: '2023-09-15T14:20:00', 
+            date: '2025-09-15T14:20:00', 
             status: 'Processing', 
             user: 'David Mutua', 
             note: 'Order verified and sent to fulfillment'
         },
         { 
             id: 4, 
-            date: '2023-09-16T09:15:00', 
+            date: '2025-09-16T09:15:00', 
             status: 'Shipped', 
             user: 'Faith Mwende', 
             note: 'Order shipped via Sendy, tracking: SENDY123456789'
         },
         {
             id: 5,
-            date: '2023-09-18T14:30:00',
+            date: '2025-09-18T14:30:00',
             status: 'Delivered',
             user: 'System',
             note: 'Package delivered to customer'
@@ -124,21 +124,21 @@ export const mockOrderHistory = {
     'ORD-1002': [
         { 
             id: 1, 
-            date: '2023-09-14T11:20:00', 
+            date: '2025-09-14T11:20:00', 
             status: 'Order Placed', 
             user: 'Customer', 
             note: 'Order placed by customer'
         },
         { 
             id: 2, 
-            date: '2023-09-14T11:25:00', 
+            date: '2025-09-14T11:25:00', 
             status: 'Payment Received', 
             user: 'System', 
             note: 'Payment confirmed via PayPal'
         },
         { 
             id: 3, 
-            date: '2023-09-14T16:45:00', 
+            date: '2025-09-14T16:45:00', 
             status: 'Processing', 
             user: 'Michael Brown', 
             note: 'Order verified and sent to fulfillment'
@@ -147,28 +147,28 @@ export const mockOrderHistory = {
     'ORD-1003': [
         { 
             id: 1, 
-            date: '2023-09-14T09:15:00', 
+            date: '2025-09-14T09:15:00', 
             status: 'Order Placed', 
             user: 'Customer', 
             note: 'Order placed by customer'
         },
         { 
             id: 2, 
-            date: '2023-09-14T09:20:00', 
+            date: '2025-09-14T09:20:00', 
             status: 'Payment Received', 
             user: 'System', 
             note: 'Payment confirmed via Credit Card'
         },
         { 
             id: 3, 
-            date: '2023-09-14T13:10:00', 
+            date: '2025-09-14T13:10:00', 
             status: 'Processing', 
             user: 'Emily Davis', 
             note: 'Order verified and sent to fulfillment'
         },
         { 
             id: 4, 
-            date: '2023-09-15T10:30:00', 
+            date: '2025-09-15T10:30:00', 
             status: 'Shipped', 
             user: 'Robert Johnson', 
             note: 'Order shipped via UPS, tracking: UPS87654321'
@@ -177,21 +177,21 @@ export const mockOrderHistory = {
     'ORD-1004': [
         { 
             id: 1, 
-            date: '2023-09-13T15:45:00', 
+            date: '2025-09-13T15:45:00', 
             status: 'Order Placed', 
             user: 'Customer', 
             note: 'Order placed by customer'
         },
         { 
             id: 2, 
-            date: '2023-09-13T15:50:00', 
+            date: '2025-09-13T15:50:00', 
             status: 'Payment Pending', 
             user: 'System', 
             note: 'Waiting for payment confirmation'
         },
         { 
             id: 3, 
-            date: '2023-09-13T16:00:00', 
+            date: '2025-09-13T16:00:00', 
             status: 'Processing', 
             user: 'James Wilson', 
             note: 'Order being prepared - awaiting payment verification'
@@ -200,35 +200,35 @@ export const mockOrderHistory = {
     'ORD-1005': [
         { 
             id: 1, 
-            date: '2023-09-12T12:30:00', 
+            date: '2025-09-12T12:30:00', 
             status: 'Order Placed', 
             user: 'Customer', 
             note: 'Order placed by customer'
         },
         { 
             id: 2, 
-            date: '2023-09-12T12:35:00', 
+            date: '2025-09-12T12:35:00', 
             status: 'Payment Received', 
             user: 'System', 
             note: 'Payment confirmed via Bank Transfer'
         },
         { 
             id: 3, 
-            date: '2023-09-12T14:15:00', 
+            date: '2025-09-12T14:15:00', 
             status: 'Processing', 
             user: 'Emma Taylor', 
             note: 'Order verified and sent to fulfillment'
         },
         { 
             id: 4, 
-            date: '2023-09-12T17:20:00', 
+            date: '2025-09-12T17:20:00', 
             status: 'Cancelled', 
             user: 'David Smith', 
             note: 'Order cancelled per customer request'
         },
         { 
             id: 5, 
-            date: '2023-09-12T17:25:00', 
+            date: '2025-09-12T17:25:00', 
             status: 'Refund Initiated', 
             user: 'System', 
             note: 'Refund processed successfully'
@@ -264,7 +264,7 @@ export const mockReturns = [
         customer: 'Wanjiku Kamau',
         reason: 'Wrong product shade',
         status: 'Pending',
-        dateRequested: '2023-09-20',
+        dateRequested: '2025-09-20',
         phone: '+254 712 345 678',
         location: 'Nairobi, Kenya',
         items: [
@@ -278,7 +278,7 @@ export const mockReturns = [
         customer: 'Njeri Mwangi',
         reason: 'Damaged product',
         status: 'Approved',
-        dateRequested: '2023-09-19',
+        dateRequested: '2025-09-19',
         phone: '+254 735 567 890',
         location: 'Mombasa, Kenya',
         items: [
@@ -292,8 +292,8 @@ export const mockReturns = [
         customer: 'Omondi Otieno',
         reason: 'Changed mind',
         status: 'Completed',
-        dateRequested: '2023-09-18',
-        dateProcessed: '2023-09-21',
+        dateRequested: '2025-09-18',
+        dateProcessed: '2025-09-21',
         phone: '+254 723 456 789',
         location: 'Kisumu, Kenya',
         items: [
@@ -315,7 +315,7 @@ export const mockIssues = [
         type: 'Delivery Delay',
         status: 'Open',
         priority: 'Medium',
-        dateReported: '2023-09-21',
+        dateReported: '2025-09-21',
         description: 'Package stuck in Westlands distribution center',
         location: 'Nairobi, Kenya'
     },
@@ -326,7 +326,7 @@ export const mockIssues = [
         type: 'Wrong Items',
         status: 'In Progress',
         priority: 'High',
-        dateReported: '2023-09-20',
+        dateReported: '2025-09-20',
         description: 'Received dark shade instead of light shade of foundation',
         location: 'Nakuru, Kenya'
     },
@@ -337,8 +337,8 @@ export const mockIssues = [
         type: 'Payment Issue',
         status: 'Resolved',
         priority: 'Low',
-        dateReported: '2023-09-19',
-        dateResolved: '2023-09-20',
+        dateReported: '2025-09-19',
+        dateResolved: '2025-09-20',
         description: 'Double charged on M-Pesa',
         resolution: 'Refund processed via M-Pesa',
         location: 'Mombasa, Kenya'

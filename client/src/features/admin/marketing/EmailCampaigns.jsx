@@ -59,7 +59,7 @@ const EmailCampaigns = () => {
                             sentCount: 12500, 
                             openRate: 27.3, 
                             clickRate: 4.2, 
-                            sentDate: '2023-06-15' 
+                            sentDate: '2025-06-15' 
                         },
                         { 
                             id: 2, 
@@ -68,7 +68,7 @@ const EmailCampaigns = () => {
                             sentCount: 9800, 
                             openRate: 24.8, 
                             clickRate: 3.7, 
-                            sentDate: '2023-06-05' 
+                            sentDate: '2025-06-05' 
                         },
                         { 
                             id: 3, 
@@ -77,7 +77,7 @@ const EmailCampaigns = () => {
                             sentCount: 11200, 
                             openRate: 26.1, 
                             clickRate: 4.0, 
-                            sentDate: '2023-06-01' 
+                            sentDate: '2025-06-01' 
                         },
                         { 
                             id: 4, 
@@ -86,7 +86,7 @@ const EmailCampaigns = () => {
                             sentCount: 5600, 
                             openRate: 22.8, 
                             clickRate: 3.4, 
-                            sentDate: '2023-06-20' 
+                            sentDate: '2025-06-20' 
                         },
                         { 
                             id: 5, 
@@ -95,7 +95,7 @@ const EmailCampaigns = () => {
                             sentCount: 2800, 
                             openRate: 38.5, 
                             clickRate: 6.2, 
-                            sentDate: '2023-06-18' 
+                            sentDate: '2025-06-18' 
                         }
                     ]
                 });

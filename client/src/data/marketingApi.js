@@ -16,10 +16,10 @@ export const marketingApi = {
         data: [
           {
             id: 'camp-001',
-            name: 'Summer Sale 2023',
+            name: 'Summer Sale 2025',
             description: 'Special discounts on summer products',
-            startDate: '2023-06-01',
-            endDate: '2023-08-31',
+            startDate: '2025-06-01',
+            endDate: '2025-08-31',
             status: 'active',
             type: 'seasonal',
             target: 'all_customers',
@@ -37,8 +37,8 @@ export const marketingApi = {
             id: 'camp-002',
             name: 'New Customer Welcome',
             description: 'Special offer for first-time customers',
-            startDate: '2023-01-01',
-            endDate: '2023-12-31',
+            startDate: '2025-01-01',
+            endDate: '2025-12-31',
             status: 'active',
             type: 'welcome',
             target: 'new_customers',
@@ -54,10 +54,10 @@ export const marketingApi = {
           },
           {
             id: 'camp-003',
-            name: 'Holiday Collection 2023',
+            name: 'Holiday Collection 2025',
             description: 'Special holiday-themed products and bundles',
-            startDate: '2023-11-15',
-            endDate: '2023-12-25',
+            startDate: '2025-11-15',
+            endDate: '2025-12-25',
             status: 'scheduled',
             type: 'seasonal',
             target: 'all_customers',
@@ -73,10 +73,10 @@ export const marketingApi = {
           },
           {
             id: 'camp-004',
-            name: 'Spring Sale 2023',
+            name: 'Spring Sale 2025',
             description: 'Spring collection promotion',
-            startDate: '2023-03-01',
-            endDate: '2023-05-31',
+            startDate: '2025-03-01',
+            endDate: '2025-05-31',
             status: 'ended',
             type: 'seasonal',
             target: 'all_customers',
@@ -107,10 +107,10 @@ export const marketingApi = {
       return {
         data: {
           id: id,
-          name: 'Summer Sale 2023',
+          name: 'Summer Sale 2025',
           description: 'Special discounts on summer products',
-          startDate: '2023-06-01',
-          endDate: '2023-08-31',
+          startDate: '2025-06-01',
+          endDate: '2025-08-31',
           status: 'active',
           type: 'seasonal',
           target: 'all_customers',
@@ -204,13 +204,13 @@ export const marketingApi = {
             description: 'Summer sale discount',
             discountType: 'percentage',
             discountValue: 15,
-            startDate: '2023-06-01',
-            endDate: '2023-08-31',
+            startDate: '2025-06-01',
+            endDate: '2025-08-31',
             status: 'active',
             usageLimit: 1000,
             usageCount: 423,
             minimumOrderValue: 50,
-            campaigns: ['Summer Sale 2023']
+            campaigns: ['Summer Sale 2025']
           },
           {
             id: 'disc-002',
@@ -218,8 +218,8 @@ export const marketingApi = {
             description: 'New customer discount',
             discountType: 'fixed',
             discountValue: 10,
-            startDate: '2023-01-01',
-            endDate: '2023-12-31',
+            startDate: '2025-01-01',
+            endDate: '2025-12-31',
             status: 'active',
             usageLimit: 5000,
             usageCount: 1875,
@@ -232,13 +232,13 @@ export const marketingApi = {
             description: 'Holiday season discount',
             discountType: 'percentage',
             discountValue: 20,
-            startDate: '2023-11-15',
-            endDate: '2023-12-25',
+            startDate: '2025-11-15',
+            endDate: '2025-12-25',
             status: 'scheduled',
             usageLimit: 2000,
             usageCount: 0,
             minimumOrderValue: 75,
-            campaigns: ['Holiday Collection 2023']
+            campaigns: ['Holiday Collection 2025']
           },
           {
             id: 'disc-004',
@@ -246,13 +246,13 @@ export const marketingApi = {
             description: 'Spring season discount',
             discountType: 'percentage',
             discountValue: 15,
-            startDate: '2023-03-01',
-            endDate: '2023-05-31',
+            startDate: '2025-03-01',
+            endDate: '2025-05-31',
             status: 'expired',
             usageLimit: 1500,
             usageCount: 1287,
             minimumOrderValue: 50,
-            campaigns: ['Spring Sale 2023']
+            campaigns: ['Spring Sale 2025']
           }
         ],
         total: 4
@@ -275,13 +275,13 @@ export const marketingApi = {
           description: 'Summer sale discount',
           discountType: 'percentage',
           discountValue: 15,
-          startDate: '2023-06-01',
-          endDate: '2023-08-31',
+          startDate: '2025-06-01',
+          endDate: '2025-08-31',
           status: 'active',
           usageLimit: 1000,
           usageCount: 423,
           minimumOrderValue: 50,
-          campaigns: ['Summer Sale 2023'],
+          campaigns: ['Summer Sale 2025'],
           applicable: {
             productCategories: ['skincare', 'suncare'],
             specificProducts: [
@@ -291,8 +291,8 @@ export const marketingApi = {
             customerGroups: ['regular', 'vip']
           },
           usageHistory: [
-            { date: '2023-06-05', orderId: 'ord-5678', amount: 75.99, discount: 11.40 },
-            { date: '2023-06-06', orderId: 'ord-5679', amount: 120.50, discount: 18.08 }
+            { date: '2025-06-05', orderId: 'ord-5678', amount: 75.99, discount: 11.40 },
+            { date: '2025-06-06', orderId: 'ord-5679', amount: 120.50, discount: 18.08 }
           ]
         }
       };
@@ -372,7 +372,7 @@ export const marketingApi = {
             totalRevenue: 80700,
             totalConversions: 2740,
             conversionRate: 14.8,
-            topPerforming: 'Spring Sale 2023'
+            topPerforming: 'Spring Sale 2025'
           },
           discountCodes: {
             active: 2,

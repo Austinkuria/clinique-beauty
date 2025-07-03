@@ -96,8 +96,8 @@ ON CONFLICT (key) DO NOTHING;
 
 -- Insert the admin setup code with a default value
 INSERT INTO system_settings (key, value, description)
-VALUES ('admin_setup_code', 'clinique-beauty-admin-2023', 'Code used for setting up admin accounts')
-ON CONFLICT (key) DO UPDATE SET value = 'clinique-beauty-admin-2023';
+VALUES ('admin_setup_code', 'clinique-beauty-admin-2025', 'Code used for setting up admin accounts')
+ON CONFLICT (key) DO UPDATE SET value = 'clinique-beauty-admin-2025';
 
 -- Create a function to sync clerk metadata role to database roles
 CREATE OR REPLACE FUNCTION sync_clerk_role_to_database(

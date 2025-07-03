@@ -4,8 +4,8 @@ export const emailCampaigns = [
     name: 'Summer Sale Announcement',
     subject: 'Summer Sale: Up to 50% Off Your Favorite Beauty Products',
     status: 'sent',
-    scheduledDate: '2023-06-15T08:00:00',
-    sentDate: '2023-06-15T08:00:00',
+    scheduledDate: '2025-06-15T08:00:00',
+    sentDate: '2025-06-15T08:00:00',
     recipients: {
       segmentType: 'segment',
       segmentId: 'seg-001',
@@ -36,8 +36,8 @@ export const emailCampaigns = [
     name: 'New Product Launch - Vitamin C Serum',
     subject: 'Introducing Our New Vitamin C Serum',
     status: 'sent',
-    scheduledDate: '2023-07-10T09:00:00',
-    sentDate: '2023-07-10T09:00:00',
+    scheduledDate: '2025-07-10T09:00:00',
+    sentDate: '2025-07-10T09:00:00',
     recipients: {
       segmentType: 'segment',
       segmentId: 'seg-002',
@@ -128,7 +128,7 @@ export const emailCampaigns = [
   {
     id: 'em-005',
     name: 'Fall Collection Preview',
-    subject: 'Exclusive Preview: Fall 2023 Collection',
+    subject: 'Exclusive Preview: Fall 2025 Collection',
     status: 'draft',
     recipients: {
       segmentType: 'segment',
@@ -139,7 +139,7 @@ export const emailCampaigns = [
     content: {
       template: 'seasonal',
       header: 'Fall in Love with Our New Collection',
-      body: '<p>Dear {customer_name},</p><p>As one of our valued VIP customers, we\'re giving you an exclusive preview of our Fall 2023 Collection before it\'s officially released.</p><p>Embrace the autumn season with our warm, rich tones and nourishing formulas designed for the changing weather.</p>',
+      body: '<p>Dear {customer_name},</p><p>As one of our valued VIP customers, we\'re giving you an exclusive preview of our Fall 2025 Collection before it\'s officially released.</p><p>Embrace the autumn season with our warm, rich tones and nourishing formulas designed for the changing weather.</p>',
       featuredProducts: [402, 405, 410],
       cta: {
         text: 'Get Early Access',
@@ -152,7 +152,7 @@ export const emailCampaigns = [
     name: 'Customer Feedback Request',
     subject: 'We value your opinion',
     status: 'scheduled',
-    scheduledDate: '2023-10-05T10:00:00',
+    scheduledDate: '2025-10-05T10:00:00',
     recipients: {
       segmentType: 'segment',
       segmentId: 'seg-004',

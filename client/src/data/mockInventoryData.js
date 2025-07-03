@@ -16,7 +16,7 @@ export const STOCK_MOVEMENT_TYPES = {
 export const stockMovements = [
   {
     id: 'SM-1001',
-    date: '2023-09-25',
+    date: '2025-09-25',
     productId: 1,
     productName: 'Moisturizing Cream',
     type: STOCK_MOVEMENT_TYPES.PURCHASE,
@@ -26,7 +26,7 @@ export const stockMovements = [
   },
   {
     id: 'SM-1002',
-    date: '2023-09-25',
+    date: '2025-09-25',
     productId: 3,
     productName: 'Citrus Perfume',
     type: STOCK_MOVEMENT_TYPES.PURCHASE,
@@ -36,7 +36,7 @@ export const stockMovements = [
   },
   {
     id: 'SM-1003',
-    date: '2023-09-26',
+    date: '2025-09-26',
     productId: 4,
     productName: 'Hair Repair Mask',
     type: STOCK_MOVEMENT_TYPES.SALE,
@@ -46,7 +46,7 @@ export const stockMovements = [
   },
   {
     id: 'SM-1004',
-    date: '2023-09-26',
+    date: '2025-09-26',
     productId: 1,
     productName: 'Moisturizing Cream',
     type: STOCK_MOVEMENT_TYPES.SALE,
@@ -56,7 +56,7 @@ export const stockMovements = [
   },
   {
     id: 'SM-1005',
-    date: '2023-09-27',
+    date: '2025-09-27',
     productId: 1,
     productName: 'Moisturizing Cream',
     type: STOCK_MOVEMENT_TYPES.DAMAGED,
@@ -66,7 +66,7 @@ export const stockMovements = [
   },
   {
     id: 'SM-1006',
-    date: '2023-09-28',
+    date: '2025-09-28',
     productId: 2,
     productName: 'Anti-Aging Serum',
     type: STOCK_MOVEMENT_TYPES.ADJUSTMENT,
@@ -76,7 +76,7 @@ export const stockMovements = [
   },
   {
     id: 'SM-1007',
-    date: '2023-09-28',
+    date: '2025-09-28',
     productId: 3,
     productName: 'Citrus Perfume',
     type: STOCK_MOVEMENT_TYPES.RETURN,
@@ -86,7 +86,7 @@ export const stockMovements = [
   },
   {
     id: 'SM-1008',
-    date: '2023-09-29',
+    date: '2025-09-29',
     productId: 5,
     productName: 'Shower Gel',
     type: STOCK_MOVEMENT_TYPES.TRANSFER,
@@ -96,7 +96,7 @@ export const stockMovements = [
   },
   {
     id: 'SM-1009',
-    date: '2023-09-30',
+    date: '2025-09-30',
     productId: 6,
     productName: 'Day Cream SPF 30',
     type: STOCK_MOVEMENT_TYPES.PURCHASE,
@@ -106,7 +106,7 @@ export const stockMovements = [
   },
   {
     id: 'SM-1010',
-    date: '2023-10-01',
+    date: '2025-10-01',
     productId: 4,
     productName: 'Hair Repair Mask',
     type: STOCK_MOVEMENT_TYPES.ADJUSTMENT,
@@ -125,7 +125,7 @@ export const lowStockAlerts = [
     currentStock: 12,
     threshold: 15,
     status: 'active',
-    createdAt: '2023-09-25',
+    createdAt: '2025-09-25',
     resolved: false
   },
   {
@@ -135,7 +135,7 @@ export const lowStockAlerts = [
     currentStock: 5,
     threshold: 10,
     status: 'critical',
-    createdAt: '2023-09-24',
+    createdAt: '2025-09-24',
     resolved: false
   },
   {
@@ -145,10 +145,10 @@ export const lowStockAlerts = [
     currentStock: 0,
     threshold: 10,
     status: 'outOfStock',
-    createdAt: '2023-09-23',
+    createdAt: '2025-09-23',
     resolved: false,
     autoOrderSent: true,
-    poNumber: 'PO-2023-091'
+    poNumber: 'PO-2025-091'
   },
   {
     id: 'LSA-004',
@@ -157,7 +157,7 @@ export const lowStockAlerts = [
     currentStock: 8,
     threshold: 12,
     status: 'active',
-    createdAt: '2023-09-22',
+    createdAt: '2025-09-22',
     resolved: false
   },
   {
@@ -167,7 +167,7 @@ export const lowStockAlerts = [
     currentStock: 14,
     threshold: 15,
     status: 'active',
-    createdAt: '2023-09-26',
+    createdAt: '2025-09-26',
     resolved: false
   },
   {
@@ -177,9 +177,9 @@ export const lowStockAlerts = [
     currentStock: 6,
     threshold: 12,
     status: 'active',
-    createdAt: '2023-09-20',
+    createdAt: '2025-09-20',
     resolved: true,
-    resolvedAt: '2023-09-28',
+    resolvedAt: '2025-09-28',
     resolvedBy: 'David Mutua',
     notes: 'Ordered 30 units from supplier'
   }
@@ -272,7 +272,7 @@ export const products = [
 export const adjustmentHistory = [
   { 
     id: 'ADJ-001', 
-    date: '2023-10-10 09:15', 
+    date: '2025-10-10 09:15', 
     productId: 1, 
     productName: 'Moisturizing Cream', 
     type: STOCK_MOVEMENT_TYPES.ADJUSTMENT, 
@@ -283,7 +283,7 @@ export const adjustmentHistory = [
   },
   { 
     id: 'ADJ-002', 
-    date: '2023-10-09 14:30', 
+    date: '2025-10-09 14:30', 
     productId: 3, 
     productName: 'Citrus Perfume', 
     type: STOCK_MOVEMENT_TYPES.DAMAGED, 
@@ -294,7 +294,7 @@ export const adjustmentHistory = [
   },
   { 
     id: 'ADJ-003', 
-    date: '2023-10-08 11:45', 
+    date: '2025-10-08 11:45', 
     productId: 4, 
     productName: 'Hair Repair Mask', 
     type: STOCK_MOVEMENT_TYPES.ADJUSTMENT, 
@@ -305,7 +305,7 @@ export const adjustmentHistory = [
   },
   { 
     id: 'ADJ-004', 
-    date: '2023-10-07 16:20', 
+    date: '2025-10-07 16:20', 
     productId: 2, 
     productName: 'Anti-Aging Serum', 
     type: STOCK_MOVEMENT_TYPES.RETURN, 

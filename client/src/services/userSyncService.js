@@ -111,7 +111,7 @@ const getApiBaseUrl = () => {
 
 // For development: Simulate admin verification
 const devVerifyAdminCode = (code) => {
-  const validCodes = ['admin123', 'clinique-beauty-admin-2023', 'clinique-admin-2023'];
+  const validCodes = ['admin123', 'clinique-beauty-admin-2025', 'clinique-admin-2025'];
   return validCodes.includes(code);
 };
 
