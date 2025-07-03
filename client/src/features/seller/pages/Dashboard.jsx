@@ -92,10 +92,10 @@ const SellerDashboard = () => {
           ratingChange: 0.2
         },
         recentOrders: [
-          { id: 'ORD-001', customer: 'Sarah Johnson', amount: 89.99, status: 'Processing', date: '2024-01-15' },
-          { id: 'ORD-002', customer: 'Mike Chen', amount: 156.50, status: 'Shipped', date: '2024-01-15' },
-          { id: 'ORD-003', customer: 'Emma Wilson', amount: 45.00, status: 'Delivered', date: '2024-01-14' },
-          { id: 'ORD-004', customer: 'David Brown', amount: 78.25, status: 'Processing', date: '2024-01-14' },
+          { id: 'ORD-001', customer: 'Sarah Johnson', amount: 89.99, status: 'Processing', date: '2025-01-15' },
+          { id: 'ORD-002', customer: 'Mike Chen', amount: 156.50, status: 'Shipped', date: '2025-01-15' },
+          { id: 'ORD-003', customer: 'Emma Wilson', amount: 45.00, status: 'Delivered', date: '2025-01-14' },
+          { id: 'ORD-004', customer: 'David Brown', amount: 78.25, status: 'Processing', date: '2025-01-14' },
         ],
         topProducts: [
           { name: 'Vitamin C Serum', sales: 45, revenue: 1350.00, image: '/api/placeholder/50/50' },

@@ -33,7 +33,7 @@ const SellerOrders = () => {
       items: 2,
       total: 89.99,
       status: 'Processing',
-      date: '2024-01-15',
+      date: '2025-01-15',
       shippingAddress: '123 Main St, City, State 12345'
     },
     {
@@ -43,7 +43,7 @@ const SellerOrders = () => {
       items: 1,
       total: 156.50,
       status: 'Shipped',
-      date: '2024-01-15',
+      date: '2025-01-15',
       shippingAddress: '456 Oak Ave, City, State 67890'
     },
     {
@@ -53,7 +53,7 @@ const SellerOrders = () => {
       items: 3,
       total: 45.00,
       status: 'Delivered',
-      date: '2024-01-14',
+      date: '2025-01-14',
       shippingAddress: '789 Pine St, City, State 11111'
     },
     {
@@ -63,7 +63,7 @@ const SellerOrders = () => {
       items: 1,
       total: 78.25,
       status: 'Cancelled',
-      date: '2024-01-14',
+      date: '2025-01-14',
       shippingAddress: '321 Elm St, City, State 22222'
     }
   ];

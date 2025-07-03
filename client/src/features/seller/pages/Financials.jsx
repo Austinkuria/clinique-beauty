@@ -29,7 +29,7 @@ const SellerFinancials = () => {
     pendingPayouts: 2340.75,
     thisMonthRevenue: 4280.30,
     lastPayout: 12150.00,
-    payoutDate: '2024-01-01'
+    payoutDate: '2025-01-01'
   };
 
   const transactions = [
@@ -39,7 +39,7 @@ const SellerFinancials = () => {
       amount: 89.99,
       commission: 8.99,
       net: 81.00,
-      date: '2024-01-15',
+      date: '2025-01-15',
       status: 'Pending'
     },
     {
@@ -48,7 +48,7 @@ const SellerFinancials = () => {
       amount: 156.50,
       commission: 15.65,
       net: 140.85,
-      date: '2024-01-15',
+      date: '2025-01-15',
       status: 'Pending'
     },
     {
@@ -57,7 +57,7 @@ const SellerFinancials = () => {
       amount: 12150.00,
       commission: 0,
       net: 12150.00,
-      date: '2024-01-01',
+      date: '2025-01-01',
       status: 'Completed'
     }
   ];
@@ -169,7 +169,7 @@ const SellerFinancials = () => {
               Payouts are processed on the 1st and 15th of each month for earnings from the previous period.
             </Typography>
             <Typography variant="body2" color="text.secondary" paragraph>
-              Next payout: <strong>February 1st, 2024</strong>
+              Next payout: <strong>February 1st, 2025</strong>
             </Typography>
             <Button variant="outlined" size="small">
               View Payout Settings
