@@ -19,6 +19,7 @@ import searchRoutes from './routes/searchRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import mpesaRoutes from './routes/mpesaRoutes.js';
 import sellerRoutes from './routes/sellerRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 import { clerkMiddleware } from './middleware/clerkMiddleware.js';
 import { corsMiddleware } from './middleware/corsMiddleware.js';
@@ -122,7 +123,9 @@ app.get('/', (req, res) => {
       '/api/orders',
       '/api/search',
       '/api/users',
-      '/api/mpesa'
+      '/api/mpesa',
+      '/api/categories',
+      '/api/tags'
     ]
   });
 });
@@ -149,6 +152,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/users', clerkMiddleware, userRoutes);
 app.use('/api/mpesa', mpesaRoutes);
 app.use('/api/seller', clerkMiddleware, sellerRoutes);
+app.use('/api', categoryRoutes);
 
 // Add a documentation route
 app.get('/api/docs', (req, res) => {
