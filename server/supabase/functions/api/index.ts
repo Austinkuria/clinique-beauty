@@ -3595,6 +3595,138 @@ serve(async (req: Request) => {
             );
         }
 
+        // --- GET /api/categories ---
+        if (req.method === 'GET' && route[0] === 'categories' && route.length === 1) {
+            console.log('[Route Handler GET /api/categories] Fetching all categories');
+            
+            try {
+                const { data: categories, error } = await supabase
+                    .from('categories')
+                    .select('id, name, description, created_at, updated_at')
+                    .order('name', { ascending: true });
+
+                if (error) {
+                    console.error('[Route Handler GET /api/categories] Error fetching categories:', error);
+                    return new Response(
+                        JSON.stringify({ error: 'Failed to fetch categories', details: error.message }),
+                        { headers, status: 500 }
+                    );
+                }
+
+                console.log(`[Route Handler GET /api/categories] Found ${categories?.length || 0} categories`);
+                return new Response(JSON.stringify(categories || []), { headers, status: 200 });
+            } catch (error) {
+                console.error('[Route Handler GET /api/categories] Unexpected error:', error);
+                return new Response(
+                    JSON.stringify({ error: 'Failed to fetch categories', details: error?.message }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+
+        // --- GET /api/tags ---
+        if (req.method === 'GET' && route[0] === 'tags' && route.length === 1) {
+            console.log('[Route Handler GET /api/tags] Fetching all tags');
+            
+            try {
+                const { data: tags, error } = await supabase
+                    .from('tags')
+                    .select('id, name, description, created_at, updated_at')
+                    .order('name', { ascending: true });
+
+                if (error) {
+                    console.error('[Route Handler GET /api/tags] Error fetching tags:', error);
+                    return new Response(
+                        JSON.stringify({ error: 'Failed to fetch tags', details: error.message }),
+                        { headers, status: 500 }
+                    );
+                }
+
+                console.log(`[Route Handler GET /api/tags] Found ${tags?.length || 0} tags`);
+                return new Response(JSON.stringify(tags || []), { headers, status: 200 });
+            } catch (error) {
+                console.error('[Route Handler GET /api/tags] Unexpected error:', error);
+                return new Response(
+                    JSON.stringify({ error: 'Failed to fetch tags', details: error?.message }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+
+        // --- GET /api/categories/:id ---
+        if (req.method === 'GET' && route[0] === 'categories' && route.length === 2) {
+            const categoryId = route[1];
+            console.log(`[Route Handler GET /api/categories/${categoryId}] Fetching category by ID`);
+            
+            try {
+                const { data: category, error } = await supabase
+                    .from('categories')
+                    .select('id, name, description, created_at, updated_at')
+                    .eq('id', categoryId)
+                    .single();
+
+                if (error) {
+                    console.error(`[Route Handler GET /api/categories/${categoryId}] Error fetching category:`, error);
+                    if (error.code === 'PGRST116') {
+                        return new Response(
+                            JSON.stringify({ error: 'Category not found' }),
+                            { headers, status: 404 }
+                        );
+                    }
+                    return new Response(
+                        JSON.stringify({ error: 'Failed to fetch category', details: error.message }),
+                        { headers, status: 500 }
+                    );
+                }
+
+                console.log(`[Route Handler GET /api/categories/${categoryId}] Found category:`, category.name);
+                return new Response(JSON.stringify(category), { headers, status: 200 });
+            } catch (error) {
+                console.error(`[Route Handler GET /api/categories/${categoryId}] Unexpected error:`, error);
+                return new Response(
+                    JSON.stringify({ error: 'Failed to fetch category', details: error?.message }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+
+        // --- GET /api/tags/:id ---
+        if (req.method === 'GET' && route[0] === 'tags' && route.length === 2) {
+            const tagId = route[1];
+            console.log(`[Route Handler GET /api/tags/${tagId}] Fetching tag by ID`);
+            
+            try {
+                const { data: tag, error } = await supabase
+                    .from('tags')
+                    .select('id, name, description, created_at, updated_at')
+                    .eq('id', tagId)
+                    .single();
+
+                if (error) {
+                    console.error(`[Route Handler GET /api/tags/${tagId}] Error fetching tag:`, error);
+                    if (error.code === 'PGRST116') {
+                        return new Response(
+                            JSON.stringify({ error: 'Tag not found' }),
+                            { headers, status: 404 }
+                        );
+                    }
+                    return new Response(
+                        JSON.stringify({ error: 'Failed to fetch tag', details: error.message }),
+                        { headers, status: 500 }
+                    );
+                }
+
+                console.log(`[Route Handler GET /api/tags/${tagId}] Found tag:`, tag.name);
+                return new Response(JSON.stringify(tag), { headers, status: 200 });
+            } catch (error) {
+                console.error(`[Route Handler GET /api/tags/${tagId}] Unexpected error:`, error);
+                return new Response(
+                    JSON.stringify({ error: 'Failed to fetch tag', details: error?.message }),
+                    { headers, status: 500 }
+                );
+            }
+        }
+
         // --- Fallback for unhandled routes ---
         console.warn(`[Route Handler] Route not found: ${req.method} ${url.pathname}`);
         return new Response(JSON.stringify({ message: 'Route not found' }), { headers, status: 404 });

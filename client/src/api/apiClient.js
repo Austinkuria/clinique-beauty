@@ -387,6 +387,21 @@ export const useSellerApi = () => {
     return response;
   }, [fetchWithAuth]);
 
+  // Categories and Tags Management
+  const getCategories = useCallback(async () => {
+    console.log('[apiClient] Fetching categories from Supabase Function: /categories');
+    const response = await fetchWithAuth('/categories');
+    console.log('[apiClient] Categories response:', response);
+    return response;
+  }, [fetchWithAuth]);
+
+  const getTags = useCallback(async () => {
+    console.log('[apiClient] Fetching tags from Supabase Function: /tags');
+    const response = await fetchWithAuth('/tags');
+    console.log('[apiClient] Tags response:', response);
+    return response;
+  }, [fetchWithAuth]);
+
   return {
     loading,
     error,
@@ -398,7 +413,10 @@ export const useSellerApi = () => {
     getSellerProducts,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    // Categories & Tags
+    getCategories,
+    getTags
   };
 };
 

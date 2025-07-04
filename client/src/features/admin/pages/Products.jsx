@@ -832,13 +832,14 @@ function AdminProducts() {
                     }}
                 >
                     <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} md={3}>
+                        <Grid item xs={12} sm={12} md={4} lg={3}>
                             <TextField
                                 fullWidth
                                 variant="outlined"
                                 placeholder="Search products..."
                                 value={search}
                                 onChange={handleSearchChange}
+                                size="small"
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
@@ -848,7 +849,7 @@ function AdminProducts() {
                                 }}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6} md={2}>
+                        <Grid item xs={12} sm={6} md={2} lg={2}>
                             <FormControl fullWidth size="small">
                                 <InputLabel id="category-filter-label">Category</InputLabel>
                                 <Select
@@ -860,7 +861,8 @@ function AdminProducts() {
                                         PaperProps: {
                                             style: {
                                                 maxHeight: 300,
-                                                width: 250,
+                                                width: 'auto',
+                                                minWidth: 250,
                                             },
                                         },
                                     }}
@@ -874,7 +876,7 @@ function AdminProducts() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6} md={2}>
+                        <Grid item xs={12} sm={6} md={2} lg={1.5}>
                             <FormControl fullWidth size="small">
                                 <InputLabel id="tag-filter-label">Tag</InputLabel>
                                 <Select
@@ -886,7 +888,8 @@ function AdminProducts() {
                                         PaperProps: {
                                             style: {
                                                 maxHeight: 300,
-                                                width: 200,
+                                                width: 'auto',
+                                                minWidth: 200,
                                             },
                                         },
                                     }}
@@ -900,7 +903,7 @@ function AdminProducts() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6} md={2}>
+                        <Grid item xs={12} sm={6} md={2} lg={1.5}>
                             <FormControl fullWidth size="small">
                                 <InputLabel id="status-filter-label">Status</InputLabel>
                                 <Select
@@ -912,7 +915,8 @@ function AdminProducts() {
                                         PaperProps: {
                                             style: {
                                                 maxHeight: 300,
-                                                width: 180,
+                                                width: 'auto',
+                                                minWidth: 180,
                                             },
                                         },
                                     }}
@@ -926,7 +930,7 @@ function AdminProducts() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6} md={2}>
+                        <Grid item xs={12} sm={6} md={2} lg={1.5}>
                             <FormControl fullWidth size="small">
                                 <InputLabel id="approval-filter-label">Approval</InputLabel>
                                 <Select
@@ -938,7 +942,8 @@ function AdminProducts() {
                                         PaperProps: {
                                             style: {
                                                 maxHeight: 300,
-                                                width: 180,
+                                                width: 'auto',
+                                                minWidth: 180,
                                             },
                                         },
                                     }}
@@ -952,12 +957,16 @@ function AdminProducts() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6} md={1}>
+                        <Grid item xs={12} sm={6} md={1} lg={1.5}>
                             <Button
                                 variant="outlined"
                                 startIcon={<ClearIcon />}
                                 onClick={handleClearFilters}
-                                sx={{ width: '100%', minWidth: '80px' }}
+                                sx={{ 
+                                    width: '100%', 
+                                    minWidth: '100px',
+                                    height: '40px'
+                                }}
                                 size="small"
                             >
                                 Clear
@@ -965,8 +974,8 @@ function AdminProducts() {
                         </Grid>
                     </Grid>
                     <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-                        <Grid item xs={12} md={3}>
-                            <FormControl component="fieldset">
+                        <Grid item xs={12} sm={6} md={4} lg={3}>
+                            <FormControl component="fieldset" fullWidth>
                                 <FormControlLabel
                                     control={
                                         <Switch
@@ -975,69 +984,73 @@ function AdminProducts() {
                                             color="primary"
                                         />
                                     }
-                                    label="Featured Only"
+                                    label="Featured Products Only"
+                                    sx={{ width: '100%' }}
                                 />
                             </FormControl>
                         </Grid>
-                        {selectedProducts.length > 0 && (
-                            <Grid item xs={12} md={9} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <Typography variant="body2" sx={{ mr: 2, alignSelf: 'center' }}>
-                                    {selectedProducts.length} selected
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    onClick={handleBulkActionClick}
-                                    endIcon={<ExpandMoreIcon />}
-                                >
-                                    Bulk Actions
-                                </Button>
-                                <Menu
-                                    anchorEl={bulkActionAnchorEl}
-                                    open={Boolean(bulkActionAnchorEl)}
-                                    onClose={handleBulkActionClose}
-                                >
-                                    <MenuItem onClick={() => handleBulkFeature(true)}>
-                                        <ListItemIcon>
-                                            <StarIcon fontSize="small" />
-                                        </ListItemIcon>
-                                        <ListItemText>Mark as Featured</ListItemText>
-                                    </MenuItem>
-                                    <MenuItem onClick={() => handleBulkFeature(false)}>
-                                        <ListItemIcon>
-                                            <StarBorderIcon fontSize="small" />
-                                        </ListItemIcon>
-                                        <ListItemText>Remove from Featured</ListItemText>
-                                    </MenuItem>
-                                    <Divider />
-                                    <MenuItem onClick={() => handleBulkApprovalStatus('Approved')}>
-                                        <ListItemIcon>
-                                            <CheckCircleIcon fontSize="small" color="success" />
-                                        </ListItemIcon>
-                                        <ListItemText>Approve</ListItemText>
-                                    </MenuItem>
-                                    <MenuItem onClick={() => handleBulkApprovalStatus('Pending')}>
-                                        <ListItemIcon>
-                                            <PendingIcon fontSize="small" color="warning" />
-                                        </ListItemIcon>
-                                        <ListItemText>Mark as Pending</ListItemText>
-                                    </MenuItem>
-                                    <MenuItem onClick={() => handleBulkApprovalStatus('Rejected')}>
-                                        <ListItemIcon>
-                                            <CancelIcon fontSize="small" color="error" />
-                                        </ListItemIcon>
-                                        <ListItemText>Reject</ListItemText>
-                                    </MenuItem>
-                                    <Divider />
-                                    <MenuItem onClick={handleBulkDelete}>
-                                        <ListItemIcon>
-                                            <DeleteIcon fontSize="small" color="error" />
-                                        </ListItemIcon>
-                                        <ListItemText>Delete</ListItemText>
-                                    </MenuItem>
-                                </Menu>
-                            </Grid>
-                        )}
+                        <Grid item xs={12} sm={6} md={8} lg={9}>
+                            {selectedProducts.length > 0 && (
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%' }}>
+                                    <Typography variant="body2" sx={{ mr: 2, alignSelf: 'center' }}>
+                                        {selectedProducts.length} products selected
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={handleBulkActionClick}
+                                        endIcon={<ExpandMoreIcon />}
+                                        size="small"
+                                    >
+                                        Bulk Actions
+                                    </Button>
+                                    <Menu
+                                        anchorEl={bulkActionAnchorEl}
+                                        open={Boolean(bulkActionAnchorEl)}
+                                        onClose={handleBulkActionClose}
+                                    >
+                                        <MenuItem onClick={() => handleBulkFeature(true)}>
+                                            <ListItemIcon>
+                                                <StarIcon fontSize="small" />
+                                            </ListItemIcon>
+                                            <ListItemText>Mark as Featured</ListItemText>
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleBulkFeature(false)}>
+                                            <ListItemIcon>
+                                                <StarBorderIcon fontSize="small" />
+                                            </ListItemIcon>
+                                            <ListItemText>Remove from Featured</ListItemText>
+                                        </MenuItem>
+                                        <Divider />
+                                        <MenuItem onClick={() => handleBulkApprovalStatus('Approved')}>
+                                            <ListItemIcon>
+                                                <CheckCircleIcon fontSize="small" color="success" />
+                                            </ListItemIcon>
+                                            <ListItemText>Approve</ListItemText>
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleBulkApprovalStatus('Pending')}>
+                                            <ListItemIcon>
+                                                <PendingIcon fontSize="small" color="warning" />
+                                            </ListItemIcon>
+                                            <ListItemText>Mark as Pending</ListItemText>
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleBulkApprovalStatus('Rejected')}>
+                                            <ListItemIcon>
+                                                <CancelIcon fontSize="small" color="error" />
+                                            </ListItemIcon>
+                                            <ListItemText>Reject</ListItemText>
+                                        </MenuItem>
+                                        <Divider />
+                                        <MenuItem onClick={handleBulkDelete}>
+                                            <ListItemIcon>
+                                                <DeleteIcon fontSize="small" color="error" />
+                                            </ListItemIcon>
+                                            <ListItemText>Delete</ListItemText>
+                                        </MenuItem>
+                                    </Menu>
+                                </Box>
+                            )}
+                        </Grid>
                     </Grid>
                 </Paper>
                 
