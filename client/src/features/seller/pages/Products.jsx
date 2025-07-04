@@ -64,12 +64,9 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useSellerApi } from '../../../api/apiClient';
+import { useCategories, useTags } from '../../../hooks/useAutoRefreshData';
 import defaultProductImage from '../../../assets/images/placeholder.webp';
 import { debugSellerProducts } from '../../../debug/sellerProductsDebug';
-import { API_BASE_URL } from '../../../debug-api-config';
-
-// Import API base URL for direct fetch calls - fallback for categories/tags
-const FALLBACK_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const SellerProducts = () => {
   const navigate = useNavigate();
@@ -134,11 +131,20 @@ const SellerProducts = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   
-  // Dynamic categories and tags from API
-  const [categories, setCategories] = useState([]);
-  const [tags, setTags] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [tagsLoading, setTagsLoading] = useState(true);
+  // Auto-refreshing categories and tags from API
+  const { 
+    data: categories, 
+    loading: categoriesLoading, 
+    error: categoriesError,
+    refetch: refetchCategories 
+  } = useCategories(sellerApi);
+  
+  const { 
+    data: tags, 
+    loading: tagsLoading, 
+    error: tagsError,
+    refetch: refetchTags 
+  } = useTags(sellerApi);
 
   // Track if we've already fetched products to prevent multiple calls
   const hasFetchedRef = useRef(false);
@@ -284,155 +290,34 @@ const SellerProducts = () => {
     };
   }, []); // Empty dependency array - only run once on mount
 
-  // Load categories from API
+  // Handle categories/tags errors with snackbar notifications
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setCategoriesLoading(true);
-        console.log('Loading categories from API...');
-        
-        // Try using the seller API first, then fallback to direct fetch
-        try {
-          const categoriesData = await sellerApi.getCategories();
-          console.log('Loaded categories via API:', categoriesData);
-          setCategories(categoriesData);
-          return; // Success, exit early
-        } catch (apiError) {
-          console.log('API method failed, trying direct fetch...', apiError);
-        }
-        
-        // Fallback to direct fetch - try main API first, then fallback
-        let response;
-        try {
-          response = await fetch(`${API_BASE_URL}/categories`);
-        } catch (error) {
-          console.log('Primary API failed, trying fallback...', error);
-          response = await fetch(`${FALLBACK_API_BASE_URL}/categories`);
-        }
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch categories: ${response.statusText}`);
-        }
-        
-        const categoriesData = await response.json();
-        console.log('Loaded categories via direct fetch:', categoriesData);
-        
-        setCategories(categoriesData);
-      } catch (error) {
-        console.error('Error loading categories:', error);
-        setSnackbar({
-          open: true,
-          message: `Failed to load categories: ${error.message}`,
-          severity: 'warning'
-        });
-        
-        // Fallback to hardcoded categories if API fails
-        setCategories([
-          { id: 1, name: 'Skincare' },
-          { id: 2, name: 'Makeup' },
-          { id: 3, name: 'Fragrance' },
-          { id: 4, name: 'Hair' },
-          { id: 5, name: 'Body' }
-        ]);
-      } finally {
-        setCategoriesLoading(false);
-      }
-    };
+    if (categoriesError) {
+      setSnackbar({
+        open: true,
+        message: `Failed to load categories: ${categoriesError.message}`,
+        severity: 'warning'
+      });
+    }
+  }, [categoriesError]);
 
-    loadCategories();
-  }, [sellerApi]); // Add sellerApi as dependency
-
-  // Load tags from API
   useEffect(() => {
-    const loadTags = async () => {
-      try {
-        setTagsLoading(true);
-        console.log('Loading tags from API...');
-        
-        // Try using the seller API first, then fallback to direct fetch
-        try {
-          const tagsData = await sellerApi.getTags();
-          console.log('Loaded tags via API:', tagsData);
-          setTags(tagsData);
-          return; // Success, exit early
-        } catch (apiError) {
-          console.log('API method failed, trying direct fetch...', apiError);
-        }
-        
-        // Fallback to direct fetch - try main API first, then fallback
-        let response;
-        try {
-          response = await fetch(`${API_BASE_URL}/tags`);
-        } catch (error) {
-          console.log('Primary API failed, trying fallback...', error);
-          response = await fetch(`${FALLBACK_API_BASE_URL}/tags`);
-        }
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch tags: ${response.statusText}`);
-        }
-        
-        const tagsData = await response.json();
-        console.log('Loaded tags via direct fetch:', tagsData);
-        
-        setTags(tagsData);
-      } catch (error) {
-        console.error('Error loading tags:', error);
-        setSnackbar({
-          open: true,
-          message: `Failed to load tags: ${error.message}`,
-          severity: 'warning'
-        });
-        
-        // Fallback to hardcoded tags if API fails
-        setTags([
-          { id: 1, name: 'New Arrival' },
-          { id: 2, name: 'Best Seller' },
-          { id: 3, name: 'Limited Edition' },
-          { id: 4, name: 'Sale' },
-          { id: 5, name: 'Organic' },
-          { id: 6, name: 'Vegan' }
-        ]);
-      } finally {
-        setTagsLoading(false);
-      }
-    };
-
-    loadTags();
-  }, [sellerApi]); // Add sellerApi as dependency
+    if (tagsError) {
+      setSnackbar({
+        open: true,
+        message: `Failed to load tags: ${tagsError.message}`,
+        severity: 'warning'
+      });
+    }
+  }, [tagsError]);
 
   // Refresh categories and tags (useful for when admin adds new ones)
   const refreshCategoriesAndTags = async () => {
     try {
-      // Try API methods first, then fallback to direct fetch
-      try {
-        const [categoriesData, tagsData] = await Promise.all([
-          sellerApi.getCategories(),
-          sellerApi.getTags()
-        ]);
-        setCategories(categoriesData);
-        setTags(tagsData);
-      } catch (apiError) {
-        console.log('API methods failed, trying direct fetch...', apiError);
-        
-        // Fallback to direct fetch
-        const responses = await Promise.allSettled([
-          fetch(`${API_BASE_URL}/categories`).catch(() => fetch(`${FALLBACK_API_BASE_URL}/categories`)),
-          fetch(`${API_BASE_URL}/tags`).catch(() => fetch(`${FALLBACK_API_BASE_URL}/tags`))
-        ]);
-        
-        // Process categories response
-        if (responses[0].status === 'fulfilled' && responses[0].value.ok) {
-          const categoriesData = await responses[0].value.json();
-          setCategories(categoriesData);
-        }
-        
-        // Process tags response
-        if (responses[1].status === 'fulfilled' && responses[1].value.ok) {
-          const tagsData = await responses[1].value.json();
-          setTags(tagsData);
-        }
-      }
+      await Promise.all([
+        refetchCategories(true), // Force refetch
+        refetchTags(true)
+      ]);
       
       setSnackbar({
         open: true,
@@ -1153,15 +1038,29 @@ const SellerProducts = () => {
         <Typography variant="h4" fontWeight="bold">
           My Products
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           <Button
             variant="outlined"
-            startIcon={<RefreshIcon />}
+            startIcon={
+              (categoriesLoading || tagsLoading) ? (
+                <CircularProgress size={16} />
+              ) : categoriesError || tagsError ? (
+                <ErrorIcon />
+              ) : (
+                <RefreshIcon />
+              )
+            }
             onClick={refreshCategoriesAndTags}
             size="small"
             disabled={categoriesLoading || tagsLoading}
+            color={categoriesError || tagsError ? 'error' : 'primary'}
           >
-            Refresh Data
+            {(categoriesLoading || tagsLoading) 
+              ? 'Syncing...' 
+              : (categoriesError || tagsError)
+                ? 'Retry Sync'
+                : 'Data Auto-Synced'
+            }
           </Button>
           <Button
             variant="contained"
