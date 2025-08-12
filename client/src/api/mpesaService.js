@@ -1,23 +1,12 @@
 import axios from 'axios';
+import { mpesaConfig } from '../config/env.js';
 
-// Determine the base URL based on environment
-const getBaseUrl = () => {
-  // Check if we're in production (Vercel)
-  if (import.meta.env.PROD) {
-    console.log('Using production API URL for M-Pesa');
-    // Use the Vercel URL with /api prefix
-    return window.location.origin + '/api';
-  } else {
-    console.log('Using development API URL for M-Pesa');
-    // Use localhost for development
-    return 'http://localhost:5000/api';
-  }
-};
+// Use the centralized configuration for M-Pesa API URL
+const BASE_URL = mpesaConfig.getApiUrl();
+console.log('M-Pesa Service initialized with BASE_URL:', BASE_URL);
+console.log('M-Pesa environment:', mpesaConfig.environment);
 
-// Base URLs - Use conditional URL based on environment
-const BASE_URL = getBaseUrl();
-
-// M-Pesa Endpoints
+// M-Pesa Endpoints (relative to BASE_URL which already includes /api)
 const ENDPOINTS = {
   GENERATE_TOKEN: '/mpesa/token',
   STK_PUSH: '/mpesa/stkpush',
@@ -36,7 +25,9 @@ const ENDPOINTS = {
  */
 export const initiateSTKPush = async (paymentData) => {
   try {
-    console.log(`Sending payment request to: ${BASE_URL}${ENDPOINTS.STK_PUSH}`);
+    const fullUrl = `${BASE_URL}${ENDPOINTS.STK_PUSH}`;
+    console.log(`Sending M-Pesa STK push request to: ${fullUrl}`);
+    console.log('M-Pesa API base URL:', BASE_URL);
     console.log('Payment data:', paymentData);
     
     // Format the phone number if needed
@@ -50,21 +41,55 @@ export const initiateSTKPush = async (paymentData) => {
       timestamp: new Date().toISOString()
     };
     
-    const response = await axios.post(`${BASE_URL}${ENDPOINTS.STK_PUSH}`, enhancedPaymentData, {
+    const response = await axios.post(fullUrl, enhancedPaymentData, {
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 10000 // 10 second timeout
     });
     
     console.log('STK push response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error initiating STK push:', error);
+    
+    // Enhanced error handling
     if (error.response) {
       console.error('Response data:', error.response.data);
       console.error('Response status:', error.response.status);
+      console.error('Response headers:', error.response.headers);
+      
+      // If we get a 405 Method Not Allowed or 404 Not Found, it means M-Pesa endpoints aren't available
+      if (error.response.status === 405 || error.response.status === 404) {
+        console.warn('M-Pesa endpoints not available. Providing fallback response.');
+        
+        // In development, provide a mock success response for testing
+        if (import.meta.env.DEV) {
+          return {
+            success: true,
+            message: 'DEV MODE: M-Pesa STK Push simulated',
+            checkoutRequestId: `mock_${Date.now()}`,
+            merchantRequestId: `mock_merchant_${Date.now()}`,
+            responseDescription: 'Mock STK push initiated successfully',
+            responseCode: '0'
+          };
+        }
+        
+        // In production, return a helpful error
+        throw new Error('M-Pesa payment service is currently unavailable. Please try another payment method or contact support.');
+      }
+      
+      // For other errors, throw with the response message
+      throw new Error(error.response?.data?.message || `M-Pesa service error: ${error.response.status}`);
+    } else if (error.request) {
+      // Network error
+      console.error('Network error:', error.request);
+      throw new Error('Unable to connect to M-Pesa service. Please check your internet connection and try again.');
+    } else {
+      // Other error
+      console.error('Error setting up request:', error.message);
+      throw new Error(error.message || 'Failed to initiate M-Pesa payment');
     }
-    throw new Error(error.response?.data?.message || 'Failed to initiate M-Pesa payment');
   }
 };
 
@@ -75,20 +100,67 @@ export const initiateSTKPush = async (paymentData) => {
  */
 export const querySTKStatus = async (checkoutRequestId) => {
   try {
-    console.log(`Checking payment status at: ${BASE_URL}${ENDPOINTS.QUERY_STATUS}`);
+    const fullUrl = `${BASE_URL}${ENDPOINTS.QUERY_STATUS}`;
+    console.log(`Checking M-Pesa payment status at: ${fullUrl}`);
+    console.log('M-Pesa API base URL:', BASE_URL);
     console.log('Checkout request ID:', checkoutRequestId);
     
-    const response = await axios.post(`${BASE_URL}${ENDPOINTS.QUERY_STATUS}`, {
+    // If this is a mock checkout request ID from development, return mock success
+    if (checkoutRequestId.startsWith('mock_')) {
+      console.log('Mock checkout request detected, returning simulated success');
+      return {
+        success: true,
+        ResultCode: 0,
+        ResultDesc: 'Mock payment completed successfully',
+        checkoutRequestId: checkoutRequestId,
+        responseCode: '0'
+      };
+    }
+    
+    const response = await axios.post(fullUrl, {
       checkoutRequestId,
       environment: import.meta.env.PROD ? 'production' : 'development',
       timestamp: new Date().toISOString()
+    }, {
+      timeout: 10000 // 10 second timeout
     });
     
     console.log('Status response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error querying STK status:', error);
-    throw new Error(error.response?.data?.message || 'Failed to check payment status');
+    
+    // Enhanced error handling
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      
+      // If endpoints aren't available
+      if (error.response.status === 405 || error.response.status === 404) {
+        console.warn('M-Pesa status endpoint not available.');
+        
+        // If it's a mock request, return success
+        if (checkoutRequestId.startsWith('mock_')) {
+          return {
+            success: true,
+            ResultCode: 0,
+            ResultDesc: 'Mock payment completed successfully',
+            checkoutRequestId: checkoutRequestId,
+            responseCode: '0'
+          };
+        }
+        
+        // For real requests in production, return error
+        throw new Error('M-Pesa status service is currently unavailable.');
+      }
+      
+      throw new Error(error.response?.data?.message || `M-Pesa status check failed: ${error.response.status}`);
+    } else if (error.request) {
+      // Network error
+      throw new Error('Unable to connect to M-Pesa status service. Please check your internet connection.');
+    } else {
+      throw new Error(error.message || 'Failed to check payment status');
+    }
   }
 };
 
