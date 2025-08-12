@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { ThemeContext } from '../context/ThemeContext';
+import { formatCurrency } from '../utils/helpers';
 import {
     Container,
     Typography,
@@ -177,7 +178,7 @@ function CartPage() {
                                             )}
                                             {/* Safely access price */}
                                             <Typography variant="body1" sx={{ color: colorValues.primary, fontWeight: 500, my: 0.5 }}>
-                                                ${typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
+                                                {typeof item.price === 'number' ? formatCurrency(item.price) : 'N/A'}
                                             </Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', alignItems: 'center', mr: 2, position: 'relative' }}>
@@ -244,7 +245,7 @@ function CartPage() {
                                             )}
                                         </Box>
                                         <Typography variant="body1" sx={{ fontWeight: 500, minWidth: '80px', textAlign: 'right', mr: 2 }}>
-                                            ${itemSubtotal.toFixed(2)}
+                                            {formatCurrency(itemSubtotal)}
                                         </Typography>
                                         <IconButton
                                             edge="end"
@@ -281,7 +282,7 @@ function CartPage() {
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                     <Typography>Subtotal ({cartItemCount} items)</Typography>
                                     {/* Ensure cartTotal is calculated correctly */}
-                                    <Typography sx={{ fontWeight: 500 }}>${cartTotal.toFixed(2)}</Typography>
+                                    <Typography sx={{ fontWeight: 500 }}>{formatCurrency(cartTotal)}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                                     <Typography>Shipping</Typography>
@@ -290,7 +291,7 @@ function CartPage() {
                                 <Divider sx={{ my: 2 }} />
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                                     <Typography variant="h6" sx={{ fontWeight: 600 }}>Total</Typography>
-                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>${cartTotal.toFixed(2)}</Typography>
+                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>{formatCurrency(cartTotal)}</Typography>
                                 </Box>
                                 <Button
                                     variant="contained"

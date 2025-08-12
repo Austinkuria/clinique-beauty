@@ -42,7 +42,7 @@ export const banners = [
   {
     id: 'ban-003',
     title: 'Free Shipping',
-    subtitle: 'On all orders over $50',
+    subtitle: 'On all orders over Ksh3,500',
     imageUrl: '/images/banners/free-shipping.jpg',
     mobileImageUrl: '/images/banners/mobile/free-shipping.jpg',
     link: '/shipping',

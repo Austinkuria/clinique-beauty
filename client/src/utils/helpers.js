@@ -21,13 +21,19 @@ export function debounce(func, wait) {
 }
 
 /**
- * Formats a number as a currency string
+ * Formats a number as currency (Kenyan Shillings)
  * 
  * @param {number} value The value to format
- * @param {string} currency The currency code (default: 'USD')
+ * @param {string} currency The currency code (default: 'KES' for Kenyan Shillings)
  * @return {string} The formatted currency string
  */
-export function formatCurrency(value, currency = 'USD') {
+export function formatCurrency(value, currency = 'KES') {
+    // For Kenyan Shillings, use a custom format since KES might not be fully supported everywhere
+    if (currency === 'KES') {
+        return `Ksh${Number(value).toFixed(2)}`;
+    }
+    
+    // For other currencies, use Intl.NumberFormat
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency

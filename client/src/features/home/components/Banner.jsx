@@ -12,7 +12,7 @@ function Banner() {
 
     // Banner promotion messages
     const promos = [
-        { text: "FREE SHIPPING on orders over $50", link: "/products" },
+        { text: "FREE SHIPPING on orders over Ksh3,500", link: "/products" },
         { text: "NEW ARRIVALS: Summer Collection 2025", link: "/collections/summer" },
         { text: "Limited Time: 20% OFF all skincare products", link: "/products/skincare" },
     ];

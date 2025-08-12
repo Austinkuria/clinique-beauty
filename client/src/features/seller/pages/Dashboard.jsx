@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatCurrency } from '../../../utils/helpers';
 import {
   Box,
   Grid,
@@ -121,7 +122,7 @@ const SellerDashboard = () => {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
-        label: 'Revenue ($)',
+        label: 'Revenue (Ksh)',
         data: [2400, 2800, 3200, 2900, 3500, 4200],
         borderColor: theme.palette.primary.main,
         backgroundColor: `${theme.palette.primary.main}20`,
@@ -217,7 +218,7 @@ const SellerDashboard = () => {
                     Total Revenue
                   </Typography>
                   <Typography variant="h5" fontWeight="bold">
-                    ${dashboardData.metrics.totalRevenue.toLocaleString()}
+                    {formatCurrency(dashboardData.metrics.totalRevenue)}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                     <TrendingUpIcon color="success" sx={{ fontSize: 16, mr: 0.5 }} />
@@ -389,7 +390,7 @@ const SellerDashboard = () => {
                             {order.customer}
                           </Typography>
                           <Typography variant="body2" fontWeight="bold">
-                            ${order.amount}
+                            {formatCurrency(order.amount)}
                           </Typography>
                         </Box>
                       }
@@ -433,7 +434,7 @@ const SellerDashboard = () => {
                             {product.sales} sales
                           </Typography>
                           <Typography variant="body2" fontWeight="bold">
-                            ${product.revenue.toLocaleString()}
+                            {formatCurrency(product.revenue)}
                           </Typography>
                         </Box>
                       }

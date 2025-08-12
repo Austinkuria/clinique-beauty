@@ -111,7 +111,7 @@ function RevenueAnalytics() {
                 <Grid item xs={12} sm={6} md={4}>
                     <StatCard 
                         title="Average Order Value" 
-                        value={`$${(stats.revenue.total / stats.orders.total).toFixed(2)}`} 
+                        value={`$Ksh{(stats.revenue.total / stats.orders.total).toFixed(2)}`} 
                         icon={<AttachMoney />} 
                         color="info"
                     />
@@ -153,7 +153,7 @@ function RevenueAnalytics() {
                                         } 
                                     />
                                     <YAxis />
-                                    <RechartsTooltip formatter={(value) => [`$${value}`, 'Revenue']} />
+                                    <RechartsTooltip formatter={(value) => [`$Ksh{value}`, 'Revenue']} />
                                     <Legend />
                                     <Line 
                                         type="monotone" 
@@ -200,7 +200,7 @@ function RevenueAnalytics() {
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="month" />
                                     <YAxis />
-                                    <RechartsTooltip formatter={(value) => [`$${value}`, value === null ? 'No Data Yet' : 'Revenue']} />
+                                    <RechartsTooltip formatter={(value) => [`$Ksh{value}`, value === null ? 'No Data Yet' : 'Revenue']} />
                                     <Legend />
                                     <Bar 
                                         dataKey="actual" 

@@ -351,7 +351,7 @@ function Cart() {
                   {/* Use itemCount from context */}
                   <Typography>Subtotal ({itemCount} items)</Typography>
                   {/* Use cartTotal from context */}
-                  <Typography sx={{ fontWeight: 500 }}>${cartTotal.toFixed(2)}</Typography>
+                  <Typography sx={{ fontWeight: 500 }}>Ksh{cartTotal.toFixed(2)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography>Shipping</Typography>
