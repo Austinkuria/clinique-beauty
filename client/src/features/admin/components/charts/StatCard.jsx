@@ -29,7 +29,7 @@ const StatCard = ({ title, value, icon, color, percentChange }) => {
                 <Box>
                     <Typography variant="subtitle2" color="textSecondary">{title}</Typography>
                     <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold' }}>
-                        {title.includes('Revenue') || title.includes('Value') || title.includes('Total') ? formatCurrency(value) : value.toLocaleString()}
+                        {title.includes('Revenue') || title.includes('Value') || title.includes('Total Revenue') || title.includes('Sales') || title.includes('Earnings') ? formatCurrency(value) : value.toLocaleString()}
                     </Typography>
                     
                     {percentChange && (
