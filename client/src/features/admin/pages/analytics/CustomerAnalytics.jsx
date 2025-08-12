@@ -13,6 +13,7 @@ import {
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../../context/ThemeContext';
 import { useApi } from '../../../../api/apiClient';
+import { formatCurrency } from '../../../../utils/helpers';
 import StatCard from '../../components/charts/StatCard';
 import {
     AreaChart,
@@ -90,7 +91,7 @@ function CustomerAnalytics() {
                 <Grid item xs={12} sm={6} md={4}>
                     <StatCard 
                         title="Average Order Value" 
-                        value={`$${(stats.revenue.total / stats.orders.total).toFixed(2)}`} 
+                        value={formatCurrency(stats.revenue.total / stats.orders.total)} 
                         icon={<CustomerIcon />} 
                         color="info"
                     />

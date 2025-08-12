@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { ThemeContext } from '../../../../context/ThemeContext';
 import { useApi } from '../../../../api/apiClient';
+import { formatCurrency } from '../../../../utils/helpers';
 import GeographicalChart from '../../components/charts/GeographicalChart';
 import StatCard from '../../components/charts/StatCard';
 import { Public as GlobeIcon, Language as RegionIcon, Flag as CountryIcon } from '@mui/icons-material';
@@ -59,7 +60,7 @@ function GeographicalAnalytics() {
                 <Grid item xs={12} sm={6} md={4}>
                     <StatCard 
                         title="Total International Revenue" 
-                        value={`$${totalInternationalRevenue.toLocaleString()}`} 
+                        value={formatCurrency(totalInternationalRevenue)} 
                         icon={<GlobeIcon />} 
                         color="primary"
                     />

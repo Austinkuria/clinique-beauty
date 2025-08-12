@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { Public as GlobeIcon } from '@mui/icons-material';
 import { ThemeContext } from '../../../../context/ThemeContext';
+import { formatCurrency } from '../../../../utils/helpers';
 import {
     BarChart,
     Bar,
@@ -66,9 +67,9 @@ const GeographicalChart = ({ geographicalData }) => {
                                     <TableRow key={country.country} hover>
                                         <TableCell>{country.country}</TableCell>
                                         <TableCell align="right">{country.sales}</TableCell>
-                                        <TableCell align="right">${country.revenue.toLocaleString()}</TableCell>
+                                        <TableCell align="right">{formatCurrency(country.revenue)}</TableCell>
                                         <TableCell align="right">
-                                            ${(country.revenue / country.sales).toFixed(2)}
+                                            {formatCurrency(country.revenue / country.sales)}
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -104,7 +105,7 @@ const GeographicalChart = ({ geographicalData }) => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis type="number" />
                             <YAxis dataKey="country" type="category" width={100} />
-                            <RechartsTooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']} />
+                            <RechartsTooltip formatter={(value) => [formatCurrency(value), 'Revenue']} />
                             <Legend />
                             <Bar dataKey="revenue" fill={colorValues.primary} name="Revenue" />
                         </BarChart>

@@ -21,6 +21,7 @@ import {
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../../context/ThemeContext';
 import { useApi } from '../../../../api/apiClient';
+import { formatCurrency } from '../../../../utils/helpers';
 import StatCard from '../../components/charts/StatCard';
 import {
     PieChart,
@@ -227,7 +228,7 @@ function ProductAnalytics() {
                                 <TableRow key={product.id} hover>
                                     <TableCell>{product.name}</TableCell>
                                     <TableCell align="right">{product.sales}</TableCell>
-                                    <TableCell align="right">${product.revenue.toLocaleString()}</TableCell>
+                                    <TableCell align="right">{formatCurrency(product.revenue)}</TableCell>
                                     <TableCell align="right">
                                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                                             {product.growth > 0 ? (

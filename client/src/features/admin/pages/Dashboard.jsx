@@ -858,10 +858,6 @@ function AdminDashboard() {
                 <Typography variant="body2" sx={{ mt: 1 }}>
                     All admin routes are accessible through the sidebar or navigation cards above.
                 </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                    If you're having trouble accessing a specific feature, please check the routes.jsx file 
-                    to ensure the route is properly configured.
-                </Typography>
             </Paper>
         </Box>
     );
