@@ -176,7 +176,8 @@ export const useAdminApi = () => {
     error,
     // Dashboard
     getDashboardData,
-    // Users    getUsers,
+    // Users
+    getUsers,
     getUserDetails,
     updateUserRole,    // Products
     getProducts,
@@ -191,18 +192,7 @@ export const useAdminApi = () => {
   };
 };
 
-// Helper function to get the Express server URL (for seller operations)
-const getExpressServerUrl = () => {
-  // In production, use the same API base URL without the /api suffix
-  if (import.meta.env.PROD) {
-    return API_BASE_URL.replace('/api', '');
-  }
-  
-  // In development, use the Express server URL or localhost fallback
-  const expressUrl = import.meta.env.VITE_EXPRESS_SERVER_URL || 'http://localhost:5000';
-  console.log('[apiClient] Using Express server URL for seller operations:', expressUrl);
-  return expressUrl;
-};
+// Helper functions removed - getApiServerUrl was unused
 
 // Seller API for authenticated seller requests
 // Updated: 2025-06-27 - Modified to use Supabase Functions instead of direct Express server
@@ -443,7 +433,7 @@ console.log('Environment check:', {
 console.log('DIRECT_API_URL value:', DIRECT_API_URL);
 console.log('SUPABASE_FUNCTIONS_BASE value:', SUPABASE_FUNCTIONS_BASE);
 
-// Use direct API URL if available, otherwise construct it
+// Use direct API URL if available, otherwise construct it from Supabase URL
 const constructApiBaseUrl = () => {
   // First try the direct API URL from env
   if (DIRECT_API_URL) {
@@ -456,16 +446,22 @@ const constructApiBaseUrl = () => {
   if (!SUPABASE_FUNCTIONS_BASE) {
     console.warn('SUPABASE_FUNCTIONS_BASE is not defined, checking fallbacks...');
     
-    // Check if we have VITE_SUPABASE_URL to construct from
+    // Always try to use VITE_SUPABASE_URL to construct the functions URL
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (supabaseUrl && import.meta.env.PROD) {
+    if (supabaseUrl) {
       const fallbackUrl = `${supabaseUrl}/functions/v1/api`;
       console.log('Using fallback Supabase functions URL:', fallbackUrl);
       return fallbackUrl;
     }
     
-    console.warn('Falling back to localhost - this should only happen in development');
-    return `http://localhost:5000/api`; // Fallback to Express server
+    // Only fall back to localhost in development if no Supabase URL is available
+    if (import.meta.env.DEV) {
+      console.warn('DEV MODE: Falling back to localhost - ensure your .env file has VITE_SUPABASE_URL set');
+      return `http://localhost:5000/api`;
+    }
+    
+    // In production, this should never happen
+    throw new Error('No Supabase URL configured. Please set VITE_API_URL or VITE_SUPABASE_URL in your environment variables.');
   }
   
   // Remove trailing slash if present
@@ -624,7 +620,7 @@ const _request = async (method, endpoint, body = null, requiresAuth = true) => {
             let errorData;
             try {
                 errorData = await response.json();
-            } catch (_) { // Changed 'e' to '_' to mark as intentionally unused
+            } catch { // Removed unused parameter
                 errorData = { message: `HTTP error ${response.status}: ${response.statusText}` };
             }
             console.error(`API Client Error: ${method} ${endpoint} failed with status ${response.status}`, errorData);
@@ -969,107 +965,42 @@ const formatCartItem = (item) => {
 
 // Add a syncUser method to the API client
 const syncUser = async (userData) => {
-  console.log("Syncing user data to server:", userData);
+  console.log("Syncing user data to Supabase:", userData);
+  
   try {
-    // First, check if we're in development with a running Express server
-    let expressSuccess = false;
+    // Use the _request method which uses API_BASE_URL (Supabase functions)
+    console.log("Using Supabase function for user sync");
     
-    if (import.meta.env.DEV) {
-      try {
-        const expressUrl = `${getExpressServerUrl()}/api/users/sync`;
-        console.log("Attempting direct Express endpoint for user sync:", expressUrl);
-        
-        const headers = new Headers({ 'Content-Type': 'application/json' });
-        if (clerkGetToken) {
-          const token = await clerkGetToken();
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-        
-        // First try the Express server with a short timeout
-        const response = await fetch(expressUrl, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(userData),
-          signal: AbortSignal.timeout(3000) // 3 second timeout
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log("User sync successful via Express server:", data);
-          expressSuccess = true;
-          return data;
-        }
-      } catch (expressError) {
-        console.warn("Express server not available, falling back to Supabase function:", expressError.message);
-      }
-    }
+    // Delay a bit to ensure Clerk token is ready
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    if (!expressSuccess) {
-      // Fallback to Supabase function
-      console.log("Using Supabase function for user sync");
-      
-      // Use the _request method which uses API_BASE_URL
+    // Try the request with explicit token
+    const token = await clerkGetToken();
+    const supabaseApiUrl = `${API_BASE_URL}/users/sync`;
+    console.log(`Making direct fetch to ${supabaseApiUrl} with token`);
+    
+    const response = await fetch(supabaseApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(userData)
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log("User sync successful with direct fetch:", data);
+      return data;
+    } else {
+      console.error(`User sync failed with status ${response.status}`);
       try {
-        // Delay a bit to ensure Clerk token is ready
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Try the request with explicit token
-        const token = await clerkGetToken();
-        const supabaseApiUrl = `${API_BASE_URL}/users/sync`;
-        console.log(`Making direct fetch to ${supabaseApiUrl} with token`);
-        
-        const response = await fetch(supabaseApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(userData)
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log("User sync successful with direct fetch:", data);
-          return data;
-        } else {
-          console.error(`User sync failed with status ${response.status}`);
-          try {
-            const errorData = await response.json();
-            console.error("Error response:", errorData);
-          } catch (e) {
-            console.error("Could not parse error response");
-          }
-          throw new Error(`User sync failed with status ${response.status}`);
-        }
-      } catch (directFetchError) {
-        console.error("Direct fetch for user sync failed:", directFetchError);
-        
-        try {
-          console.log("Attempting standard _request method as fallback");
-          const supabaseResponse = await _request('POST', '/users/sync', userData, true);
-          console.log("User sync successful via standard _request:", supabaseResponse);
-          return supabaseResponse;
-        } catch (supabaseError) {
-          console.error("Supabase function user sync failed:", supabaseError);
-          
-          // Simulated success response for development only
-          if (import.meta.env.DEV) {
-            console.log("DEV MODE: Returning simulated success response");
-            return {
-              success: true,
-              data: {
-                id: "simulated-id",
-                clerk_id: userData.clerkId,
-                email: userData.email,
-                name: userData.name,
-                simulated: true
-              }
-            };
-          }
-          
-          throw supabaseError;
-        }
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+      } catch {
+        console.error("Could not parse error response");
       }
+      throw new Error(`User sync failed with status ${response.status}`);
     }
   } catch (error) {
     console.error("User sync failed:", error);
@@ -1183,12 +1114,6 @@ export const api = {
     clearCart,
     // Helper function for components
     formatCartItem,
-    // Add createProduct method
-    createProduct: async (formData) => {
-        // Endpoint is /products, as API_BASE_URL handles the /api prefix.
-        // This assumes the backend route is POST /api/products and requires authentication.
-        return _request('POST', '/products', formData, true);
-    },
     // ... other existing methods
     updateUserRole,
     syncUser,
@@ -1247,17 +1172,25 @@ export const api = {
         throw error;
       }
     },
-    getUserDetails: async (userId) => {
+    getUserDetails: async () => {
       // Implementation for getting a specific user's details
+      // TODO: Implement user details fetching
+      throw new Error("getUserDetails not implemented yet");
     },
-    verifyUser: async (userId) => {
+    verifyUser: async () => {
       // Implementation for verifying a user
+      // TODO: Implement user verification
+      throw new Error("verifyUser not implemented yet");
     },
-    suspendUser: async (userId) => {
+    suspendUser: async () => {
       // Implementation for suspending a user
+      // TODO: Implement user suspension
+      throw new Error("suspendUser not implemented yet");
     },
-    activateUser: async (userId) => {
+    activateUser: async () => {
       // Implementation for activating a user
+      // TODO: Implement user activation
+      throw new Error("activateUser not implemented yet");
     },
     importProducts: async (formData) => { // Exposing importProducts via global api object as well
         if (!(formData instanceof FormData)) {
