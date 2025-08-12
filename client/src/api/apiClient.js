@@ -193,10 +193,13 @@ export const useAdminApi = () => {
 
 // Helper function to get the Express server URL (for seller operations)
 const getExpressServerUrl = () => {
-  const expressUrl = import.meta.env.VITE_EXPRESS_SERVER_URL || 
-                     (import.meta.env.PROD ? 
-                      API_BASE_URL.replace('/api', '') : 
-                      'http://localhost:5000');
+  // In production, use the same API base URL without the /api suffix
+  if (import.meta.env.PROD) {
+    return API_BASE_URL.replace('/api', '');
+  }
+  
+  // In development, use the Express server URL or localhost fallback
+  const expressUrl = import.meta.env.VITE_EXPRESS_SERVER_URL || 'http://localhost:5000';
   console.log('[apiClient] Using Express server URL for seller operations:', expressUrl);
   return expressUrl;
 };
