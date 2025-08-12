@@ -6,9 +6,12 @@
 export const getApiUrl = () => {
   // In production (Vercel deployment)
   if (import.meta.env.PROD) {
-    // Check if we have VITE_API_URL, otherwise use the Vercel deployment URL
+    // Check if we have VITE_API_URL (Supabase functions URL)
     return import.meta.env.VITE_API_URL || 
-           (window.location.origin + '/api');
+           // Fallback to constructing Supabase functions URL
+           (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ? 
+            `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/api` : 
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api`);
   }
   
   // In development, use localhost
@@ -22,9 +25,14 @@ export const mpesaConfig = {
   
   // Get API URL for M-Pesa requests
   getApiUrl: () => {
-    // In production, prefer a direct, proxied path from the current domain
+    // In production, use Supabase functions
     if (import.meta.env.PROD) {
-      return window.location.origin + '/api/mpesa';
+      // Use the same API base URL + mpesa path
+      const baseApiUrl = import.meta.env.VITE_API_URL || 
+                         (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ? 
+                          `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/api` : 
+                          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api`);
+      return `${baseApiUrl}/mpesa`;
     }
     
     // In development, use localhost

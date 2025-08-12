@@ -428,7 +428,10 @@ const SUPABASE_FUNCTIONS_BASE = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
 console.log('Environment check:', {
   VITE_API_URL: import.meta.env.VITE_API_URL,
   VITE_SUPABASE_FUNCTIONS_URL: import.meta.env.VITE_SUPABASE_FUNCTIONS_URL,
-  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL
+  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+  PROD: import.meta.env.PROD,
+  DEV: import.meta.env.DEV,
+  MODE: import.meta.env.MODE
 });
 
 // Use direct API URL if available, otherwise construct it
@@ -442,7 +445,17 @@ const constructApiBaseUrl = () => {
   console.log('constructApiBaseUrl called with SUPABASE_FUNCTIONS_BASE:', SUPABASE_FUNCTIONS_BASE);
   
   if (!SUPABASE_FUNCTIONS_BASE) {
-    console.warn('SUPABASE_FUNCTIONS_BASE is not defined, falling back to localhost');
+    console.warn('SUPABASE_FUNCTIONS_BASE is not defined, checking fallbacks...');
+    
+    // Check if we have VITE_SUPABASE_URL to construct from
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (supabaseUrl && import.meta.env.PROD) {
+      const fallbackUrl = `${supabaseUrl}/functions/v1/api`;
+      console.log('Using fallback Supabase functions URL:', fallbackUrl);
+      return fallbackUrl;
+    }
+    
+    console.warn('Falling back to localhost - this should only happen in development');
     return `http://localhost:5000/api`; // Fallback to Express server
   }
   
