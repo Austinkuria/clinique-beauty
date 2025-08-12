@@ -4,18 +4,19 @@
 
 // API URL configuration
 export const getApiUrl = () => {
-  // In production (Vercel deployment)
+  // In production (Vercel deployment), ALWAYS use Supabase
   if (import.meta.env.PROD) {
-    // Check if we have VITE_API_URL (Supabase functions URL)
+    // Priority: VITE_API_URL > construct from VITE_SUPABASE_FUNCTIONS_URL > construct from VITE_SUPABASE_URL > hardcoded fallback
     return import.meta.env.VITE_API_URL || 
-           // Fallback to constructing Supabase functions URL
            (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ? 
             `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/api` : 
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api`);
+            (import.meta.env.VITE_SUPABASE_URL ? 
+             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api` :
+             'https://zdbfjwienzjdjpawcnuc.supabase.co/functions/v1/api')); // Final hardcoded fallback
   }
   
-  // In development, use localhost
-  return 'http://localhost:5000/api';
+  // In development, prefer Supabase if configured, otherwise localhost
+  return import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 };
 
 // M-Pesa configuration
@@ -25,18 +26,21 @@ export const mpesaConfig = {
   
   // Get API URL for M-Pesa requests
   getApiUrl: () => {
-    // In production, use Supabase functions
+    // In production, ALWAYS use Supabase functions
     if (import.meta.env.PROD) {
       // Use the same API base URL + mpesa path
       const baseApiUrl = import.meta.env.VITE_API_URL || 
                          (import.meta.env.VITE_SUPABASE_FUNCTIONS_URL ? 
                           `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/api` : 
-                          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api`);
+                          (import.meta.env.VITE_SUPABASE_URL ?
+                           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api` :
+                           'https://zdbfjwienzjdjpawcnuc.supabase.co/functions/v1/api')); // Final hardcoded fallback
       return `${baseApiUrl}/mpesa`;
     }
     
-    // In development, use localhost
-    return 'http://localhost:5000/api/mpesa';
+    // In development, prefer Supabase if configured, otherwise localhost
+    const baseApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    return `${baseApiUrl}/mpesa`;
   },
   
   // Default test phone number for sandbox

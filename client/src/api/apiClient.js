@@ -435,7 +435,38 @@ console.log('SUPABASE_FUNCTIONS_BASE value:', SUPABASE_FUNCTIONS_BASE);
 
 // Use direct API URL if available, otherwise construct it from Supabase URL
 const constructApiBaseUrl = () => {
-  // First try the direct API URL from env
+  // In production, FORCE Supabase URL and ignore localhost
+  if (import.meta.env.PROD) {
+    // Priority: VITE_API_URL (but only if it's not localhost) > construct from other env vars > hardcoded fallback
+    if (DIRECT_API_URL && !DIRECT_API_URL.includes('localhost')) {
+      console.log('Using direct API URL from VITE_API_URL (production):', DIRECT_API_URL);
+      return DIRECT_API_URL;
+    }
+    
+    // If VITE_API_URL is localhost or missing, use other env vars
+    if (SUPABASE_FUNCTIONS_BASE) {
+      const baseUrl = SUPABASE_FUNCTIONS_BASE.replace(/\/$/, '');
+      const apiUrl = baseUrl.includes('/functions/v1') ? 
+        `${baseUrl}/api` : `${baseUrl}/functions/v1/api`;
+      console.log('Constructed API URL from SUPABASE_FUNCTIONS_BASE (production):', apiUrl);
+      return apiUrl;
+    }
+    
+    // Construct from VITE_SUPABASE_URL
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (supabaseUrl) {
+      const fallbackUrl = `${supabaseUrl}/functions/v1/api`;
+      console.log('Using fallback Supabase functions URL (production):', fallbackUrl);
+      return fallbackUrl;
+    }
+    
+    // Final hardcoded fallback for production
+    const hardcodedUrl = 'https://zdbfjwienzjdjpawcnuc.supabase.co/functions/v1/api';
+    console.warn('PRODUCTION: Using hardcoded Supabase URL as final fallback:', hardcodedUrl);
+    return hardcodedUrl;
+  }
+  
+  // Development logic (unchanged)
   if (DIRECT_API_URL) {
     console.log('Using direct API URL from VITE_API_URL:', DIRECT_API_URL);
     return DIRECT_API_URL;
