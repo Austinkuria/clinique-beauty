@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import toast from 'react-hot-toast';
 import { ThemeContext } from "../../context/ThemeContext.jsx";
+import { formatCurrency } from "../../utils/helpers";
 import { useCart } from "../../context/CartContext";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import AddIcon from '@mui/icons-material/Add';
@@ -696,7 +697,7 @@ function ProductDetail() {
                             </Box>
 
                             <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: colorValues.primary }}>
-                                ${product.price.toFixed(2)}
+                                {formatCurrency(product.price)}
                             </Typography>
 
                             <Typography variant="body1" sx={{ mb: 3 }}>

@@ -63,6 +63,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import { ThemeContext } from '../../../context/ThemeContext';
+import { formatCurrency } from '../../../utils/helpers';
 import { useSellerApi } from '../../../api/apiClient';
 import { useCategories, useTags } from '../../../hooks/useAutoRefreshData';
 import defaultProductImage from '../../../assets/images/placeholder.webp';
@@ -914,7 +915,7 @@ const SellerProducts = () => {
                     
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="h6" color="primary.main">
-                        ${product.price}
+                        {formatCurrency(product.price)}
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <StockIcon fontSize="small" color="action" />
@@ -990,7 +991,7 @@ const SellerProducts = () => {
                       </Box>
                     </TableCell>
                     <TableCell>{product.category}</TableCell>
-                    <TableCell>${product.price}</TableCell>
+                    <TableCell>{formatCurrency(product.price)}</TableCell>
                     <TableCell>{product.stock}</TableCell>
                     <TableCell>
                       <Chip

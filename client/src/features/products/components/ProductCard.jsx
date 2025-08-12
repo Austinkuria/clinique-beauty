@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Card, CardMedia, CardContent, CardActions, Rating, CircularProgress } from '@mui/material';
 import { ThemeContext } from '../../../context/ThemeContext';
+import { formatCurrency } from '../../../utils/helpers';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useCart } from '../../../context/CartContext'; // Import useCart
 // Update path to use the general placeholder image
@@ -104,8 +105,8 @@ function ProductCard({ product }) {
                         </Typography>
                     </Box>
                     <Typography variant="h6" sx={{ fontWeight: 600, color: colorValues.primary }}>
-                        {/* Ensure price is a number before calling toFixed */}
-                        ${typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A'}
+                        {/* Use formatCurrency for consistent Kenyan Shillings formatting */}
+                        {typeof product.price === 'number' ? formatCurrency(product.price) : 'N/A'}
                     </Typography>
                 </CardContent>
                 <CardActions sx={{ p: 2, pt: 0 }}>
