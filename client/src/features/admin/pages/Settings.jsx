@@ -39,7 +39,7 @@ function TabPanel(props) {
 }
 
 function AdminSettings() {
-    const { theme, toggleTheme } = useContext(ThemeContext);
+    const { theme, themeVariant, themeVariants, toggleTheme, changeThemeVariant } = useContext(ThemeContext);
     const [tabValue, setTabValue] = useState(0);
     const [siteTitle, setSiteTitle] = useState('');
     const [adminEmail, setAdminEmail] = useState('');
@@ -289,6 +289,87 @@ function AdminSettings() {
                                 </Typography>
                             </Paper>
                         </Grid>
+                        
+                        {/* Color Theme Variants */}
+                        <Grid item xs={12}>
+                            <Divider sx={{ my: 2 }} />
+                            <Typography variant="h6" gutterBottom>
+                                Color Themes
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary" paragraph>
+                                Choose your preferred color scheme for the application.
+                            </Typography>
+                        </Grid>
+                        
+                        {Object.entries(themeVariants).map(([key, variant]) => (
+                            <Grid item xs={12} sm={6} md={4} key={key}>
+                                <Paper
+                                    elevation={theme === 'dark' ? 3 : 1}
+                                    sx={{
+                                        borderRadius: 2,
+                                        p: 2,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        cursor: 'pointer',
+                                        border: themeVariant === key ? `2px solid ${variant[theme].primary}` : '2px solid transparent',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            transform: 'translateY(-3px)',
+                                            boxShadow: theme === 'dark' ? '0 8px 16px rgba(0,0,0,0.4)' : '0 8px 16px rgba(0,0,0,0.1)'
+                                        }
+                                    }}
+                                    onClick={() => changeThemeVariant(key)}
+                                >
+                                    {/* Color Preview */}
+                                    <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                                        <Box 
+                                            sx={{ 
+                                                width: 24, 
+                                                height: 24, 
+                                                borderRadius: '50%',
+                                                bgcolor: variant[theme].primary,
+                                                boxShadow: 1
+                                            }} 
+                                        />
+                                        <Box 
+                                            sx={{ 
+                                                width: 24, 
+                                                height: 24, 
+                                                borderRadius: '50%',
+                                                bgcolor: variant[theme].secondary,
+                                                boxShadow: 1
+                                            }} 
+                                        />
+                                        <Box 
+                                            sx={{ 
+                                                width: 24, 
+                                                height: 24, 
+                                                borderRadius: '50%',
+                                                bgcolor: variant[theme].accent,
+                                                boxShadow: 1
+                                            }} 
+                                        />
+                                    </Box>
+                                    
+                                    <Typography 
+                                        variant="subtitle1" 
+                                        sx={{ 
+                                            fontWeight: themeVariant === key ? 'bold' : 'medium',
+                                            color: themeVariant === key ? variant[theme].primary : 'inherit'
+                                        }}
+                                    >
+                                        {variant.name}
+                                    </Typography>
+                                    
+                                    {themeVariant === key && (
+                                        <Typography variant="caption" color="primary">
+                                            Active
+                                        </Typography>
+                                    )}
+                                </Paper>
+                            </Grid>
+                        ))}
                         
                         <Grid item xs={12}>
                             <Divider sx={{ my: 2 }} />

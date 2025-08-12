@@ -8,36 +8,148 @@ export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
     const [mode, setMode] = useState('light');
+    const [themeVariant, setThemeVariant] = useState('pink'); // New theme variant state
 
-    // Common color palette for both Tailwind and MUI
-    const colorPalette = {
-        light: {
-            primary: '#e91e63',          // Main pink
-            primaryLight: '#f48fb1',      // Lighter pink
-            primaryDark: '#c2185b',       // Darker pink
-            secondary: '#9c27b0',        // Purple
-            secondaryLight: '#ba68c8',    // Lighter purple
-            bgDefault: '#fafafa',        // Light background
-            bgPaper: '#ffffff',          // White paper background
-            textPrimary: '#212121',      // Nearly black text
-            textSecondary: '#757575',    // Dark gray text
-            navbarBg: '#ffffff',         // White navbar
-            buttonHover: 'rgba(233,30,99,0.08)', // Pink hover with opacity
+    // Load saved theme preferences on initialization
+    useEffect(() => {
+        const savedMode = localStorage.getItem('themeMode');
+        const savedVariant = localStorage.getItem('themeVariant');
+        
+        if (savedMode && (savedMode === 'light' || savedMode === 'dark')) {
+            setMode(savedMode);
+        }
+        
+        if (savedVariant && ['pink', 'purple', 'blue', 'green', 'orange'].includes(savedVariant)) {
+            setThemeVariant(savedVariant);
+        }
+    }, []); // Empty dependency array to run only on mount
+
+    // Predefined theme variants with their color schemes
+    const themeVariants = {
+        pink: {
+            name: 'Pink Beauty',
+            light: {
+                primary: '#e91e63',
+                primaryLight: '#f48fb1',
+                primaryDark: '#c2185b',
+                secondary: '#9c27b0',
+                secondaryLight: '#ba68c8',
+                accent: '#ff4081',
+            },
+            dark: {
+                primary: '#f48fb1',
+                primaryLight: '#f8bbd0',
+                primaryDark: '#c2185b',
+                secondary: '#ce93d8',
+                secondaryLight: '#e1bee7',
+                accent: '#ff4081',
+            }
         },
-        dark: {
-            primary: '#f48fb1',          // Lighter pink for dark mode
-            primaryLight: '#f8bbd0',      // Even lighter pink
-            primaryDark: '#c2185b',      // Darker pink
-            secondary: '#ce93d8',        // Light purple
-            secondaryLight: '#e1bee7',   // Even lighter purple
-            bgDefault: '#121212',        // Dark background
-            bgPaper: '#1e1e1e',          // Slightly lighter dark paper
-            textPrimary: '#ffffff',      // White text
-            textSecondary: '#b0b0b0',    // Light gray text
-            navbarBg: '#1e1e1e',         // Dark navbar
-            buttonHover: 'rgba(244,143,177,0.15)', // Pink hover with opacity
+        purple: {
+            name: 'Royal Purple',
+            light: {
+                primary: '#9c27b0',
+                primaryLight: '#ba68c8',
+                primaryDark: '#7b1fa2',
+                secondary: '#673ab7',
+                secondaryLight: '#9575cd',
+                accent: '#e040fb',
+            },
+            dark: {
+                primary: '#ce93d8',
+                primaryLight: '#e1bee7',
+                primaryDark: '#ab47bc',
+                secondary: '#b39ddb',
+                secondaryLight: '#c5cae9',
+                accent: '#e040fb',
+            }
+        },
+        blue: {
+            name: 'Ocean Blue',
+            light: {
+                primary: '#2196f3',
+                primaryLight: '#64b5f6',
+                primaryDark: '#1976d2',
+                secondary: '#03dac6',
+                secondaryLight: '#4dd0e1',
+                accent: '#40c4ff',
+            },
+            dark: {
+                primary: '#64b5f6',
+                primaryLight: '#90caf9',
+                primaryDark: '#42a5f5',
+                secondary: '#4dd0e1',
+                secondaryLight: '#80deea',
+                accent: '#40c4ff',
+            }
+        },
+        green: {
+            name: 'Nature Green',
+            light: {
+                primary: '#4caf50',
+                primaryLight: '#81c784',
+                primaryDark: '#388e3c',
+                secondary: '#8bc34a',
+                secondaryLight: '#aed581',
+                accent: '#64dd17',
+            },
+            dark: {
+                primary: '#81c784',
+                primaryLight: '#a5d6a7',
+                primaryDark: '#66bb6a',
+                secondary: '#aed581',
+                secondaryLight: '#c8e6c9',
+                accent: '#64dd17',
+            }
+        },
+        orange: {
+            name: 'Sunset Orange',
+            light: {
+                primary: '#ff9800',
+                primaryLight: '#ffb74d',
+                primaryDark: '#f57c00',
+                secondary: '#ff5722',
+                secondaryLight: '#ff8a65',
+                accent: '#ff6f00',
+            },
+            dark: {
+                primary: '#ffb74d',
+                primaryLight: '#ffcc02',
+                primaryDark: '#ffa726',
+                secondary: '#ff8a65',
+                secondaryLight: '#ffab91',
+                accent: '#ff6f00',
+            }
         }
     };
+
+    // Common color palette for both Tailwind and MUI
+    const getColorPalette = (currentMode, variant) => {
+        const variantColors = themeVariants[variant][currentMode];
+        return {
+            [currentMode]: {
+                ...variantColors,
+                bgDefault: currentMode === 'light' ? '#fafafa' : '#121212',
+                bgPaper: currentMode === 'light' ? '#ffffff' : '#1e1e1e',
+                textPrimary: currentMode === 'light' ? '#212121' : '#ffffff',
+                textSecondary: currentMode === 'light' ? '#757575' : '#b0b0b0',
+                navbarBg: currentMode === 'light' ? '#ffffff' : '#1e1e1e',
+                buttonHover: currentMode === 'light' ? 
+                    `rgba(${hexToRgb(variantColors.primary)}, 0.08)` : 
+                    `rgba(${hexToRgb(variantColors.primary)}, 0.15)`,
+            }
+        };
+    };
+
+    // Helper function to convert hex to rgb
+    const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? 
+            `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+            '0, 0, 0';
+    };
+
+    const colorPalette = getColorPalette(mode, themeVariant);
 
     // Tailwind theme definitions
     const tailwindThemes = {
@@ -156,11 +268,17 @@ export const ThemeProvider = ({ children }) => {
     // Save theme to localStorage when it changes
     useEffect(() => {
         localStorage.setItem('themeMode', mode);
-    }, [mode]);
+        localStorage.setItem('themeVariant', themeVariant);
+    }, [mode, themeVariant]);
 
     // Toggle between light and dark modes
     const toggleTheme = () => {
         setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+    };
+
+    // Change theme variant
+    const changeThemeVariant = (variant) => {
+        setThemeVariant(variant);
     };
 
     // Get current MUI theme
@@ -171,9 +289,12 @@ export const ThemeProvider = ({ children }) => {
         <ThemeContext.Provider
             value={{
                 theme: mode,
+                themeVariant,
+                themeVariants,
                 colors: tailwindThemes[mode],
                 colorValues: colorPalette[mode], // Provide direct color values for MUI styling
                 toggleTheme,
+                changeThemeVariant,
                 muiTheme
             }}
         >
