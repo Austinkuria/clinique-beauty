@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { LocationOn as LocationIcon } from '@mui/icons-material';
 import { ThemeContext } from '../../../../context/ThemeContext';
+import { formatCurrency } from '../../../../utils/helpers';
 
 const RecentOrdersList = ({ orders, maxItems = 8 }) => {
     const { colorValues } = useContext(ThemeContext);
@@ -28,7 +29,7 @@ const RecentOrdersList = ({ orders, maxItems = 8 }) => {
                         <ListItemText
                             primary={
                                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                    {order.id} - ${order.total}
+                                    {order.id} - {formatCurrency(order.total)}
                                 </Typography>
                             }
                             secondary={

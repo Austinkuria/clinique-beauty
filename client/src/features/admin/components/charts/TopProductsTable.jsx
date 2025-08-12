@@ -14,6 +14,7 @@ import {
     TrendingDown as TrendingDownIcon
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../../context/ThemeContext';
+import { formatCurrency } from '../../../../utils/helpers';
 
 const TopProductsTable = ({ products, maxItems = 5 }) => {
     const { colorValues } = useContext(ThemeContext);
@@ -37,7 +38,7 @@ const TopProductsTable = ({ products, maxItems = 5 }) => {
                         <TableRow key={product.id} hover>
                             <TableCell>{product.name}</TableCell>
                             <TableCell align="right">{product.sales}</TableCell>
-                            <TableCell align="right">${product.revenue.toLocaleString()}</TableCell>
+                            <TableCell align="right">{formatCurrency(product.revenue)}</TableCell>
                             <TableCell align="right">
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                                     {product.growth > 0 ? (

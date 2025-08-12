@@ -5,6 +5,7 @@ import {
     TrendingDown as TrendingDownIcon 
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../../context/ThemeContext';
+import { formatCurrency } from '../../../../utils/helpers';
 
 const StatCard = ({ title, value, icon, color, percentChange }) => {
     const { theme, colorValues } = useContext(ThemeContext);
@@ -28,7 +29,7 @@ const StatCard = ({ title, value, icon, color, percentChange }) => {
                 <Box>
                     <Typography variant="subtitle2" color="textSecondary">{title}</Typography>
                     <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold' }}>
-                        {title.includes('Revenue') ? `$${value.toLocaleString()}` : value.toLocaleString()}
+                        {title.includes('Revenue') || title.includes('Value') || title.includes('Total') ? formatCurrency(value) : value.toLocaleString()}
                     </Typography>
                     
                     {percentChange && (
