@@ -2,6 +2,8 @@ import React, { useContext } from 'react';
 import ReactDOM from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
 import { ThemeProvider, ThemeContext } from './context/ThemeContext.jsx';
+// Debug environment variables in production
+import './debug-env.js';
 // Remove CartProvider and WishlistProvider imports again
 // import { CartProvider } from './context/CartContext.jsx';
 // import { WishlistProvider } from './context/WishlistContext.jsx';

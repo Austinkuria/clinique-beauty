@@ -129,7 +129,7 @@ function Footer() {
                             </ListItem>
                             <ListItem disablePadding className={`${colors?.footerText}`}>
                                 <Phone sx={{ mr: 1 }} />
-                                <ListItemText primary="(555) 123-4567" />
+                                <ListItemText primary="(+254) 797561978" />
                             </ListItem>
                             <ListItem disablePadding className={`${colors?.footerText}`}>
                                 <Email sx={{ mr: 1 }} />

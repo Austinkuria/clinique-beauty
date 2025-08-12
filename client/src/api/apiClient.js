@@ -193,7 +193,10 @@ export const useAdminApi = () => {
 
 // Helper function to get the Express server URL (for seller operations)
 const getExpressServerUrl = () => {
-  const expressUrl = import.meta.env.VITE_EXPRESS_SERVER_URL || 'http://localhost:5000';
+  const expressUrl = import.meta.env.VITE_EXPRESS_SERVER_URL || 
+                     (import.meta.env.PROD ? 
+                      API_BASE_URL.replace('/api', '') : 
+                      'http://localhost:5000');
   console.log('[apiClient] Using Express server URL for seller operations:', expressUrl);
   return expressUrl;
 };
@@ -434,6 +437,9 @@ console.log('Environment check:', {
   MODE: import.meta.env.MODE
 });
 
+console.log('DIRECT_API_URL value:', DIRECT_API_URL);
+console.log('SUPABASE_FUNCTIONS_BASE value:', SUPABASE_FUNCTIONS_BASE);
+
 // Use direct API URL if available, otherwise construct it
 const constructApiBaseUrl = () => {
   // First try the direct API URL from env
@@ -504,13 +510,6 @@ export const useInitializeApi = () => {
         clerkGetToken = getToken;
         console.log("API Client: Clerk getToken function initialized.");
     }
-};
-
-// For fallback mode, use Express server directly for user sync
-const useExpressServerDirectly = () => {
-  const endpoint = 'http://localhost:5000';
-  console.log("Using Express server directly:", endpoint);
-  return endpoint;
 };
 
 // Add this function to handle products with missing data fields
@@ -974,7 +973,7 @@ const syncUser = async (userData) => {
     
     if (import.meta.env.DEV) {
       try {
-        const expressUrl = `${useExpressServerDirectly()}/api/users/sync`;
+        const expressUrl = `${getExpressServerUrl()}/api/users/sync`;
         console.log("Attempting direct Express endpoint for user sync:", expressUrl);
         
         const headers = new Headers({ 'Content-Type': 'application/json' });
@@ -1204,7 +1203,7 @@ export const api = {
                 
                 // Try fetching from local server first
                 try {
-                    const response = await fetch(`http://localhost:5000/api/admin/dashboard?timeRange=${timeRange}`);
+                    const response = await fetch(`${API_BASE_URL}/admin/dashboard?timeRange=${timeRange}`);
                     if (response.ok) {
                         return await response.json();
                     }
