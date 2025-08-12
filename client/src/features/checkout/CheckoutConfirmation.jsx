@@ -153,7 +153,7 @@ const CheckoutConfirmation = () => {
             Your order is being processed. We'll send you a notification when your items are ready for shipping.
           </Typography>
           <Typography variant="body2">
-            For any questions about your order, please contact our customer service at support@cliniquebeauty.com or call us at (254) 700-123-456.
+            For any questions about your order, please contact our customer service at support@cliniquebeauty.com or call us at (254) 797561978
           </Typography>
         </CardContent>
       </Card>
