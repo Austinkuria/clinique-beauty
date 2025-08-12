@@ -11,6 +11,7 @@ import {
   TrendingUp as TrendingUpIcon,
   Warning as WarningIcon
 } from '@mui/icons-material';
+import { formatCurrency } from '../../../utils/helpers';
 
 const SellerPerformance = () => {
   const [sellers, setSellers] = useState([]);
@@ -154,7 +155,7 @@ const SellerPerformance = () => {
                         <Box sx={{ ml: 1 }}>({seller.rating})</Box>
                       </Box>
                     </TableCell>
-                    <TableCell>${seller.totalSales.toLocaleString()}</TableCell>
+                    <TableCell>{formatCurrency(seller.totalSales)}</TableCell>
                     <TableCell>{seller.ordersCompleted}</TableCell>
                     <TableCell>{seller.returnRate}%</TableCell>
                     <TableCell>{seller.responseTime} hrs</TableCell>
@@ -197,7 +198,7 @@ const SellerPerformance = () => {
                   <Grid item xs={12} md={3}>
                     <Card>
                       <CardContent sx={{ textAlign: 'center' }}>
-                        <Typography variant="h5">${selectedSeller.totalSales.toLocaleString()}</Typography>
+                        <Typography variant="h5">{formatCurrency(selectedSeller.totalSales)}</Typography>
                         <Typography color="textSecondary">Total Sales</Typography>
                       </CardContent>
                     </Card>

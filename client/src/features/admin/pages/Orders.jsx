@@ -98,6 +98,7 @@ import {
 } from '@mui/lab';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
+import { formatCurrency } from '../../../utils/helpers';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -716,7 +717,7 @@ function AdminOrders() {
         setReturnsData(updatedReturns);
         setSnackbar({
             open: true,
-            message: `Refund of $${refundAmount} processed for ${selectedReturn.id}`,
+            message: `Refund of ${formatCurrency(refundAmount)} processed for ${selectedReturn.id}`,
             severity: 'success'
         });
         
@@ -1047,7 +1048,7 @@ function AdminOrders() {
                                                     </Box>
                                                 </TableCell>
                                                 <TableCell>{order.date}</TableCell>
-                                                <TableCell align="right">${order.total.toFixed(2)}</TableCell>
+                                                <TableCell align="right">{formatCurrency(order.total)}</TableCell>
                                                 <TableCell>
                                                     <Chip 
                                                         label={order.status} 
@@ -1137,9 +1138,9 @@ function AdminOrders() {
                                                                                 {item.name}
                                                                             </TableCell>
                                                                             <TableCell align="right">{item.quantity}</TableCell>
-                                                                            <TableCell align="right">${item.price.toFixed(2)}</TableCell>
+                                                                            <TableCell align="right">{formatCurrency(item.price)}</TableCell>
                                                                             <TableCell align="right">
-                                                                                ${(item.price * item.quantity).toFixed(2)}
+                                                                                {formatCurrency(item.price * item.quantity)}
                                                                             </TableCell>
                                                                         </TableRow>
                                                                     ))}
@@ -1148,7 +1149,7 @@ function AdminOrders() {
                                                                             Total:
                                                                         </TableCell>
                                                                         <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                                                            ${order.total.toFixed(2)}
+                                                                            {formatCurrency(order.total)}
                                                                         </TableCell>
                                                                     </TableRow>
                                                                 </TableBody>
@@ -1267,7 +1268,7 @@ function AdminOrders() {
                                             </Box>
                                         </TableCell>
                                         <TableCell>{order.date}</TableCell>
-                                        <TableCell align="right">${order.total.toFixed(2)}</TableCell>
+                                        <TableCell align="right">{formatCurrency(order.total)}</TableCell>
                                         <TableCell>{order.items.length} items</TableCell>
                                         <TableCell align="center">
                                             <ButtonGroup variant="outlined" size="small">
@@ -1382,7 +1383,7 @@ function AdminOrders() {
                                             </Box>
                                         </TableCell>
                                         <TableCell>{order.date}</TableCell>
-                                        <TableCell align="right">${order.total.toFixed(2)}</TableCell>
+                                        <TableCell align="right">{formatCurrency(order.total)}</TableCell>
                                         <TableCell align="center">
                                             <ButtonGroup variant="outlined" size="small">
                                                 <Button
@@ -1504,7 +1505,7 @@ function AdminOrders() {
                                         <TableCell>{returnItem.customer}</TableCell>
                                         <TableCell>{returnItem.dateRequested}</TableCell>
                                         <TableCell>{returnItem.reason}</TableCell>
-                                        <TableCell align="right">${returnItem.total.toFixed(2)}</TableCell>
+                                        <TableCell align="right">{formatCurrency(returnItem.total)}</TableCell>
                                         <TableCell>
                                             <Chip 
                                                 label={returnItem.status} 
@@ -1751,7 +1752,7 @@ function AdminOrders() {
                                             <strong>Date:</strong> {selectedOrder.date}
                                         </Typography>
                                         <Typography variant="body2">
-                                            <strong>Total:</strong> ${selectedOrder.total.toFixed(2)}
+                                            <strong>Total:</strong> {formatCurrency(selectedOrder.total)}
                                         </Typography>
                                         <Typography variant="body2">
                                             <strong>Status:</strong> {selectedOrder.status}
@@ -1805,9 +1806,9 @@ function AdminOrders() {
                                                     <TableRow key={item.id}>
                                                         <TableCell>{item.name}</TableCell>
                                                         <TableCell align="right">{item.quantity}</TableCell>
-                                                        <TableCell align="right">${item.price.toFixed(2)}</TableCell>
+                                                        <TableCell align="right">{formatCurrency(item.price)}</TableCell>
                                                         <TableCell align="right">
-                                                            ${(item.price * item.quantity).toFixed(2)}
+                                                            {formatCurrency(item.price * item.quantity)}
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
@@ -1816,7 +1817,7 @@ function AdminOrders() {
                                                         Total:
                                                     </TableCell>
                                                     <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                                        ${selectedOrder.total.toFixed(2)}
+                                                        {formatCurrency(selectedOrder.total)}
                                                     </TableCell>
                                                 </TableRow>
                                             </TableBody>
@@ -1990,7 +1991,7 @@ function AdminOrders() {
                                         <strong>Customer:</strong> {selectedOrder.customer}
                                     </Typography>
                                     <Typography variant="body2">
-                                        <strong>Amount:</strong> ${selectedOrder.total.toFixed(2)}
+                                        <strong>Amount:</strong> {formatCurrency(selectedOrder.total)}
                                     </Typography>
                                     <Typography variant="body2">
                                         <strong>Date:</strong> {selectedOrder.date}
@@ -2269,11 +2270,11 @@ function AdminOrders() {
                                         Financial Summary
                                     </Typography>
                                     <Typography variant="body2">
-                                        <strong>Items Total:</strong> ${selectedReturn.total.toFixed(2)}
+                                        <strong>Items Total:</strong> {formatCurrency(selectedReturn.total)}
                                     </Typography>
                                     {selectedReturn.refundAmount && (
                                         <Typography variant="body2">
-                                            <strong>Refund Amount:</strong> ${selectedReturn.refundAmount.toFixed(2)}
+                                            <strong>Refund Amount:</strong> {formatCurrency(selectedReturn.refundAmount)}
                                         </Typography>
                                     )}
                                 </Grid>
@@ -2296,9 +2297,9 @@ function AdminOrders() {
                                                 <TableRow key={item.id}>
                                                     <TableCell>{item.name}</TableCell>
                                                     <TableCell align="right">{item.quantity}</TableCell>
-                                                    <TableCell align="right">${item.price.toFixed(2)}</TableCell>
+                                                    <TableCell align="right">{formatCurrency(item.price)}</TableCell>
                                                     <TableCell align="right">
-                                                        ${(item.price * item.quantity).toFixed(2)}
+                                                        {formatCurrency(item.price * item.quantity)}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -2307,7 +2308,7 @@ function AdminOrders() {
                                                     Total:
                                                 </TableCell>
                                                 <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                                    ${selectedReturn.total.toFixed(2)}
+                                                    {formatCurrency(selectedReturn.total)}
                                                 </TableCell>
                                             </TableRow>
                                         </TableBody>

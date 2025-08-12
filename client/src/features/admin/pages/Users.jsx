@@ -54,6 +54,7 @@ import {
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
+import { formatCurrency } from '../../../utils/helpers';
 import { toast } from 'react-hot-toast';
 import StatCard from '../components/charts/StatCard';
 import { mockDashboardData } from '../../../data/mockDashboardData';
@@ -692,7 +693,7 @@ function AdminUsers() {
                                             )}
                                         </TableCell>
                                         <TableCell align="right">{user.ordersCount || 0}</TableCell>
-                                        <TableCell align="right">${user.totalSpent?.toFixed(2) || '0.00'}</TableCell>
+                                        <TableCell align="right">{formatCurrency(user.totalSpent || 0)}</TableCell>
                                         <TableCell>
                                             <Chip 
                                                 label={user.status} 

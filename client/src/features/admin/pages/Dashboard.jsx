@@ -39,6 +39,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
+import { formatCurrency } from '../../../utils/helpers';
 import { 
     LineChart, 
     Line, 
@@ -351,12 +352,12 @@ function AdminDashboard() {
                                     <YAxis 
                                         tick={{ fill: colorValues.text }} 
                                         width={45}
-                                        tickFormatter={(value) => `$${value/1000}k`}
+                                        tickFormatter={(value) => formatCurrency(value/1000).replace('Ksh', 'Ksh ') + 'k'}
                                         domain={['auto', 'auto']}
                                         tickMargin={5}
                                     />
                                     <RechartsTooltip 
-                                        formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                                        formatter={(value) => [formatCurrency(value), 'Revenue']}
                                         contentStyle={{
                                             backgroundColor: colorValues.bgPaper,
                                             borderColor: colorValues.border,

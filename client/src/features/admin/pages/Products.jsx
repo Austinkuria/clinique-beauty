@@ -69,6 +69,7 @@ import {
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useAdminApi } from '../../../api/apiClient';
+import { formatCurrency } from '../../../utils/helpers';
 import defaultProductImage from '../../../assets/images/placeholder.webp';
 
 // Import mock data
@@ -1145,14 +1146,14 @@ function AdminProducts() {
                                                                     color: 'text.secondary',
                                                                     mr: 1
                                                                 }}                                                            >
-                                                                ${product.price ? product.price.toFixed(2) : '0.00'}
+                                                                {formatCurrency(product.price || 0)}
                                                             </Typography>
                                                             <Typography variant="body2" component="span" color="error">
-                                                                ${product.salePrice ? product.salePrice.toFixed(2) : '0.00'}
+                                                                {formatCurrency(product.salePrice || 0)}
                                                             </Typography>
                                                         </Box>                                                    ) : (
                                                         <Typography variant="body2">
-                                                            ${product.price ? product.price.toFixed(2) : '0.00'}
+                                                            {formatCurrency(product.price || 0)}
                                                         </Typography>
                                                     )}
                                                 </TableCell>                                                <TableCell align="right">{product.stock || 0}</TableCell>
