@@ -33,15 +33,14 @@ import {
 } from '@mui/icons-material';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
-// Import theme when needed
-// import { useTheme as useAppTheme } from '../../../context/ThemeContext';
+import { useContext } from 'react';
+import { ThemeContext } from '../../../context/ThemeContext';
 
 const drawerWidth = 260;
 
 const SellerLayout = () => {
   const theme = useMuiTheme();
-  // We can access app theme if needed later
-  // const appTheme = useAppTheme();
+  const { colorValues } = useContext(ThemeContext);
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useUser();
@@ -232,7 +231,7 @@ const SellerLayout = () => {
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           mt: '64px',
           minHeight: 'calc(100vh - 64px)',
-          bgcolor: theme.palette.grey[50],
+          bgcolor: colorValues.bgDefault,
         }}
       >
         <Outlet />

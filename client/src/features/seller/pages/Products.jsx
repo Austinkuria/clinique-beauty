@@ -945,7 +945,7 @@ const SellerProducts = () => {
 
   // Table view component
   const ProductTable = () => (
-    <TableContainer component={Paper}>
+    <TableContainer component={Paper} sx={{ bgcolor: colorValues.bgSecondary }}>
       <Table>
         <TableHead>
           <TableRow>
@@ -1127,7 +1127,7 @@ const SellerProducts = () => {
       </Grid>
 
       {/* Filters and Search */}
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper sx={{ p: 3, mb: 3, bgcolor: colorValues.bgSecondary }}>
         <Grid container spacing={3} alignItems="center">
           <Grid item xs={12} md={4}>
             <TextField
@@ -1215,7 +1215,7 @@ const SellerProducts = () => {
 
       {/* Products Display */}
       {filteredProducts.length === 0 && !loading ? (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
+        <Paper sx={{ p: 6, textAlign: 'center', bgcolor: colorValues.bgSecondary }}>
           {error ? (
             // Error state
             <>

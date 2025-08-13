@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { formatCurrency } from '../../../utils/helpers';
 import {
   Box,
@@ -38,6 +38,7 @@ import {
   Pending as PendingIcon
 } from '@mui/icons-material';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { ThemeContext } from '../../../context/ThemeContext';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -68,6 +69,7 @@ ChartJS.register(
 
 const SellerDashboard = () => {
   const theme = useTheme();
+  const { colorValues } = useContext(ThemeContext);
   const navigate = useNavigate();
   const { user } = useUser();
   const [loading, setLoading] = useState(true);
@@ -210,7 +212,7 @@ const SellerDashboard = () => {
       {/* Key Metrics */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ height: '100%' }}>
+          <Card sx={{ height: '100%', bgcolor: colorValues.bgSecondary }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
@@ -234,7 +236,7 @@ const SellerDashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ height: '100%' }}>
+          <Card sx={{ height: '100%', bgcolor: colorValues.bgSecondary }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
@@ -258,7 +260,7 @@ const SellerDashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ height: '100%' }}>
+          <Card sx={{ height: '100%', bgcolor: colorValues.bgSecondary }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
@@ -282,7 +284,7 @@ const SellerDashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ height: '100%' }}>
+          <Card sx={{ height: '100%', bgcolor: colorValues.bgSecondary }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
@@ -306,7 +308,7 @@ const SellerDashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ height: '100%' }}>
+          <Card sx={{ height: '100%', bgcolor: colorValues.bgSecondary }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>

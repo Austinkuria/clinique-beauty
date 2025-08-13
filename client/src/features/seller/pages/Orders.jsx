@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { 
   Box, 
   Typography, 
@@ -22,8 +22,10 @@ import {
   CheckCircle as DeliveredIcon,
   Cancel as CancelledIcon
 } from '@mui/icons-material';
+import { ThemeContext } from '../../../context/ThemeContext';
 
 const SellerOrders = () => {
+  const { colorValues } = useContext(ThemeContext);
   // Mock orders data
   const orders = [
     {
@@ -150,7 +152,7 @@ const SellerOrders = () => {
       </Grid>
 
       {/* Orders Table */}
-      <Paper>
+      <Paper sx={{ bgcolor: colorValues.bgSecondary }}>
         <TableContainer>
           <Table>
             <TableHead>

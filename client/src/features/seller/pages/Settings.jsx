@@ -51,7 +51,7 @@ function TabPanel(props) {
 }
 
 function SellerSettings() {
-    const { theme, themeVariant, toggleTheme, changeThemeVariant, themeVariants } = useContext(ThemeContext);
+    const { theme, themeVariant, toggleTheme, changeThemeVariant, themeVariants, colorValues } = useContext(ThemeContext);
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const { user } = useUser();
@@ -123,7 +123,7 @@ function SellerSettings() {
                 Store Settings
             </Typography>
 
-            <Paper elevation={theme === 'dark' ? 3 : 1} sx={{ mb: 4 }}>
+            <Paper elevation={theme === 'dark' ? 3 : 1} sx={{ mb: 4, bgcolor: colorValues.bgSecondary }}>
                 <Tabs
                     value={tabValue}
                     onChange={handleTabChange}
@@ -383,6 +383,7 @@ function SellerSettings() {
                                 <Paper
                                     elevation={theme === 'dark' ? 3 : 1}
                                     sx={{
+                                        bgcolor: colorValues.bgSecondary,
                                         borderRadius: 2,
                                         p: 2,
                                         display: 'flex',
