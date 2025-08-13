@@ -30,6 +30,7 @@ import SellerDashboard from './features/seller/pages/Dashboard';
 import SellerProducts from './features/seller/pages/Products';
 import SellerOrders from './features/seller/pages/Orders';
 import SellerFinancials from './features/seller/pages/Financials';
+import SellerSettings from './features/seller/pages/Settings';
 import RevenueAnalytics from './features/admin/pages/analytics/RevenueAnalytics';
 import ProductAnalytics from './features/admin/pages/analytics/ProductAnalytics';
 import CustomerAnalytics from './features/admin/pages/analytics/CustomerAnalytics';
@@ -181,7 +182,7 @@ export const router = createBrowserRouter([
                     // { path: 'marketing', element: <SellerMarketing /> },
                     // { path: 'customers', element: <SellerCustomers /> },
                     // { path: 'reports', element: <SellerReports /> },
-                    // { path: 'settings', element: <SellerSettings /> },
+                    { path: 'settings', element: <SellerSettings /> },
                     // { path: 'products/new', element: <SellerProductCreate /> },
                     // { path: 'products/:id', element: <SellerProductDetail /> },
                     // { path: 'products/:id/edit', element: <SellerProductEdit /> },

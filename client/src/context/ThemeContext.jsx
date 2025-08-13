@@ -10,20 +10,6 @@ export const ThemeProvider = ({ children }) => {
     const [mode, setMode] = useState('light');
     const [themeVariant, setThemeVariant] = useState('pink'); // New theme variant state
 
-    // Load saved theme preferences on initialization
-    useEffect(() => {
-        const savedMode = localStorage.getItem('themeMode');
-        const savedVariant = localStorage.getItem('themeVariant');
-        
-        if (savedMode && (savedMode === 'light' || savedMode === 'dark')) {
-            setMode(savedMode);
-        }
-        
-        if (savedVariant && ['pink', 'purple', 'blue', 'green', 'orange'].includes(savedVariant)) {
-            setThemeVariant(savedVariant);
-        }
-    }, []); // Empty dependency array to run only on mount
-
     // Predefined theme variants with their color schemes
     const themeVariants = {
         pink: {
@@ -123,6 +109,28 @@ export const ThemeProvider = ({ children }) => {
         }
     };
 
+    // Load saved theme preferences on initialization
+    useEffect(() => {
+        const savedMode = localStorage.getItem('themeMode');
+        const savedVariant = localStorage.getItem('themeVariant');
+        
+        if (savedMode && (savedMode === 'light' || savedMode === 'dark')) {
+            setMode(savedMode);
+        }
+        
+        if (savedVariant && themeVariants[savedVariant]) {
+            setThemeVariant(savedVariant);
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Helper function to convert hex to rgb
+    const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? 
+            `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+            '0, 0, 0';
+    };
+
     // Common color palette for both Tailwind and MUI
     const getColorPalette = (currentMode, variant) => {
         const variantColors = themeVariants[variant][currentMode];
@@ -139,14 +147,6 @@ export const ThemeProvider = ({ children }) => {
                     `rgba(${hexToRgb(variantColors.primary)}, 0.15)`,
             }
         };
-    };
-
-    // Helper function to convert hex to rgb
-    const hexToRgb = (hex) => {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? 
-            `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
-            '0, 0, 0';
     };
 
     const colorPalette = getColorPalette(mode, themeVariant);
