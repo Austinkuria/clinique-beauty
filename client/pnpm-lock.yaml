@@ -230,6 +230,7 @@ packages:
   '@clerk/clerk-react@5.27.0':
     resolution: {integrity: sha512-OD6ZYREAtlxVLUgGJu1S6A6kUzXKo9VX+x5ZlGWjdPqfxXdrlFx7n8WqgJKREOGV8f20DcuphNCnBdLzbRCvHg==}
     engines: {node: '>=18.17.0'}
+    deprecated: 'This package is no longer supported. Please use @clerk/react instead. See the upgrade guide for more info: https://clerk.com/docs/guides/development/upgrading/upgrade-guides/core-3'
     peerDependencies:
       react: ^18.0.0 || ^19.0.0 || ^19.0.0-0
       react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-0
@@ -249,6 +250,7 @@ packages:
   '@clerk/types@4.53.0':
     resolution: {integrity: sha512-MkJckVDQtxPK9WTbPZugsqO5dbatiX1uCtSdu4b16OKtt0adZSXX72RKQLKdRfcP/eIbijruBMrGIuZR9qLEeQ==}
     engines: {node: '>=18.17.0'}
+    deprecated: 'This package is no longer supported. Please import types from @clerk/shared/types instead. See the upgrade guide for more info: https://clerk.com/docs/guides/development/upgrading/upgrade-guides/core-3'
 
   '@emotion/babel-plugin@11.13.5':
     resolution: {integrity: sha512-pxHCpT2ex+0q+HH91/zsdHkw/lXd468DIN2zvfvLtPKLLMo6gQj7oLObq8PhkrxOZb/gGCq03S3Z7PDhS8pduQ==}
