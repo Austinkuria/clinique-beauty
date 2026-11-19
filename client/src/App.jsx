@@ -12,6 +12,7 @@ import { syncUserToSupabase } from './services/userSyncService';
 import { toast } from 'react-hot-toast';
 import { handleApiError } from './components/ErrorHandler';
 import { AdminProvider } from './context/AdminContext';
+import { CategoryProvider } from './context/CategoryContext';
 
 function App() {
   const { muiTheme } = useContext(ThemeContext);
@@ -51,9 +52,10 @@ function App() {
   return (
     <MUIThemeProvider theme={muiTheme}>
       <CssBaseline />
-      <CartProvider>
-        <WishlistProvider>
-          <AdminProvider>
+      <CategoryProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <AdminProvider>
             <Suspense fallback={
               <Box sx={{ 
                 display: 'flex', 
@@ -74,6 +76,7 @@ function App() {
           </AdminProvider>
         </WishlistProvider>
       </CartProvider>
+      </CategoryProvider>
     </MUIThemeProvider>
   );
 }

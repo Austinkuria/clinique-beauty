@@ -66,46 +66,51 @@ function ProductCard({ product }) {
                 <CardMedia
                     component="img"
                     height="200"
-                    // Use product.image directly, handle error with state
                     image={product.image || defaultProductImage}
                     alt={product.name}
                     onError={handleImageError}
                     sx={{
-                        objectFit: 'contain',
-                        p: 1,
-                        backgroundColor: 'transparent'
+                        height: 200,
+                        width: '100%',
+                        objectFit: 'cover',
+                        backgroundColor: colorValues.bgPaper
                     }}
                 />
-                <CardContent sx={{ flexGrow: 1, p: 2 }}>
+                <CardContent sx={{ flexGrow: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
                     <Typography
-                        variant="h6"
+                        variant="subtitle1"
                         className="product-title"
                         sx={{
-                            fontWeight: 500,
+                            fontWeight: 600,
+                            fontSize: '0.95rem',
                             mb: 1,
                             color: colorValues.textPrimary,
                             textDecoration: 'none',
                             transition: 'color 0.2s',
+                            minHeight: 44,
+                            maxHeight: 44,
+                            overflow: 'hidden',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: 1.25
                         }}
                     >
                         {product.name}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <Rating
-                            // Use product.rating directly
-                            value={product.rating || 0} // Default to 0 if rating is missing
+                            value={product.rating || 0}
                             precision={0.1}
                             readOnly
                             size="small"
                             sx={{ color: colorValues.primary }}
                         />
                         <Typography variant="body2" sx={{ ml: 1, color: colorValues.textSecondary }}>
-                            {/* Display rating value */}
                             ({product.rating || 0})
                         </Typography>
                     </Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: colorValues.primary }}>
-                        {/* Use formatCurrency for consistent Kenyan Shillings formatting */}
+                    <Typography variant="h6" sx={{ fontWeight: 700, mt: 'auto', color: colorValues.primary }}>
                         {typeof product.price === 'number' ? formatCurrency(product.price) : 'N/A'}
                     </Typography>
                 </CardContent>

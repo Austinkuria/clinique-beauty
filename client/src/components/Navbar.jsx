@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { UserButton, useAuth, useUser } from '@clerk/clerk-react';
 import { CartContext } from '../context/CartContext';
+import { useCategories } from '../context/CategoryContext';
 
 function Navbar() {
     const { theme, toggleTheme, colors, colorValues } = useContext(ThemeContext);
@@ -49,14 +50,12 @@ function Navbar() {
     const itemCount = cartContext?.itemCount || 0;
     const cartLoading = cartContext?.loading || false;
 
-    // Navigation items without the cart and without Profile button
-    const navItems = [
-        { name: 'Skincare', path: '/products/skincare' },
-        { name: 'Makeup', path: '/products/makeup' },
-        { name: 'Fragrance', path: '/products/fragrance' },
-        { name: 'Hair', path: '/products/hair' },
-        // Removed the profile button since Clerk's UserButton handles this
-    ];
+    // Dynamic navigation items driven directly by admin-configured categories
+    const { categories } = useCategories();
+    const navItems = (categories || []).map((cat) => ({
+        name: cat.name,
+        path: `/products/${cat.slug || cat.name.toLowerCase()}`
+    }));
 
     // Clerk UserButton styling - Updated to include variables with direct color values
     const clerkButtonAppearance = {

@@ -25,6 +25,7 @@ import userRoutes from './routes/userRoutes.js';
 import mpesaRoutes from './routes/mpesaRoutes.js';
 import sellerRoutes from './routes/sellerRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
+import homepageRoutes from './routes/homepageRoutes.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 import { clerkMiddleware } from './middleware/clerkMiddleware.js';
 import { corsMiddleware } from './middleware/corsMiddleware.js';
@@ -169,6 +170,7 @@ v1Router.use('/users', clerkMiddleware, userRoutes);
 v1Router.use('/mpesa', mpesaRoutes);
 v1Router.use('/seller', clerkMiddleware, sellerRoutes);
 v1Router.use('/sellers', clerkMiddleware, sellerRoutes);
+v1Router.use('/homepage', homepageRoutes);
 v1Router.use('/', categoryRoutes);
 
 // Mount versioned API routes

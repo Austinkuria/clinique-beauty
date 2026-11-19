@@ -21,17 +21,18 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductCard from './components/ProductCard';
 import { ThemeContext } from '../../context/ThemeContext';
+import { useCategories } from '../../context/CategoryContext';
 import { useApi } from '../../api/apiClient';
 import mockProducts from '../../data/mockProducts';
-
-const CATEGORIES = ['All', 'Skincare', 'Makeup', 'Fragrance', 'Hair'];
 
 export default function ProductList() {
     const { categoryName } = useParams();
     const navigate = useNavigate();
     const { colorValues } = useContext(ThemeContext);
+    const { categories } = useCategories();
     const api = useApi();
 
+    const dynamicCategories = ['All', ...(categories || []).map((c) => c.name)];
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedSubcategory, setSelectedSubcategory] = useState('All');
     const [sortBy, setSortBy] = useState('default');
@@ -42,7 +43,7 @@ export default function ProductList() {
     // Initialise category from URL param if available
     useEffect(() => {
         if (categoryName) {
-            const matched = CATEGORIES.find(
+            const matched = dynamicCategories.find(
                 (c) => c.toLowerCase() === categoryName.toLowerCase()
             );
             if (matched) {
@@ -143,7 +144,7 @@ export default function ProductList() {
                 minHeight: '80vh'
             }}
         >
-            <Container maxWidth="xl">
+            <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3, md: 4, lg: 5 } }}>
                 <Typography
                     variant="h4"
                     component="h1"
@@ -164,7 +165,7 @@ export default function ProductList() {
                         mb: 3
                     }}
                 >
-                    Explore premium beauty, skincare, fragrance, and hair essentials from verified sellers.
+                    Explore essentials from verified marketplace sellers.
                 </Typography>
 
                 {/* Category Navigation Tabs */}
@@ -177,7 +178,7 @@ export default function ProductList() {
                         textColor="primary"
                         indicatorColor="primary"
                     >
-                        {CATEGORIES.map((cat) => (
+                        {dynamicCategories.map((cat) => (
                             <Tab
                                 key={cat}
                                 label={cat}
