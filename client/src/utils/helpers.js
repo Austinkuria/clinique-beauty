@@ -28,16 +28,21 @@ export function debounce(func, wait) {
  * @return {string} The formatted currency string
  */
 export function formatCurrency(value, currency = 'KES') {
-    // For Kenyan Shillings, use a custom format since KES might not be fully supported everywhere
+    const num = Number(value) || 0;
+    
+    // For Kenyan Shillings, format as KSh X,XXX (without trailing decimal .00 for integer values)
     if (currency === 'KES') {
-        return `Ksh${Number(value).toFixed(2)}`;
+        const formatted = new Intl.NumberFormat('en-KE', {
+            maximumFractionDigits: num % 1 === 0 ? 0 : 2
+        }).format(num);
+        return `KSh ${formatted}`;
     }
     
-    // For other currencies, use Intl.NumberFormat
+    // For other currencies, use standard Intl.NumberFormat
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency
-    }).format(value);
+    }).format(num);
 }
 
 /**

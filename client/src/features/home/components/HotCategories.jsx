@@ -21,12 +21,12 @@ export default function HotCategories({ categories = [] }) {
     }
 
     return (
-        <Box sx={{ py: 3, backgroundColor: colorValues.bgDefault }}>
-            <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3, md: 4, lg: 5 } }}>
+        <Box sx={{ py: 2.5, backgroundColor: colorValues.bgDefault }}>
+            <Container maxWidth={false} sx={{ px: { xs: 1.5, sm: 2, md: 3 } }}>
                 <Paper
                     elevation={0}
                     sx={{
-                        p: { xs: 2, md: 3 },
+                        p: { xs: 2, md: 2.5 },
                         border: '1px solid',
                         borderColor: 'divider',
                         borderRadius: 2,

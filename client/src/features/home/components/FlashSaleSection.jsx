@@ -24,6 +24,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useCart } from '../../../context/CartContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { formatCurrency } from '../../../utils/helpers';
+import defaultProductImage from '../../../assets/images/placeholder.webp';
 
 export default function FlashSaleSection({ flashSale }) {
     const { addToCart } = useCart();
@@ -64,12 +65,12 @@ export default function FlashSaleSection({ flashSale }) {
     }
 
     return (
-        <Box sx={{ py: 3, backgroundColor: colorValues.bgDefault }}>
-            <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3, md: 4, lg: 5 } }}>
+        <Box sx={{ py: 2.5, backgroundColor: colorValues.bgDefault }}>
+            <Container maxWidth={false} sx={{ px: { xs: 1.5, sm: 2, md: 3 } }}>
                 <Paper
                     elevation={0}
                     sx={{
-                        p: { xs: 2, md: 3 },
+                        p: { xs: 2, md: 2.5 },
                         border: '1px solid',
                         borderColor: 'divider',
                         borderRadius: 2,
@@ -143,8 +144,20 @@ export default function FlashSaleSection({ flashSale }) {
                         </Button>
                     </Box>
 
-                    {/* Uniform Dimension Deals Grid */}
-                    <Grid container spacing={2}>
+                    {/* Uniform Dimension Deals CSS Grid */}
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: {
+                                xs: 'repeat(2, 1fr)',
+                                sm: 'repeat(3, 1fr)',
+                                md: 'repeat(4, 1fr)',
+                                lg: 'repeat(6, 1fr)'
+                            },
+                            gap: 2,
+                            width: '100%'
+                        }}
+                    >
                         {items.slice(0, 6).map((item) => {
                             const claimed = item.claimedPercent || 65;
                             const discount = item.discountPercent || 25;
@@ -152,7 +165,7 @@ export default function FlashSaleSection({ flashSale }) {
                             const original = item.originalPrice || Math.round(Number(item.price) * 1.3);
 
                             return (
-                                <Grid item key={item.id} xs={6} sm={4} md={2} sx={{ display: 'flex' }}>
+                                <Box key={item.id} sx={{ width: '100%', height: '100%' }}>
                                     <Card
                                         elevation={0}
                                         sx={{
@@ -190,17 +203,22 @@ export default function FlashSaleSection({ flashSale }) {
                                             }}
                                         />
 
-                                        <CardMedia
-                                            component="img"
-                                            image={item.image}
-                                            alt={item.name}
-                                            sx={{
-                                                height: 180,
-                                                width: '100%',
-                                                objectFit: 'cover',
-                                                backgroundColor: colorValues.bgDefault
-                                            }}
-                                        />
+                                        <Box sx={{ position: 'relative', width: '100%', pt: '100%', backgroundColor: colorValues.bgDefault }}>
+                                            <CardMedia
+                                                component="img"
+                                                image={item.image || defaultProductImage}
+                                                alt={item.name}
+                                                onError={(e) => { e.currentTarget.src = defaultProductImage; }}
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover'
+                                                }}
+                                            />
+                                        </Box>
 
                                         <CardContent
                                             sx={{
@@ -222,8 +240,8 @@ export default function FlashSaleSection({ flashSale }) {
                                                     WebkitLineClamp: 2,
                                                     WebkitBoxOrient: 'vertical',
                                                     overflow: 'hidden',
-                                                    minHeight: 40,
-                                                    maxHeight: 40,
+                                                    minHeight: 38,
+                                                    maxHeight: 38,
                                                     lineHeight: 1.3,
                                                     mb: 1,
                                                     '&:hover': { color: colorValues.primary }
@@ -232,7 +250,7 @@ export default function FlashSaleSection({ flashSale }) {
                                                 {item.name}
                                             </Typography>
 
-                                            <Box sx={{ mt: 'auto', pt: 1 }}>
+                                            <Box sx={{ mt: 'auto', pt: 0.5 }}>
                                                 {/* Deal Price */}
                                                 <Typography variant="subtitle1" sx={{ color: colorValues.primary, fontWeight: 800, lineHeight: 1.1 }}>
                                                     {formatCurrency(displayPrice)}
@@ -283,10 +301,10 @@ export default function FlashSaleSection({ flashSale }) {
                                             </Box>
                                         </CardContent>
                                     </Card>
-                                </Grid>
+                                </Box>
                             );
                         })}
-                    </Grid>
+                    </Box>
                 </Paper>
             </Container>
         </Box>

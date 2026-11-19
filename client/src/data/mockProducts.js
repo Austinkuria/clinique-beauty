@@ -6,7 +6,7 @@ const mockProducts = [
     {
         id: 1,
         name: 'Hydrating Moisturizer',
-        price: 29.99,
+        price: 1899,
         image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=800&q=80',
@@ -23,7 +23,7 @@ const mockProducts = [
     {
         id: 2,
         name: 'Cleansing Foam',
-        price: 19.99,
+        price: 1299,
         image: 'https://images.unsplash.com/photo-1556228852-80b6e5eeff06?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1556228722-d0b503022e37?auto=format&fit=crop&w=800&q=80',
@@ -40,7 +40,7 @@ const mockProducts = [
     {
         id: 3,
         name: 'SPF 50 Sunscreen',
-        price: 24.99,
+        price: 2150,
         image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1556228724-4da94a73229b?auto=format&fit=crop&w=800&q=80',
@@ -57,7 +57,7 @@ const mockProducts = [
     {
         id: 4,
         name: 'Anti-Aging Serum',
-        price: 49.99,
+        price: 3499,
         image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?auto=format&fit=crop&w=800&q=80',
@@ -76,7 +76,7 @@ const mockProducts = [
     {
         id: 5,
         name: 'Matte Lipstick',
-        price: 15.99,
+        price: 950,
         image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1625093742435-6fa192b6fb10?auto=format&fit=crop&w=800&q=80',
@@ -100,7 +100,7 @@ const mockProducts = [
     {
         id: 6,
         name: 'Liquid Foundation',
-        price: 29.99,
+        price: 2200,
         image: 'https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=800&q=80',
@@ -124,8 +124,8 @@ const mockProducts = [
     },
     {
         id: 7,
-        name: 'Mascara',
-        price: 12.99,
+        name: 'Mascara Volume Boost',
+        price: 850,
         image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=800&q=80',
@@ -142,7 +142,7 @@ const mockProducts = [
     {
         id: 8,
         name: 'Eyeshadow Palette',
-        price: 39.99,
+        price: 2800,
         image: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1583241800698-e8ab01830a07?auto=format&fit=crop&w=800&q=80',
@@ -162,7 +162,7 @@ const mockProducts = [
     {
         id: 9,
         name: 'Floral Eau de Parfum',
-        price: 59.99,
+        price: 4500,
         image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=800&q=80',
@@ -179,7 +179,7 @@ const mockProducts = [
     {
         id: 10,
         name: 'Citrus Mist',
-        price: 39.99,
+        price: 2400,
         image: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1615397349754-cfa2066a298e?auto=format&fit=crop&w=800&q=80',
@@ -196,7 +196,7 @@ const mockProducts = [
     {
         id: 11,
         name: 'Woody Essence',
-        price: 69.99,
+        price: 5200,
         image: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=800&q=80',
@@ -213,7 +213,7 @@ const mockProducts = [
     {
         id: 12,
         name: 'Fresh Breeze',
-        price: 29.99,
+        price: 1750,
         image: 'https://images.unsplash.com/photo-1615397349754-cfa2066a298e?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=800&q=80',
@@ -232,7 +232,7 @@ const mockProducts = [
     {
         id: 13,
         name: 'Moisturizing Shampoo',
-        price: 18.99,
+        price: 1200,
         image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80',
@@ -249,7 +249,7 @@ const mockProducts = [
     {
         id: 14,
         name: 'Repair Conditioner',
-        price: 16.99,
+        price: 1150,
         image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=800&q=80',
@@ -266,8 +266,8 @@ const mockProducts = [
     {
         id: 15,
         name: 'Curl Defining Cream',
-        price: 22.99,
-        image: 'https://images.unsplash.com/photo-1608248597359-5484860b7646?auto=format&fit=crop&w=800&q=80',
+        price: 1650,
+        image: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80',
             'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80'
@@ -283,7 +283,7 @@ const mockProducts = [
     {
         id: 16,
         name: 'Hair Oil Treatment',
-        price: 34.99,
+        price: 2900,
         image: 'https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?auto=format&fit=crop&w=800&q=80',
         additionalImages: [
             'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80',
@@ -296,6 +296,66 @@ const mockProducts = [
         description: 'Lightweight oil that nourishes hair, adds shine, and tames frizz without weighing hair down.',
         benefits: ['Adds shine', 'Reduces frizz', 'Protects from heat damage'],
         ingredients: ['Argan Oil', 'Jojoba Oil', 'Marula Oil', 'Vitamin E']
+    },
+
+    // Multi-Category Showcase Products (Fashion, Shoes, Bags, Accessories)
+    {
+        id: 17,
+        name: 'Casual Streetwear Sneakers',
+        price: 2499,
+        image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+        additionalImages: [
+            'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80'
+        ],
+        rating: 4.8,
+        category: 'Shoes',
+        subcategory: 'Sneakers',
+        stock: 40,
+        description: 'Breathable sports cushion sneakers crafted for all-day comfort and casual urban style.',
+        benefits: ['Lightweight sole', 'Breathable knit', 'High durability'],
+        ingredients: ['Rubber sole', 'Knit fabric']
+    },
+    {
+        id: 18,
+        name: 'Classic Leather Loafers',
+        price: 3200,
+        image: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?auto=format&fit=crop&w=800&q=80',
+        additionalImages: [],
+        rating: 4.6,
+        category: 'Shoes',
+        subcategory: 'Loafers',
+        stock: 18,
+        description: 'Slip-on dress shoes with genuine leather finish for formal and smart-casual settings.',
+        benefits: ['Genuine leather', 'Memory foam insole', 'Anti-slip base'],
+        ingredients: ['Genuine Leather']
+    },
+    {
+        id: 19,
+        name: 'Structured Leather Tote Bag',
+        price: 3800,
+        image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80',
+        additionalImages: [],
+        rating: 4.9,
+        category: 'Bags',
+        subcategory: 'Tote Bags',
+        stock: 25,
+        description: 'Spacious multi-compartment shoulder tote bag designed for daily work and travel.',
+        benefits: ['Laptop compartment', 'Water-resistant lining', 'Reinforced straps'],
+        ingredients: ['Vegan Leather']
+    },
+    {
+        id: 20,
+        name: 'Stainless Steel Electric Kettle',
+        price: 1950,
+        image: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=800&q=80',
+        additionalImages: [],
+        rating: 4.7,
+        category: 'Appliances',
+        subcategory: 'Kitchen',
+        stock: 50,
+        description: 'Fast-boiling 1.8L cordless stainless steel kettle with automatic shut-off safety.',
+        benefits: ['Fast 1500W heating', 'Auto shut-off', 'BPA-free'],
+        ingredients: ['Stainless Steel']
     }
 ];
 

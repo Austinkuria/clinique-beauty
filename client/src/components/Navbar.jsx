@@ -205,14 +205,15 @@ function Navbar() {
     return (
         <AppBar
             position="sticky"
-            elevation={4}
+            elevation={1}
             sx={{
                 bgcolor: colorValues.navbarBg,
                 color: colorValues.textPrimary,
-                borderBottom: theme === 'dark' ? '1px solid #333' : '1px solid #eaeaea',
+                borderBottom: '1px solid',
+                borderColor: 'divider'
             }}
         >
-            <Toolbar>
+            <Toolbar sx={{ px: { xs: 1.5, sm: 2, md: 3 } }}>
                 {/* Branding */}
                 <RouterLink
                     to="/"

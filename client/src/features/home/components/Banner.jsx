@@ -7,14 +7,14 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 function Banner() {
     const [isVisible, setIsVisible] = useState(true);
-    const { theme } = useContext(ThemeContext);
+    const { theme, colorValues } = useContext(ThemeContext);
     const [currentPromo, setCurrentPromo] = useState(0);
 
     // Banner promotion messages
     const promos = [
-        { text: "FREE SHIPPING on orders over Ksh3,500", link: "/products" },
-        { text: "NEW ARRIVALS: Summer Collection 2025", link: "/collections/summer" },
-        { text: "Limited Time: 20% OFF all skincare products", link: "/products/skincare" },
+        { text: "FREE SHIPPING on orders over KSh 3,500", link: "/products" },
+        { text: "NEW ARRIVALS: Summer Collection 2025", link: "/products" },
+        { text: "Limited Time: 20% OFF all essentials", link: "/products" },
     ];
 
     // Rotate through promos
@@ -36,8 +36,8 @@ function Banner() {
                 textAlign: 'center',
                 position: 'relative',
                 transition: 'all 0.3s ease',
-                bgcolor: theme === 'light' ? '#ec4899' : '#be185d', // Pink-500 and Pink-700
-                color: 'white',
+                bgcolor: colorValues.primary,
+                color: '#ffffff',
             }}
         >
             <Box
