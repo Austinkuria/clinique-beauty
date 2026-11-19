@@ -563,7 +563,7 @@ const EmailCampaignEditor = () => {
                     <CardMedia
                       component="img"
                       height="140"
-                      image={template.thumbnail || `https://via.placeholder.com/400x200?text=${template.name}`}
+                      image={template.thumbnail || 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80'}
                       alt={template.name}
                     />
                     <CardContent>

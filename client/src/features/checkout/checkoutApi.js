@@ -118,21 +118,37 @@ export const prepareCheckout = async () => {
 };
 
 /**
+ * Submit verified checkout order to the backend
+ */
+export const submitCheckout = async (checkoutPayload, token) => {
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+    const response = await fetch(`${baseUrl}/orders/checkout`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(checkoutPayload)
+    });
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || `Order creation failed (${response.status})`);
+    }
+    return response.json();
+};
+
+/**
  * Create a checkout session (this would integrate with your payment processor)
  */
 export const createCheckoutSession = async (checkoutData) => {
-    // This would call your payment provider's API
-    // For now, simulate a successful response
-    return {
-        success: true,
-        checkoutUrl: '#/checkout-confirmation',
-        sessionId: 'sim_' + Math.random().toString(36).substring(2, 15)
-    };
+    return submitCheckout(checkoutData);
 };
 
 export default {
     validateCartForCheckout,
     calculateShipping,
     prepareCheckout,
-    createCheckoutSession
+    createCheckoutSession,
+    submitCheckout
 };

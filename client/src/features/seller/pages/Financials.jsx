@@ -1,4 +1,5 @@
-import React from 'react';
+// client/src/features/seller/pages/Financials.jsx
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
@@ -13,7 +14,8 @@ import {
   TableHead,
   TableRow,
   Button,
-  Chip
+  Chip,
+  CircularProgress
 } from '@mui/material';
 import {
   AttachMoney as RevenueIcon,
@@ -21,95 +23,101 @@ import {
   Receipt as PayoutIcon,
   Schedule as PendingIcon
 } from '@mui/icons-material';
+import { useAuth } from '@clerk/clerk-react';
+import { formatCurrency } from '../../../utils/helpers';
 
 const SellerFinancials = () => {
-  // Mock financial data
-  const financialData = {
-    totalEarnings: 15420.50,
-    pendingPayouts: 2340.75,
-    thisMonthRevenue: 4280.30,
-    lastPayout: 12150.00,
-    payoutDate: '2025-01-01'
-  };
+  const { getToken } = useAuth();
+  const [financials, setFinancials] = useState({
+    wallet: { pending_balance: 0, available_balance: 0, total_withdrawn: 0 },
+    transactions: []
+  });
+  const [loading, setLoading] = useState(true);
 
-  const transactions = [
-    {
-      id: 'TXN-001',
-      type: 'Sale',
-      amount: 89.99,
-      commission: 8.99,
-      net: 81.00,
-      date: '2025-01-15',
-      status: 'Pending'
-    },
-    {
-      id: 'TXN-002',
-      type: 'Sale',
-      amount: 156.50,
-      commission: 15.65,
-      net: 140.85,
-      date: '2025-01-15',
-      status: 'Pending'
-    },
-    {
-      id: 'TXN-003',
-      type: 'Payout',
-      amount: 12150.00,
-      commission: 0,
-      net: 12150.00,
-      date: '2025-01-01',
-      status: 'Completed'
-    }
-  ];
+  useEffect(() => {
+    const fetchFinancials = async () => {
+      setLoading(true);
+      try {
+        const token = await getToken();
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+        const response = await fetch(`${baseUrl}/seller/financials`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Completed': return 'success';
-      case 'Pending': return 'warning';
-      case 'Failed': return 'error';
+        if (response.ok) {
+          const resData = await response.json();
+          setFinancials(resData);
+        }
+      } catch (err) {
+        console.error('Error fetching seller financials:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFinancials();
+  }, []);
+
+  const getStatusColor = (type) => {
+    switch (type) {
+      case 'escrow_release': return 'success';
+      case 'escrow_credit': return 'warning';
+      case 'payout_deduction': return 'info';
+      case 'refund_debit': return 'error';
       default: return 'default';
     }
   };
 
+  const { wallet, transactions } = financials;
+
   return (
     <Box>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Financials & Payouts
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Track your earnings, commissions, and payout history
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" fontWeight="bold">
+            Financial Overview
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Track your earnings, platform commissions, and escrow releases
+          </Typography>
+        </Box>
+        <Button variant="contained" disabled={wallet.available_balance <= 0}>
+          Request M-Pesa Payout
+        </Button>
+      </Box>
 
-      {/* Financial Overview */}
+      {/* Financial Overview Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography color="text.secondary" gutterBottom variant="body2">
-                    Total Earnings
+                    Available for Payout
                   </Typography>
-                  <Typography variant="h5" fontWeight="bold">
-                    ${financialData.totalEarnings.toLocaleString()}
+                  <Typography variant="h5" fontWeight="bold" color="success.main">
+                    {formatCurrency(wallet.available_balance)}
                   </Typography>
                 </Box>
-                <RevenueIcon sx={{ fontSize: 40, color: 'primary.main', opacity: 0.7 }} />
+                <RevenueIcon sx={{ fontSize: 40, color: 'success.main', opacity: 0.7 }} />
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography color="text.secondary" gutterBottom variant="body2">
-                    Pending Payouts
+                    Pending Escrow (In Transit / Return Window)
                   </Typography>
-                  <Typography variant="h5" fontWeight="bold">
-                    ${financialData.pendingPayouts.toLocaleString()}
+                  <Typography variant="h5" fontWeight="bold" color="warning.main">
+                    {formatCurrency(wallet.pending_balance)}
                   </Typography>
                 </Box>
                 <PendingIcon sx={{ fontSize: 40, color: 'warning.main', opacity: 0.7 }} />
@@ -118,134 +126,80 @@ const SellerFinancials = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography color="text.secondary" gutterBottom variant="body2">
-                    This Month
+                    Total Withdrawn
                   </Typography>
                   <Typography variant="h5" fontWeight="bold">
-                    ${financialData.thisMonthRevenue.toLocaleString()}
+                    {formatCurrency(wallet.total_withdrawn)}
                   </Typography>
                 </Box>
-                <TrendingUpIcon sx={{ fontSize: 40, color: 'success.main', opacity: 0.7 }} />
+                <PayoutIcon sx={{ fontSize: 40, color: 'primary.main', opacity: 0.7 }} />
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography color="text.secondary" gutterBottom variant="body2">
-                    Last Payout
-                  </Typography>
-                  <Typography variant="h5" fontWeight="bold">
-                    ${financialData.lastPayout.toLocaleString()}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {financialData.payoutDate}
-                  </Typography>
-                </Box>
-                <PayoutIcon sx={{ fontSize: 40, color: 'info.main', opacity: 0.7 }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Payout Information */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Payout Schedule
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Payouts are processed on the 1st and 15th of each month for earnings from the previous period.
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Next payout: <strong>February 1st, 2025</strong>
-            </Typography>
-            <Button variant="outlined" size="small">
-              View Payout Settings
-            </Button>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Commission Structure
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Platform commission: <strong>10%</strong> per sale
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Payment processing fee: <strong>2.9% + $0.30</strong>
-            </Typography>
-            <Button variant="outlined" size="small">
-              View Commission Details
-            </Button>
-          </Paper>
         </Grid>
       </Grid>
 
       {/* Transaction History */}
-      <Paper>
-        <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h6">
-            Transaction History
-          </Typography>
-        </Box>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Transaction ID</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Amount</TableCell>
-                <TableCell>Commission</TableCell>
-                <TableCell>Net Amount</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Status</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {transactions.map((transaction) => (
-                <TableRow key={transaction.id} hover>
-                  <TableCell>
-                    <Typography variant="subtitle2" fontWeight="bold">
-                      {transaction.id}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{transaction.type}</TableCell>
-                  <TableCell>${transaction.amount}</TableCell>
-                  <TableCell>
-                    {transaction.commission > 0 ? `-$${transaction.commission}` : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold" color="success.main">
-                      ${transaction.net}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{transaction.date}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={transaction.status}
-                      color={getStatusColor(transaction.status)}
-                      size="small"
-                    />
-                  </TableCell>
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+          Recent Wallet Ledger Transactions
+        </Typography>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : transactions.length === 0 ? (
+          <Box sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              No transactions recorded in your seller wallet ledger yet.
+            </Typography>
+          </Box>
+        ) : (
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Transaction ID</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Amount</TableCell>
+                  <TableCell>Date</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {transactions.map((tx) => (
+                  <TableRow key={tx.id} hover>
+                    <TableCell>
+                      <Typography variant="subtitle2" fontFamily="monospace">
+                        {tx.id.substring(0, 8)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={tx.transaction_type.replace('_', ' ')}
+                        color={getStatusColor(tx.transaction_type)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{tx.description}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>
+                      {formatCurrency(tx.amount)}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(tx.created_at).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Paper>
     </Box>
   );

@@ -12,9 +12,9 @@ import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useCart } from '../../context/CartContext';
 import { useApi } from '../../api/apiClient';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import { ThemeContext } from '../../context/ThemeContext';
-import { prepareCheckout, createCheckoutSession } from './checkoutApi';
+import { prepareCheckout, createCheckoutSession, submitCheckout } from './checkoutApi';
 import { initiateSTKPush, querySTKStatus, formatPhoneNumber } from '../../api/mpesaService';
 import defaultProductImage from '../../assets/images/placeholder.webp';
 import DOMPurify from 'dompurify'; // Import DOMPurify for sanitization
@@ -142,6 +142,7 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const { cartItems, cartTotal, clearCart, loadCart } = useCart();
   const { isSignedIn, user } = useUser();
+  const { getToken } = useAuth();
   const { theme, colorValues } = useContext(ThemeContext);
   const api = useApi();
   
@@ -669,31 +670,40 @@ const CheckoutPage = () => {
         }
       };
       
-      // Handle different payment methods
+      // Persist master order to database with server-side pricing verification
+      const authToken = await getToken();
+      const checkoutPayload = {
+        items: cartItems.map(item => ({
+          productId: item.productId || item.id,
+          quantity: item.quantity,
+          shade: item.selectedShade?.name || null
+        })),
+        shippingAddress: orderData.shipping,
+        paymentMethod: selectedPayment,
+        customerPhone: sanitizedMpesaNumber || orderData.customer.phone
+      };
+
+      const serverOrder = await submitCheckout(checkoutPayload, authToken);
+      if (!serverOrder || !serverOrder.orderId) {
+        throw new Error('Failed to create server order record');
+      }
+
+      orderData.orderId = serverOrder.orderId;
+      orderData.orderNumber = serverOrder.orderNumber;
+
+      // Handle payment methods
       if (selectedPayment === 'mpesa') {
-        setLoading(false); // Turn off main loading as we'll use the dialog
-        console.log('Processing M-Pesa payment for order:', orderData.orderId);
-        // Force the payment dialog to appear even in production
+        setLoading(false);
+        console.log('Processing M-Pesa payment for master order:', orderData.orderId);
         await handleMpesaPayment(orderData);
-        
-        // The rest of the process is handled by the handleMpesaPayment function
-        // which includes navigation to confirmation page upon success
       } else {
-        // Handle other payment methods (mock success for now)
-        const result = await createCheckoutSession(orderData);
-        
-        if (result.success) {
-          // Clear the cart and navigate to confirmation
-          await clearCart();
-          navigate('/checkout/confirmation', { 
-            state: { 
-              orderId: result.sessionId || orderData.orderId,
-              orderDetails: orderData
-            } 
-          });
-        } else {
-          throw new Error(result.message || 'Failed to create checkout session');
-        }
+        await clearCart();
+        navigate('/checkout/confirmation', { 
+          state: { 
+            orderId: orderData.orderNumber || orderData.orderId,
+            orderDetails: orderData
+          } 
+        });
       }
     } catch (err) {
       console.error('Error submitting order:', err);

@@ -101,10 +101,10 @@ const SellerDashboard = () => {
           { id: 'ORD-004', customer: 'David Brown', amount: 78.25, status: 'Processing', date: '2025-01-14' },
         ],
         topProducts: [
-          { name: 'Vitamin C Serum', sales: 45, revenue: 1350.00, image: '/api/placeholder/50/50' },
-          { name: 'Hydrating Face Cream', sales: 38, revenue: 1140.00, image: '/api/placeholder/50/50' },
-          { name: 'Cleansing Oil', sales: 32, revenue: 960.00, image: '/api/placeholder/50/50' },
-          { name: 'Sunscreen SPF 50', sales: 28, revenue: 840.00, image: '/api/placeholder/50/50' },
+          { name: 'Vitamin C Serum', sales: 45, revenue: 1350.00, image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=200&q=80' },
+          { name: 'Hydrating Face Cream', sales: 38, revenue: 1140.00, image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=200&q=80' },
+          { name: 'Cleansing Oil', sales: 32, revenue: 960.00, image: 'https://images.unsplash.com/photo-1556228852-80b6e5eeff06?auto=format&fit=crop&w=200&q=80' },
+          { name: 'Sunscreen SPF 50', sales: 28, revenue: 840.00, image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=200&q=80' },
         ],
         notifications: [
           { type: 'warning', message: 'Low stock alert: Vitamin C Serum (5 units left)', date: '2 hours ago' },

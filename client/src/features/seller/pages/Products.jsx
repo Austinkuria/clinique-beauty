@@ -222,7 +222,7 @@ const SellerProducts = () => {
           approvalStatus: product.approval_status === 'approved' ? 'Approved' :
                          product.approval_status === 'pending' ? 'Pending' : 'Rejected',
           featured: product.featured,
-          image: product.image || '/api/placeholder/200/200',
+          image: product.image || defaultProductImage,
           sku: product.sku,
           created: new Date(product.created_at).toLocaleDateString(),
           sales: 0, // TODO: Add sales tracking
@@ -373,7 +373,7 @@ const SellerProducts = () => {
         approvalStatus: product.approval_status === 'approved' ? 'Approved' :
                        product.approval_status === 'pending' ? 'Pending' : 'Rejected',
         featured: product.featured,
-        image: product.image || '/api/placeholder/200/200',
+        image: product.image || defaultProductImage,
         sku: product.sku,
         created: new Date(product.created_at).toLocaleDateString(),
         sales: 0,
@@ -668,7 +668,7 @@ const SellerProducts = () => {
         approvalStatus: response.approval_status === 'approved' ? 'Approved' :
                        response.approval_status === 'pending' ? 'Pending' : 'Rejected',
         featured: response.featured,
-        image: response.image || '/api/placeholder/200/200',
+        image: response.image || defaultProductImage,
         sku: response.sku,
         created: new Date(response.created_at).toLocaleDateString(),
         sales: 0,
@@ -783,7 +783,7 @@ const SellerProducts = () => {
         approvalStatus: updatedProduct.approval_status === 'approved' ? 'Approved' :
                        updatedProduct.approval_status === 'pending' ? 'Pending' : 'Rejected',
         featured: updatedProduct.featured,
-        image: updatedProduct.image || '/api/placeholder/200/200',
+        image: updatedProduct.image || defaultProductImage,
         sku: updatedProduct.sku,
         created: new Date(updatedProduct.created_at).toLocaleDateString(),
         sales: 0, // TODO: Add sales tracking

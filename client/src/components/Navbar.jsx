@@ -164,21 +164,6 @@ function Navbar() {
                         </ListItemButton>
                     </ListItem>
                 )}
-                {isSignedIn && !isAdmin && (
-                    <ListItem disablePadding>
-                        <ListItemButton
-                            component={RouterLink}
-                            to="/admin-setup"
-                            onClick={toggleDrawer(false)}
-                            className={`${colors.navbarTextSecondary} ${colors.textHover}`}
-                        >
-                            <ListItemIcon>
-                                <SecurityIcon className={colors.navbarTextSecondary} />
-                            </ListItemIcon>
-                            <ListItemText primary="Admin Setup" />
-                        </ListItemButton>
-                    </ListItem>
-                )}
                 {!isSignedIn && (
                     <>
                         <ListItem disablePadding>

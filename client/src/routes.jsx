@@ -11,6 +11,7 @@ import Skincare from './features/products/pages/Skincare';
 import Makeup from './features/products/pages/Makeup';
 import Fragrance from './features/products/pages/Fragrance';
 import HairProducts from './features/products/pages/HairProducts';
+import ProductList from './features/products/ProductList.jsx';
 import ProductDetail from './features/products/ProductDetail';
 import CheckoutPage from './features/checkout/Checkout.jsx'; 
 import CheckoutConfirmation from './features/checkout/CheckoutConfirmation.jsx'; 
@@ -109,11 +110,8 @@ export const router = createBrowserRouter([
                     // Routes rendered within MainLayout's Outlet
                     { index: true, element: <Home /> }, // Use index route for home
                     { path: '/cart', element: <RequireAuth><Cart /></RequireAuth> },
-                    { path: '/products/skincare', element: <Skincare /> },
-                    { path: '/products/makeup', element: <Makeup /> },
-                    { path: '/products/fragrance', element: <Fragrance /> },
-                    { path: '/products/hair', element: <HairProducts /> },
-                    // Correct path for product detail
+                    { path: '/products', element: <ProductList /> },
+                    { path: '/products/:categoryName', element: <ProductList /> },
                     { path: '/product/:id', element: <ProductDetail /> },                    // Checkout routes
                     { path: '/checkout', element: <RequireAuth><CheckoutPage /></RequireAuth> },
                     { path: '/checkout/confirmation', element: <RequireAuth><CheckoutConfirmation /></RequireAuth> },
@@ -121,11 +119,6 @@ export const router = createBrowserRouter([
                     { path: '/seller/apply', element: <SellerApply /> },
                     { path: '/seller/status', element: <RequireAuth><SellerStatus /></RequireAuth> },
                 ]
-            },
-            // Admin Setup Route (protected but doesn't require admin role)
-            {
-                path: '/admin-setup',
-                element: <RequireAuth><AdminSetup /></RequireAuth>,
             },
             // Admin Routes with AdminGuard
             {

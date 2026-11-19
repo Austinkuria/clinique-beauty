@@ -1,2 +1,6 @@
+allowBuilds:
+  '@clerk/shared': false
+  '@mui/x-telemetry': false
+  esbuild: false
 onlyBuiltDependencies:
   - esbuild

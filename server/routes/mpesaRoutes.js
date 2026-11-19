@@ -198,6 +198,19 @@ router.post('/stkpush', async (req, res) => {
         
         debugLog('M-Pesa response:', JSON.stringify(response.data, null, 2));
         
+        // Link CheckoutRequestID to the order in database
+        if (orderId && response.data.CheckoutRequestID) {
+            try {
+                await global.supabase
+                    .from('orders')
+                    .update({ mpesa_checkout_id: response.data.CheckoutRequestID })
+                    .eq('id', orderId);
+                debugLog(`Linked order ${orderId} with CheckoutRequestID: ${response.data.CheckoutRequestID}`);
+            } catch (dbErr) {
+                console.error('Failed to link CheckoutRequestID to order:', dbErr);
+            }
+        }
+        
         // Return the response with additional information
         res.json({
             success: true,

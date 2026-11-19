@@ -1,105 +1,100 @@
-/**
- * Supabase M-Pesa Integration Utilities
- * 
- * This file contains utility functions to handle M-Pesa callbacks
- * and update Supabase data accordingly.
- */
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-// Initialize Supabase client with service role key for admin access
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// server/utils/supabaseMpesaIntegration.js
+import { supabase } from '../config/db.js';
+import { splitOrderIntoVendorOrders } from './orderSplitter.js';
 
 /**
  * Process M-Pesa callback and update order status in Supabase
- * @param {Object} callbackData - The callback data from M-Pesa
+ * @param {Object} callbackData - The callback data from Safaricom Daraja
  * @returns {Promise<Object>} - Result of the operation
  */
 export const processMpesaCallback = async (callbackData) => {
   try {
-    console.log('Processing M-Pesa callback:', callbackData);
-    
-    // Extract relevant data from the callback
-    // Adjust these fields based on the actual M-Pesa callback structure
+    console.log('Processing M-Pesa callback:', JSON.stringify(callbackData));
+
+    const stkCallback = callbackData?.Body?.stkCallback;
+    if (!stkCallback) {
+      return { success: false, error: 'Invalid callback payload structure' };
+    }
+
     const {
       MerchantRequestID,
       CheckoutRequestID,
       ResultCode,
       ResultDesc,
       CallbackMetadata
-    } = callbackData.Body.stkCallback;
-    
+    } = stkCallback;
+
     // Extract transaction details from metadata
     const metadata = {};
     if (CallbackMetadata && CallbackMetadata.Item) {
-      CallbackMetadata.Item.forEach(item => {
-        if (item.Name && item.Value) {
+      CallbackMetadata.Item.forEach((item) => {
+        if (item.Name && item.Value !== undefined) {
           metadata[item.Name] = item.Value;
         }
       });
     }
-    
+
     const transactionAmount = metadata.Amount;
     const mpesaReceiptNumber = metadata.MpesaReceiptNumber;
-    const transactionDate = metadata.TransactionDate;
     const phoneNumber = metadata.PhoneNumber;
-    
-    // Get the order ID from the merchant request ID or from your database
-    // This assumes you stored the merchant request ID when initiating the payment
+
+    // Find master order by CheckoutRequestID
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('*')
-      .eq('mpesa_request_id', MerchantRequestID)
-      .single();
-    
+      .or(`mpesa_checkout_id.eq.${CheckoutRequestID},id.eq.${stkCallback.AccountReference || '00000000-0000-0000-0000-000000000000'}`)
+      .maybeSingle();
+
     if (orderError) {
-      console.error('Error finding order:', orderError);
+      console.error('Error finding order for M-Pesa callback:', orderError);
       return { success: false, error: orderError };
     }
-    
+
     if (!order) {
-      console.error('Order not found for request ID:', MerchantRequestID);
+      console.warn('Order not found for CheckoutRequestID:', CheckoutRequestID);
       return { success: false, error: 'Order not found' };
     }
-    
-    // Update the order status based on the result code
+
     const isSuccessful = ResultCode === 0;
     const status = isSuccessful ? 'paid' : 'payment_failed';
-    
-    const { data, error } = await supabase
+
+    const { data: updatedOrder, error: updateError } = await supabase
       .from('orders')
       .update({
-        status,
-        payment_status: isSuccessful ? 'completed' : 'failed',
+        status: isSuccessful ? 'processing' : 'payment_failed',
+        payment_status: status,
+        mpesa_receipt: mpesaReceiptNumber || null,
         payment_details: {
           provider: 'mpesa',
-          transaction_id: mpesaReceiptNumber,
+          receipt: mpesaReceiptNumber,
           amount: transactionAmount,
-          date: transactionDate,
           phone: phoneNumber,
           result_code: ResultCode,
           result_desc: ResultDesc,
-          checkout_request_id: CheckoutRequestID
+          checkout_request_id: CheckoutRequestID,
+          merchant_request_id: MerchantRequestID
         },
         updated_at: new Date().toISOString()
       })
-      .eq('id', order.id);
-    
-    if (error) {
-      console.error('Error updating order:', error);
-      return { success: false, error };
+      .eq('id', order.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating order payment status:', updateError);
+      return { success: false, error: updateError };
     }
-    
-    console.log(`Order ${order.id} updated successfully. Status: ${status}`);
-    return { success: true, data };
-    
+
+    // On successful payment, trigger order splitting into vendor sub-orders
+    if (isSuccessful) {
+      console.log(`Splitting master order ${order.id} into vendor sub-orders...`);
+      const splitResult = await splitOrderIntoVendorOrders(order.id);
+      console.log('Order splitting result:', splitResult);
+    }
+
+    return { success: true, data: updatedOrder };
   } catch (error) {
-    console.error('Error processing M-Pesa callback:', error);
+    console.error('Error in processMpesaCallback:', error);
     return { success: false, error: error.message };
   }
 };
@@ -113,37 +108,21 @@ export const getMpesaTransactionStatus = async (checkoutRequestId) => {
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('id, status, payment_status, payment_details')
-      .eq('payment_details->checkout_request_id', checkoutRequestId)
-      .single();
-    
-    if (error) {
-      console.error('Error getting transaction status:', error);
-      return { success: false, error };
+      .select('id, status, payment_status, total_price, total_amount, mpesa_receipt, order_number')
+      .eq('mpesa_checkout_id', checkoutRequestId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return { success: false, status: 'pending' };
     }
-    
-    if (!data) {
-      return { 
-        success: true, 
-        status: 'pending',
-        message: 'Transaction not yet processed' 
-      };
-    }
-    
+
     return {
       success: true,
-      status: data.payment_status,
-      orderId: data.id,
-      details: data.payment_details
+      status: data.payment_status === 'paid' ? 'completed' : data.payment_status,
+      order: data
     };
-    
   } catch (error) {
     console.error('Error checking M-Pesa transaction status:', error);
     return { success: false, error: error.message };
   }
-};
-
-export default {
-  processMpesaCallback,
-  getMpesaTransactionStatus
 };

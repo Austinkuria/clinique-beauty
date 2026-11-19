@@ -639,4 +639,159 @@ router.get('/documents/:sellerId/:filename', async (req, res) => {
   }
 });
 
+// Lookup seller by Clerk user ID (used by SellerGuard)
+router.get('/by-clerk-id/:clerkId', async (req, res) => {
+  try {
+    const { clerkId } = req.params;
+
+    const { data: seller, error } = await supabase
+      .from('sellers')
+      .select('*')
+      .or(`clerk_id.eq.${clerkId},email.eq.${req.user?.email || ''}`)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!seller) {
+      return res.status(404).json({ success: false, message: 'Seller not found' });
+    }
+
+    res.json(seller);
+  } catch (error) {
+    console.error('Error fetching seller by Clerk ID:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch seller', error: error.message });
+  }
+});
+
+// Get orders assigned to the authenticated vendor
+router.get('/orders', async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { data: seller, error: sellerError } = await supabase
+      .from('sellers')
+      .select('id, business_name, status')
+      .or(`clerk_id.eq.${userId},email.eq.${req.user?.email || ''}`)
+      .maybeSingle();
+
+    if (sellerError || !seller) {
+      return res.status(403).json({ success: false, message: 'Seller profile not found' });
+    }
+
+    const { data: vendorOrders, error: ordersError } = await supabase
+      .from('vendor_orders')
+      .select(`
+        *,
+        order_items (
+          id, quantity, price, unit_price,
+          products (id, name, image)
+        ),
+        orders:parent_order_id (
+          order_number, shipping_address, customer_email, customer_phone, created_at
+        )
+      `)
+      .eq('seller_id', seller.id)
+      .order('created_at', { ascending: false });
+
+    if (ordersError) {
+      throw ordersError;
+    }
+
+    res.json({ success: true, data: vendorOrders || [] });
+  } catch (error) {
+    console.error('Error fetching vendor orders:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch vendor orders', error: error.message });
+  }
+});
+
+// Update vendor sub-order status
+router.patch('/orders/:id/status', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { status, carrier, trackingNumber, notes } = req.body;
+
+    const allowedStatuses = ['pending', 'confirmed', 'packed', 'ready_for_pickup', 'in_transit', 'delivered', 'cancelled'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid sub-order status' });
+    }
+
+    const { data: seller } = await supabase
+      .from('sellers')
+      .select('id')
+      .or(`clerk_id.eq.${userId},email.eq.${req.user?.email || ''}`)
+      .maybeSingle();
+
+    if (!seller) {
+      return res.status(403).json({ success: false, message: 'Unauthorized vendor' });
+    }
+
+    const updatePayload = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+    if (carrier) updatePayload.shipping_carrier = carrier;
+    if (trackingNumber) updatePayload.tracking_number = trackingNumber;
+    if (notes) updatePayload.notes = notes;
+
+    const { data: updatedOrder, error: updateError } = await supabase
+      .from('vendor_orders')
+      .update(updatePayload)
+      .eq('id', id)
+      .eq('seller_id', seller.id)
+      .select()
+      .single();
+
+    if (updateError || !updatedOrder) {
+      return res.status(404).json({ success: false, message: 'Sub-order not found or unauthorized' });
+    }
+
+    res.json({ success: true, message: 'Order status updated', data: updatedOrder });
+  } catch (error) {
+    console.error('Error updating sub-order status:', error);
+    res.status(500).json({ success: false, message: 'Failed to update order status', error: error.message });
+  }
+});
+
+// Get seller financial ledger and wallet balances
+router.get('/financials', async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { data: seller } = await supabase
+      .from('sellers')
+      .select('id, business_name, commission_rate')
+      .or(`clerk_id.eq.${userId},email.eq.${req.user?.email || ''}`)
+      .maybeSingle();
+
+    if (!seller) {
+      return res.status(403).json({ success: false, message: 'Unauthorized vendor' });
+    }
+
+    const { data: wallet } = await supabase
+      .from('vendor_wallets')
+      .select('*')
+      .eq('seller_id', seller.id)
+      .maybeSingle();
+
+    const { data: transactions } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('seller_id', seller.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    res.json({
+      success: true,
+      wallet: wallet || { pending_balance: 0, available_balance: 0, total_withdrawn: 0 },
+      transactions: transactions || []
+    });
+  } catch (error) {
+    console.error('Error fetching seller financials:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch financial data', error: error.message });
+  }
+});
+
 export default router;

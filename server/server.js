@@ -1,7 +1,12 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load environment variables
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables from server directory
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Debug logging
 console.log("Environment loaded, SUPABASE_URL exists:", !!process.env.SUPABASE_URL);
@@ -144,15 +149,33 @@ app.post('/api/mpesa/callback', async (req, res) => {
   res.json({ ResultCode: 0, ResultDesc: 'Received' });
 });
 
-// Routes
-app.use('/api/products', productRoutes);
-app.use('/api/cart', clerkMiddleware, cartRoutes);
-app.use('/api/orders', clerkMiddleware, orderRoutes);
-app.use('/api/search', searchRoutes);
-app.use('/api/users', clerkMiddleware, userRoutes);
-app.use('/api/mpesa', mpesaRoutes);
-app.use('/api/seller', clerkMiddleware, sellerRoutes);
-app.use('/api', categoryRoutes);
+// API v1 Router
+const v1Router = express.Router();
+
+// Health check endpoint for v1
+v1Router.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    version: 'v1',
+    timestamp: new Date().toISOString()
+  });
+});
+
+v1Router.use('/products', productRoutes);
+v1Router.use('/cart', clerkMiddleware, cartRoutes);
+v1Router.use('/orders', clerkMiddleware, orderRoutes);
+v1Router.use('/search', searchRoutes);
+v1Router.use('/users', clerkMiddleware, userRoutes);
+v1Router.use('/mpesa', mpesaRoutes);
+v1Router.use('/seller', clerkMiddleware, sellerRoutes);
+v1Router.use('/sellers', clerkMiddleware, sellerRoutes);
+v1Router.use('/', categoryRoutes);
+
+// Mount versioned API routes
+app.use('/api/v1', v1Router);
+
+// Backward compatibility alias for unversioned clients
+app.use('/api', v1Router);
 
 // Add a documentation route
 app.get('/api/docs', (req, res) => {

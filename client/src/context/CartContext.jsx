@@ -69,7 +69,6 @@ export const CartProvider = ({ children }) => {
             stock: item.stock,
         };
     };
-``
 
     // Fetch cart when auth state changes
     useEffect(() => {

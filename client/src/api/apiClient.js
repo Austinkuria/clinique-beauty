@@ -433,84 +433,9 @@ console.log('Environment check:', {
 console.log('DIRECT_API_URL value:', DIRECT_API_URL);
 console.log('SUPABASE_FUNCTIONS_BASE value:', SUPABASE_FUNCTIONS_BASE);
 
-// Use direct API URL if available, otherwise construct it from Supabase URL
+// Direct API URL configuration for unified Express backend
 const constructApiBaseUrl = () => {
-  // In production, FORCE Supabase URL and ignore localhost
-  if (import.meta.env.PROD) {
-    // Priority: VITE_API_URL (but only if it's not localhost) > construct from other env vars > hardcoded fallback
-    if (DIRECT_API_URL && !DIRECT_API_URL.includes('localhost')) {
-      console.log('Using direct API URL from VITE_API_URL (production):', DIRECT_API_URL);
-      return DIRECT_API_URL;
-    }
-    
-    // If VITE_API_URL is localhost or missing, use other env vars
-    if (SUPABASE_FUNCTIONS_BASE) {
-      const baseUrl = SUPABASE_FUNCTIONS_BASE.replace(/\/$/, '');
-      const apiUrl = baseUrl.includes('/functions/v1') ? 
-        `${baseUrl}/api` : `${baseUrl}/functions/v1/api`;
-      console.log('Constructed API URL from SUPABASE_FUNCTIONS_BASE (production):', apiUrl);
-      return apiUrl;
-    }
-    
-    // Construct from VITE_SUPABASE_URL
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (supabaseUrl) {
-      const fallbackUrl = `${supabaseUrl}/functions/v1/api`;
-      console.log('Using fallback Supabase functions URL (production):', fallbackUrl);
-      return fallbackUrl;
-    }
-    
-    // Final hardcoded fallback for production
-    const hardcodedUrl = 'https://zdbfjwienzjdjpawcnuc.supabase.co/functions/v1/api';
-    console.warn('PRODUCTION: Using hardcoded Supabase URL as final fallback:', hardcodedUrl);
-    return hardcodedUrl;
-  }
-  
-  // Development logic (unchanged)
-  if (DIRECT_API_URL) {
-    console.log('Using direct API URL from VITE_API_URL:', DIRECT_API_URL);
-    return DIRECT_API_URL;
-  }
-  
-  console.log('constructApiBaseUrl called with SUPABASE_FUNCTIONS_BASE:', SUPABASE_FUNCTIONS_BASE);
-  
-  if (!SUPABASE_FUNCTIONS_BASE) {
-    console.warn('SUPABASE_FUNCTIONS_BASE is not defined, checking fallbacks...');
-    
-    // Always try to use VITE_SUPABASE_URL to construct the functions URL
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (supabaseUrl) {
-      const fallbackUrl = `${supabaseUrl}/functions/v1/api`;
-      console.log('Using fallback Supabase functions URL:', fallbackUrl);
-      return fallbackUrl;
-    }
-    
-    // Only fall back to localhost in development if no Supabase URL is available
-    if (import.meta.env.DEV) {
-      console.warn('DEV MODE: Falling back to localhost - ensure your .env file has VITE_SUPABASE_URL set');
-      return `http://localhost:5000/api`;
-    }
-    
-    // In production, this should never happen
-    throw new Error('No Supabase URL configured. Please set VITE_API_URL or VITE_SUPABASE_URL in your environment variables.');
-  }
-  
-  // Remove trailing slash if present
-  const baseUrl = SUPABASE_FUNCTIONS_BASE.replace(/\/$/, '');
-  
-  // Log the base URL for debugging
-  console.log("Base URL before processing:", baseUrl);
-  
-  // Check if the URL already contains "functions/v1"
-  if (baseUrl.includes('/functions/v1')) {
-    const finalUrl = `${baseUrl}/api`;
-    console.log("Final API URL (already has functions/v1):", finalUrl);
-    return finalUrl; // Already has the path
-  } else {
-    const finalUrl = `${baseUrl}/functions/v1/api`;
-    console.log("Final API URL (added functions/v1):", finalUrl);
-    return finalUrl; // Add the full path
-  }
+  return DIRECT_API_URL || 'http://localhost:5000/api/v1';
 };
 
 // Use the corrected function to set API_BASE_URL
@@ -525,9 +450,7 @@ if (!SUPABASE_FUNCTIONS_BASE) {
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_ANON_KEY) {
-    console.error("Error: VITE_SUPABASE_ANON_KEY environment variable is not set.");
-    // Optionally throw an error
-    // throw new Error("Missing VITE_SUPABASE_ANON_KEY environment variable.");
+    console.warn("Notice: VITE_SUPABASE_ANON_KEY environment variable is not set. Supabase client features will run in offline mode.");
 }
 
 // Store the getToken function reference

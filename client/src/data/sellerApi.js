@@ -2,8 +2,8 @@ import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
 import { useCallback } from 'react';
 
-// Define API base URLs - Use only Supabase Functions (Updated: 2025-06-30)
-const SUPABASE_API_URL = 'https://zdbfjwienzjdjpawcnuc.supabase.co/functions/v1/api';
+// Define API base URL for unified Express backend
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
 // Helper to get auth token from Clerk (for use outside of React components)
 const getAuthHeader = async () => {
@@ -44,10 +44,10 @@ export const sellerApi = {
       const headers = await getAuthHeader();
       
       console.log('Fetching sellers from Supabase Functions API');
-      console.log('API URL:', `${SUPABASE_API_URL}/sellers${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+      console.log('API URL:', `${API_URL}/sellers${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
       
       const response = await axios.get(
-        `${SUPABASE_API_URL}/sellers${queryParams.toString() ? '?' + queryParams.toString() : ''}`,
+        `${API_URL}/sellers${queryParams.toString() ? '?' + queryParams.toString() : ''}`,
         { headers }
       );
       
@@ -71,7 +71,11 @@ export const sellerApi = {
       // Get auth headers for authenticated requests
       const headers = await getAuthHeader();
       
-      const response = await axios.get(`${SUPABASE_API_URL}/sellers/${id}`, { headers });
+      const isClerkId = id && id.startsWith('user_');
+      const endpoint = isClerkId 
+        ? `${API_URL}/sellers/by-clerk-id/${id}`
+        : `${API_URL}/sellers/${id}`;
+      const response = await axios.get(endpoint, { headers });
       return response.data;
     } catch (error) {
       console.error(`Error fetching seller ${id}:`, error);
@@ -94,7 +98,7 @@ export const sellerApi = {
       console.log('Using authorization headers:', headers.Authorization ? 'Bearer token present' : 'No bearer token');
       
       const response = await axios.patch(
-        `${SUPABASE_API_URL}/sellers/${id}/verification`, 
+        `${API_URL}/sellers/${id}/verification`, 
         { status, notes },
         { headers }
       );
@@ -133,7 +137,7 @@ export const sellerApi = {
       console.log('Using authorization headers:', headers.Authorization ? 'Bearer token present' : 'No bearer token');
       
       const response = await axios.patch(
-        `${SUPABASE_API_URL}/sellers/${id}`, 
+        `${API_URL}/sellers/${id}`, 
         sellerData,
         { headers }
       );
@@ -168,7 +172,7 @@ export const sellerApi = {
       }
       
       console.log('Fetching verification requests from Supabase Functions API');
-      const response = await axios.get(`${SUPABASE_API_URL}/verification/pending`, { headers });
+      const response = await axios.get(`${API_URL}/verification/pending`, { headers });
       return response.data || []; // Return the data array from the response
     } catch (error) {
       console.error('Error fetching verification requests:', error);
@@ -188,7 +192,7 @@ export const sellerApi = {
       
       // Try to get document metadata/URL from Supabase Functions
       const metadataResponse = await axios.get(
-        `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`,
+        `${API_URL}/seller/documents/${sellerId}/${filename}`,
         { headers }
       );
       
@@ -221,7 +225,7 @@ export const sellerApi = {
 
   // Get document download URL for seller documents
   getDocumentDownloadUrl: (sellerId, filename) => {
-    return `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`;
+    return `${API_URL}/seller/documents/${sellerId}/${filename}`;
   },
 
   // --- SELLER PRODUCT MANAGEMENT ---
@@ -231,7 +235,7 @@ export const sellerApi = {
       // Get auth headers for authenticated requests
       const headers = await getAuthHeader();
       
-      const response = await axios.get(`${SUPABASE_API_URL}/seller/products`, { headers });
+      const response = await axios.get(`${API_URL}/seller/products`, { headers });
       return response.data || [];
     } catch (error) {
       console.error('Error fetching seller products:', error);
@@ -251,7 +255,7 @@ export const sellerApi = {
       }
       
       const response = await axios.post(
-        `${SUPABASE_API_URL}/seller/products`, 
+        `${API_URL}/seller/products`, 
         productData,
         { headers }
       );
@@ -286,7 +290,7 @@ export const sellerApi = {
       }
       
       const response = await axios.put(
-        `${SUPABASE_API_URL}/seller/products/${productId}`, 
+        `${API_URL}/seller/products/${productId}`, 
         productData,
         { headers }
       );
@@ -321,7 +325,7 @@ export const sellerApi = {
       }
       
       const response = await axios.delete(
-        `${SUPABASE_API_URL}/seller/products/${productId}`, 
+        `${API_URL}/seller/products/${productId}`, 
         { headers }
       );
       
@@ -365,7 +369,7 @@ export const useSellerApi = () => {
       console.log('Fetching sellers from Supabase Functions API (hook version)');
       
       const response = await axios.get(
-        `${SUPABASE_API_URL}/sellers${queryParams.toString() ? '?' + queryParams.toString() : ''}`,
+        `${API_URL}/sellers${queryParams.toString() ? '?' + queryParams.toString() : ''}`,
         { headers }
       );
       
@@ -384,8 +388,8 @@ export const useSellerApi = () => {
       // Check if the ID is a Clerk user ID (starts with 'user_') or a UUID
       const isClerkId = id && id.startsWith('user_');
       const endpoint = isClerkId 
-        ? `${SUPABASE_API_URL}/sellers/by-clerk-id/${id}`
-        : `${SUPABASE_API_URL}/sellers/${id}`;
+        ? `${API_URL}/sellers/by-clerk-id/${id}`
+        : `${API_URL}/sellers/${id}`;
       
       const response = await axios.get(endpoint, { headers });
       return response.data;
@@ -400,7 +404,7 @@ export const useSellerApi = () => {
       const token = await getToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const response = await axios.get(`${SUPABASE_API_URL}/verification/pending`, { headers });
+      const response = await axios.get(`${API_URL}/verification/pending`, { headers });
       return response.data || [];
     } catch (error) {
       console.error('Error fetching verification requests:', error);
@@ -418,7 +422,7 @@ export const useSellerApi = () => {
       const headers = { Authorization: `Bearer ${token}` };
       
       const response = await axios.patch(
-        `${SUPABASE_API_URL}/sellers/${id}/verification`, 
+        `${API_URL}/sellers/${id}/verification`, 
         { status, notes },
         { headers }
       );
@@ -443,7 +447,7 @@ export const useSellerApi = () => {
       const headers = { Authorization: `Bearer ${token}` };
       
       const response = await axios.patch(
-        `${SUPABASE_API_URL}/sellers/${id}`, 
+        `${API_URL}/sellers/${id}`, 
         sellerData,
         { headers }
       );
@@ -469,7 +473,7 @@ export const useSellerApi = () => {
       
       // Try to get document metadata/URL from Supabase Functions
       const metadataResponse = await axios.get(
-        `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`,
+        `${API_URL}/seller/documents/${sellerId}/${filename}`,
         { headers }
       );
       
@@ -501,7 +505,7 @@ export const useSellerApi = () => {
   }, [getToken]);
 
   const getDocumentDownloadUrl = useCallback((sellerId, filename) => {
-    return `${SUPABASE_API_URL}/seller/documents/${sellerId}/${filename}`;
+    return `${API_URL}/seller/documents/${sellerId}/${filename}`;
   }, []);
 
   const getSellerByClerkId = useCallback(async (clerkId) => {
@@ -509,7 +513,7 @@ export const useSellerApi = () => {
       const token = await getToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const response = await axios.get(`${SUPABASE_API_URL}/sellers/by-clerk-id/${clerkId}`, { headers });
+      const response = await axios.get(`${API_URL}/sellers/by-clerk-id/${clerkId}`, { headers });
       return response.data;
     } catch (error) {
       console.error(`Error fetching seller by Clerk ID ${clerkId}:`, error);
@@ -528,7 +532,7 @@ export const useSellerApi = () => {
       
       const headers = { Authorization: `Bearer ${token}` };
       
-      const response = await axios.get(`${SUPABASE_API_URL}/seller/products`, { headers });
+      const response = await axios.get(`${API_URL}/seller/products`, { headers });
       return response.data || [];
     } catch (error) {
       console.error('Error fetching seller products:', error);
@@ -549,7 +553,7 @@ export const useSellerApi = () => {
       const headers = { Authorization: `Bearer ${token}` };
       
       const response = await axios.post(
-        `${SUPABASE_API_URL}/seller/products`,
+        `${API_URL}/seller/products`,
         productFormData,
         { headers }
       );
@@ -574,7 +578,7 @@ export const useSellerApi = () => {
       const headers = { Authorization: `Bearer ${token}` };
       
       const response = await axios.put(
-        `${SUPABASE_API_URL}/seller/products/${productId}`,
+        `${API_URL}/seller/products/${productId}`,
         productFormData,
         { headers }
       );
@@ -599,7 +603,7 @@ export const useSellerApi = () => {
       const headers = { Authorization: `Bearer ${token}` };
       
       const response = await axios.delete(
-        `${SUPABASE_API_URL}/seller/products/${productId}`,
+        `${API_URL}/seller/products/${productId}`,
         { headers }
       );
       

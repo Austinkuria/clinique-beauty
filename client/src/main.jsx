@@ -13,11 +13,11 @@ import ThemedToaster from './components/ThemedToaster.jsx';
 import './index.css';
 import { RouterProvider } from 'react-router-dom';
 
-// Clerk Publishable Key
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// Clerk Publishable Key (optional for development guest/demo mode)
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 
 if (!publishableKey) {
-    throw new Error("Missing Clerk Publishable Key");
+    console.warn("Clerk Publishable Key is not set in client/.env. Operating in guest/demo mode.");
 }
 
 // New component to access ThemeContext and configure Clerk

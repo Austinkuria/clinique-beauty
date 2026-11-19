@@ -39,10 +39,10 @@ export const mockAdminProducts = [
     approvalStatus: 'Approved',
     createdAt: '2025-01-15',
     updatedAt: '2025-06-20',
-    image: 'https://via.placeholder.com/400',
+    image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80',
     gallery: [
-      'https://via.placeholder.com/800',
-      'https://via.placeholder.com/800',
+      'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1608248597359-5484860b7646?auto=format&fit=crop&w=800&q=80'
     ],
     seo: {
       title: 'Moisturizing Cream - Deep Hydration',
@@ -73,10 +73,10 @@ export const mockAdminProducts = [
     approvalStatus: 'Approved',
     createdAt: '2025-02-10',
     updatedAt: '2025-06-15',
-    image: 'https://via.placeholder.com/400',
+    image: 'https://images.unsplash.com/photo-1631730486784-5456119f69ae?auto=format&fit=crop&w=800&q=80',
     gallery: [
-      'https://via.placeholder.com/800',
-      'https://via.placeholder.com/800',
+      'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80'
     ],
     seo: {
       title: 'Liquid Foundation - Perfect Coverage',
@@ -107,10 +107,10 @@ export const mockAdminProducts = [
     approvalStatus: 'Approved',
     createdAt: '2025-03-05',
     updatedAt: '2025-05-18',
-    image: 'https://via.placeholder.com/400',
+    image: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=800&q=80',
     gallery: [
-      'https://via.placeholder.com/800',
-      'https://via.placeholder.com/800',
+      'https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?auto=format&fit=crop&w=800&q=80'
     ],
     seo: {
       title: 'Citrus Perfume - Fresh & Vibrant',
@@ -141,10 +141,10 @@ export const mockAdminProducts = [
     approvalStatus: 'Approved',
     createdAt: '2025-01-20',
     updatedAt: '2025-06-10',
-    image: 'https://via.placeholder.com/400',
+    image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=800&q=80',
     gallery: [
-      'https://via.placeholder.com/800',
-      'https://via.placeholder.com/800',
+      'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1519735777090-ec97162dc266?auto=format&fit=crop&w=800&q=80'
     ],
     seo: {
       title: 'Hair Repair Mask - Intense Restoration',
@@ -175,10 +175,10 @@ export const mockAdminProducts = [
     approvalStatus: 'Approved',
     createdAt: '2025-02-15',
     updatedAt: '2025-06-25',
-    image: 'https://via.placeholder.com/400',
+    image: 'https://images.unsplash.com/photo-1556228852-80b6e5eeff06?auto=format&fit=crop&w=800&q=80',
     gallery: [
-      'https://via.placeholder.com/800',
-      'https://via.placeholder.com/800',
+      'https://images.unsplash.com/photo-1556228722-d0b503022e37?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1617897903246-719242758050?auto=format&fit=crop&w=800&q=80'
     ],
     seo: {
       title: 'Cleansing Gel - Gentle Daily Cleanser',
@@ -209,10 +209,10 @@ export const mockAdminProducts = [
     approvalStatus: 'Pending',
     createdAt: '2025-06-01',
     updatedAt: '2025-06-01',
-    image: 'https://via.placeholder.com/400',
+    image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=800&q=80',
     gallery: [
-      'https://via.placeholder.com/800',
-      'https://via.placeholder.com/800',
+      'https://images.unsplash.com/photo-1567928815116-24d1a37c9569?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1608248597359-5484860b7646?auto=format&fit=crop&w=800&q=80'
     ],
     seo: {
       title: 'Exfoliating Scrub - Refresh Your Skin',
@@ -243,10 +243,10 @@ export const mockAdminProducts = [
     approvalStatus: 'Draft',
     createdAt: '2025-05-15',
     updatedAt: '2025-05-15',
-    image: 'https://via.placeholder.com/400',
+    image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=800&q=80',
     gallery: [
-      'https://via.placeholder.com/800',
-      'https://via.placeholder.com/800',
+      'https://images.unsplash.com/photo-1556228724-4da94a73229b?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80'
     ],
     seo: {
       title: 'Body Butter - Rich Moisture',

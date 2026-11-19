@@ -177,28 +177,29 @@ function AdminOrders() {
         const fetchOrders = async () => {
             setLoading(true);
             try {
-                // In a real app, you would fetch data from your API
-                // const data = await api.getAdminOrders();
-                // setOrders(data);
+                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+                const response = await fetch(`${baseUrl}/orders/admin/all`).catch(() => null);
+                if (response && response.ok) {
+                    const resJson = await response.json();
+                    if (resJson.data && resJson.data.length > 0) {
+                        setOrders(resJson.data);
+                        setProcessingOrders(resJson.data.filter(order => order.status === 'processing'));
+                        setPendingPaymentOrders(resJson.data.filter(order => order.payment_status === 'pending'));
+                        setReturnsData(mockReturns);
+                        setIssuesData(mockIssues);
+                        setLoading(false);
+                        return;
+                    }
+                }
                 
-                // For now, we'll use mock data with a loading simulation
-                setTimeout(() => {
-                    setOrders(mockOrders);
-                    // Also set fulfillment data from our mock dashboard data
-                    setFulfillmentData(mockDashboardData.fulfillmentData);
-                    
-                    // Get processing orders
-                    setProcessingOrders(mockOrders.filter(order => order.status === 'Processing'));
-                    
-                    // Get pending payment orders
-                    setPendingPaymentOrders(mockOrders.filter(order => order.paymentStatus === 'Pending'));
-                    
-                    // Set returns and issues data from mock data
-                    setReturnsData(mockReturns);
-                    setIssuesData(mockIssues);
-                    
-                    setLoading(false);
-                }, 1000);
+                // Fallback to mock baseline if database orders table is empty
+                setOrders(mockOrders);
+                setFulfillmentData(mockDashboardData.fulfillmentData);
+                setProcessingOrders(mockOrders.filter(order => order.status === 'Processing'));
+                setPendingPaymentOrders(mockOrders.filter(order => order.paymentStatus === 'Pending'));
+                setReturnsData(mockReturns);
+                setIssuesData(mockIssues);
+                setLoading(false);
             } catch (error) {
                 console.error('Error fetching orders:', error);
                 setLoading(false);
