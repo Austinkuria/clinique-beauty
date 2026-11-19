@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import Banner from '../features/home/components/Banner';
+import MobileBottomNav from '../components/MobileBottomNav';
 import { Box } from '@mui/material';
 
 function MainLayout() {
@@ -16,15 +17,15 @@ function MainLayout() {
                     flexGrow: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    // Remove fixed height calculation which might be causing spacing issues
-                    // Let content determine its own height
                     width: '100%',
-                    p: 0 // Ensure no padding is affecting the Hero component
+                    p: 0,
+                    pb: { xs: 8, md: 0 } // Bottom padding to prevent bottom nav from covering content on mobile/tablet
                 }}
             >
                 <Outlet />
             </Box>
             <Footer />
+            <MobileBottomNav />
         </Box>
     );
 }

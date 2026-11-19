@@ -191,7 +191,7 @@ const CommissionSettings = ({ commissionData, loading, onUpdate }) => {
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Minimum Payout Amount ($)"
+              label="Minimum Payout Amount (KSh)"
               type="number"
               name="minimumPayoutAmount"
               value={settingsForm.minimumPayoutAmount}
@@ -287,7 +287,7 @@ const CommissionSettings = ({ commissionData, loading, onUpdate }) => {
                         <Grid item xs={12} md={4}>
                           <TextField
                             fullWidth
-                            label="Minimum Sales ($)"
+                            label="Minimum Sales (KSh)"
                             type="number"
                             value={tier.minSales}
                             onChange={(e) => handleTierChange(index, 'minSales', Number(e.target.value))}

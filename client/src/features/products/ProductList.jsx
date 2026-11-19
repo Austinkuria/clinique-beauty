@@ -7,6 +7,7 @@ import {
     Typography,
     Box,
     CircularProgress,
+    Skeleton,
     Alert,
     FormControl,
     Select,
@@ -29,7 +30,7 @@ import {
     Category as CategoryIcon,
     Check as CheckIcon
 } from '@mui/icons-material';
-import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink, useSearchParams } from 'react-router-dom';
 import ProductCard from './components/ProductCard';
 import { ThemeContext } from '../../context/ThemeContext';
 import { useCategories } from '../../context/CategoryContext';
@@ -38,6 +39,8 @@ import mockProducts from '../../data/mockProducts';
 
 export default function ProductList() {
     const { categoryName } = useParams();
+    const [searchParams] = useSearchParams();
+    const searchParam = searchParams.get('search');
     const navigate = useNavigate();
     const { colorValues } = useContext(ThemeContext);
     const { categories } = useCategories();
@@ -165,6 +168,18 @@ export default function ProductList() {
                     return false;
                 }
 
+                // Keyword search filter
+                if (searchParam) {
+                    const q = searchParam.toLowerCase().trim();
+                    const matchesName = p.name?.toLowerCase().includes(q);
+                    const matchesCat = p.category?.toLowerCase().includes(q);
+                    const matchesSub = p.subcategory?.toLowerCase().includes(q);
+                    const matchesDesc = p.description?.toLowerCase().includes(q);
+                    if (!matchesName && !matchesCat && !matchesSub && !matchesDesc) {
+                        return false;
+                    }
+                }
+
                 // Price range filter
                 const price = Number(p.price) || 0;
                 if (appliedPriceMin !== '' && price < Number(appliedPriceMin)) {
@@ -190,9 +205,9 @@ export default function ProductList() {
                 if (sortBy === 'rating') return (Number(b.rating) || 0) - (Number(a.rating) || 0);
                 return 0;
             });
-    }, [products, selectedCategory, selectedSubcategory, appliedPriceMin, appliedPriceMax, shippedFrom, sortBy]);
+    }, [products, selectedCategory, selectedSubcategory, appliedPriceMin, appliedPriceMax, shippedFrom, sortBy, searchParam]);
 
-    const activeFilterCount = (appliedPriceMin ? 1 : 0) + (appliedPriceMax ? 1 : 0) + (selectedSubcategory !== 'All' ? 1 : 0) + (shippedFrom !== 'all' ? 1 : 0);
+    const activeFilterCount = (appliedPriceMin ? 1 : 0) + (appliedPriceMax ? 1 : 0) + (selectedSubcategory !== 'All' ? 1 : 0) + (shippedFrom !== 'all' ? 1 : 0) + (searchParam ? 1 : 0);
 
     return (
         <Box
@@ -230,7 +245,7 @@ export default function ProductList() {
                             </MuiLink>
                         ) : null}
                         <Typography sx={{ color: colorValues.primary, fontSize: '0.875rem', fontWeight: 700 }}>
-                            {selectedCategory === 'All' ? 'All Products' : selectedCategory}
+                            {searchParam ? `Search: "${searchParam}"` : (selectedCategory === 'All' ? 'All Products' : selectedCategory)}
                         </Typography>
                     </Breadcrumbs>
                 </Box>
@@ -507,8 +522,42 @@ export default function ProductList() {
 
                         {/* Loading / Error / Empty States */}
                         {loading ? (
-                            <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-                                <CircularProgress />
+                            <Box
+                                sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: {
+                                        xs: 'repeat(2, 1fr)',
+                                        sm: 'repeat(2, 1fr)',
+                                        md: 'repeat(3, 1fr)',
+                                        lg: 'repeat(4, 1fr)'
+                                    },
+                                    gap: 2,
+                                    width: '100%'
+                                }}
+                            >
+                                {[...Array(8)].map((_, i) => (
+                                    <Paper
+                                        key={i}
+                                        elevation={0}
+                                        sx={{
+                                            p: 1.5,
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                            borderRadius: 2,
+                                            backgroundColor: colorValues.bgPaper,
+                                            display: 'flex',
+                                            flexDirection: 'column'
+                                        }}
+                                    >
+                                        <Skeleton variant="rectangular" width="100%" sx={{ pt: '100%', borderRadius: 1, mb: 1.5 }} />
+                                        <Skeleton variant="text" width="40%" height={16} sx={{ mb: 0.8 }} />
+                                        <Skeleton variant="text" width="90%" height={20} sx={{ mb: 0.4 }} />
+                                        <Skeleton variant="text" width="60%" height={20} sx={{ mb: 0.8 }} />
+                                        <Skeleton variant="text" width="50%" height={16} sx={{ mb: 1 }} />
+                                        <Skeleton variant="text" width="35%" height={24} sx={{ mt: 'auto', mb: 1.5 }} />
+                                        <Skeleton variant="rectangular" width="100%" height={34} sx={{ borderRadius: 1 }} />
+                                    </Paper>
+                                ))}
                             </Box>
                         ) : error ? (
                             <Alert severity="error" sx={{ mb: 4 }}>

@@ -1,4 +1,5 @@
 import express from 'express';
+import { supabase } from '../config/db.js';
 
 const router = express.Router();
 

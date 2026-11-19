@@ -28,6 +28,7 @@ import {
 } from 'recharts';
 import StatCard from '../../components/charts/StatCard';
 import { AttachMoney as RevenueIcon, TrendingUp as GrowthIcon } from '@mui/icons-material';
+import { formatCurrency } from '../../../../utils/helpers';
 
 function RevenueAnalytics() {
     const { theme, colorValues } = useContext(ThemeContext);
@@ -111,8 +112,8 @@ function RevenueAnalytics() {
                 <Grid item xs={12} sm={6} md={4}>
                     <StatCard 
                         title="Average Order Value" 
-                        value={`$Ksh{(stats.revenue.total / stats.orders.total).toFixed(2)}`} 
-                        icon={<AttachMoney />} 
+                        value={formatCurrency(stats.revenue.total / (stats.orders.total || 1))} 
+                        icon={<RevenueIcon />} 
                         color="info"
                     />
                 </Grid>
@@ -153,7 +154,7 @@ function RevenueAnalytics() {
                                         } 
                                     />
                                     <YAxis />
-                                    <RechartsTooltip formatter={(value) => [`$Ksh{value}`, 'Revenue']} />
+                                    <RechartsTooltip formatter={(value) => [formatCurrency(value), 'Revenue']} />
                                     <Legend />
                                     <Line 
                                         type="monotone" 
@@ -200,7 +201,7 @@ function RevenueAnalytics() {
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="month" />
                                     <YAxis />
-                                    <RechartsTooltip formatter={(value) => [`$Ksh{value}`, value === null ? 'No Data Yet' : 'Revenue']} />
+                                    <RechartsTooltip formatter={(value) => [value === null ? 'No Data Yet' : formatCurrency(value), 'Revenue']} />
                                     <Legend />
                                     <Bar 
                                         dataKey="actual" 

@@ -1,6 +1,8 @@
 // client/src/data/mockProducts.js
 // Centralised product catalog with verified high-resolution CDN images
 
+import { slugify } from '../utils/helpers';
+
 const mockProducts = [
     // Skincare Products
     {
@@ -359,4 +361,16 @@ const mockProducts = [
     }
 ];
 
-export default mockProducts;
+// Ensure all catalog items carry safe slugs and UUIDs
+const enrichedMockProducts = mockProducts.map((p) => {
+    const slug = slugify(p.name);
+    const hexSuffix = Number(p.id).toString(16).padStart(4, '0');
+    const uuid = `e4f1a234-8901-4b5c-a1d2-3e4f5a6b${hexSuffix}`;
+    return {
+        ...p,
+        slug: p.slug || slug,
+        uuid: p.uuid || uuid
+    };
+});
+
+export default enrichedMockProducts;

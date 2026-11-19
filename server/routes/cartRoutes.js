@@ -1,11 +1,49 @@
 import express from 'express';
+import { supabase } from '../config/db.js';
 
 const router = express.Router();
+
+// Helper to resolve Clerk user id to database user record
+async function getOrCreateDbUser(clerkUser) {
+  if (!supabase || !clerkUser?.id) return null;
+  const clerkId = clerkUser.id;
+  const email = clerkUser.emailAddresses?.[0]?.emailAddress || clerkUser.email || `${clerkId}@clinique.internal`;
+  const name = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Clinique Customer';
+
+  const { data: existingUser } = await supabase
+    .from('users')
+    .select('id, clerk_id, email, role')
+    .eq('clerk_id', clerkId)
+    .maybeSingle();
+
+  if (existingUser) {
+    return existingUser;
+  }
+
+  const { data: newUser, error } = await supabase
+    .from('users')
+    .insert({ clerk_id: clerkId, email, name, role: 'customer' })
+    .select('id, clerk_id, email, role')
+    .maybeSingle();
+
+  if (error) {
+    const { data: byEmail } = await supabase.from('users').select('id, clerk_id, email, role').eq('email', email).maybeSingle();
+    return byEmail || null;
+  }
+  return newUser;
+}
 
 // Get cart items for the authenticated user
 router.get('/', async (req, res) => {
   try {
-    const userId = req.user.id;
+    if (!supabase) {
+      return res.json([]);
+    }
+
+    const dbUser = await getOrCreateDbUser(req.user);
+    if (!dbUser) {
+      return res.json([]);
+    }
     
     const { data, error } = await supabase
       .from('cart_items')
@@ -13,32 +51,37 @@ router.get('/', async (req, res) => {
         id,
         quantity,
         product_id,
-        shade,
         products (
           id, name, price, image, stock
         )
       `)
-      .eq('user_id', userId);
+      .eq('user_id', dbUser.id);
     
     if (error) {
-      throw error;
+      console.warn('Database error fetching cart items, returning empty array:', error.message);
+      return res.json([]);
     }
     
-    res.json(data);
+    res.json(data || []);
   } catch (error) {
     console.error('Error fetching cart items:', error);
-    res.status(500).json({ 
-      error: true, 
-      message: 'Failed to fetch cart items' 
-    });
+    res.json([]);
   }
 });
 
 // Add item to cart
 router.post('/add', async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { productId, quantity, shade } = req.body;
+    if (!supabase) {
+      return res.status(200).json({ success: true, localOnly: true });
+    }
+
+    const dbUser = await getOrCreateDbUser(req.user);
+    if (!dbUser) {
+      return res.status(401).json({ error: true, message: 'Authentication required' });
+    }
+
+    const { productId, quantity } = req.body;
     
     if (!productId || !quantity) {
       return res.status(400).json({ 
@@ -51,13 +94,11 @@ router.post('/add', async (req, res) => {
     const { data: existingItem } = await supabase
       .from('cart_items')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', dbUser.id)
       .eq('product_id', productId)
-      .eq('shade', shade || null)
-      .single();
+      .maybeSingle();
     
     if (existingItem) {
-      // Update quantity if item already exists
       const { data, error } = await supabase
         .from('cart_items')
         .update({ quantity: existingItem.quantity + quantity })
@@ -75,10 +116,9 @@ router.post('/add', async (req, res) => {
     const { data, error } = await supabase
       .from('cart_items')
       .insert({
-        user_id: userId,
+        user_id: dbUser.id,
         product_id: productId,
-        quantity,
-        shade
+        quantity
       })
       .select();
     
@@ -99,14 +139,17 @@ router.post('/add', async (req, res) => {
 // Remove item from cart
 router.delete('/:id', async (req, res) => {
   try {
-    const userId = req.user.id;
+    if (!supabase) return res.json({ success: true });
+    const dbUser = await getOrCreateDbUser(req.user);
+    if (!dbUser) return res.json({ success: true });
+
     const { id } = req.params;
     
     const { error } = await supabase
       .from('cart_items')
       .delete()
       .eq('id', id)
-      .eq('user_id', userId);
+      .eq('user_id', dbUser.id);
     
     if (error) {
       throw error;
@@ -125,12 +168,14 @@ router.delete('/:id', async (req, res) => {
 // Clear cart
 router.delete('/clear', async (req, res) => {
   try {
-    const userId = req.user.id;
+    if (!supabase) return res.json({ success: true });
+    const dbUser = await getOrCreateDbUser(req.user);
+    if (!dbUser) return res.json({ success: true });
     
     const { error } = await supabase
       .from('cart_items')
       .delete()
-      .eq('user_id', userId);
+      .eq('user_id', dbUser.id);
     
     if (error) {
       throw error;

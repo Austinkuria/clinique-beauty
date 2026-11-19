@@ -53,19 +53,37 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get product by ID
-router.get('/:id', async (req, res) => {
+// Get product by ID, UUID, or Slug
+router.get('/:identifier', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { identifier } = req.params;
     
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single();
+    // Check whether identifier is integer ID, UUID, or slug
+    let query = supabase.from('products').select('*');
     
-    if (error) {
-      throw error;
+    if (/^\d+$/.test(identifier)) {
+      query = query.eq('id', parseInt(identifier, 10));
+    } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier)) {
+      query = query.eq('id', identifier);
+    } else {
+      query = query.eq('slug', identifier);
+    }
+    
+    let { data, error } = await query.single();
+    
+    // If not found by exact slug column, attempt matching product name
+    if (error || !data) {
+      const sanitizedName = identifier.replace(/-/g, ' ');
+      const { data: fallbackList } = await supabase
+        .from('products')
+        .select('*')
+        .ilike('name', `%${sanitizedName}%`)
+        .limit(1);
+        
+      if (fallbackList && fallbackList.length > 0) {
+        data = fallbackList[0];
+        error = null;
+      }
     }
     
     if (!data) {
@@ -77,7 +95,7 @@ router.get('/:id', async (req, res) => {
     
     res.json(data);
   } catch (error) {
-    console.error('Error fetching product by ID:', error);
+    console.error('Error fetching product by identifier:', error);
     res.status(500).json({ 
       error: true, 
       message: 'Failed to retrieve product' 

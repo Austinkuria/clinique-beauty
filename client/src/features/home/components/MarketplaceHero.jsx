@@ -5,12 +5,9 @@ import React, { useState, useEffect } from 'react';
 import {
     Box,
     Container,
-    Grid,
     List,
     ListItem,
     ListItemButton,
-    ListItemText,
-    ListItemIcon,
     Typography,
     Button,
     Paper,
@@ -18,7 +15,6 @@ import {
     IconButton
 } from '@mui/material';
 import {
-    Category as CategoryIcon,
     ArrowBackIosNew as PrevIcon,
     ArrowForwardIos as NextIcon,
     ChevronRight as ChevronRightIcon
@@ -55,14 +51,26 @@ export default function MarketplaceHero({ banners = [], sidePromos = [] }) {
 
     return (
         <Box sx={{ py: 1.5, backgroundColor: colorValues.bgDefault, width: '100%' }}>
-            <Container maxWidth={false} sx={{ px: { xs: 1, sm: 1.5, md: 2 } }}>
-                <Grid container spacing={1.5}>
-                    {/* Left Category Navigation Sidebar (Synchronised with Navbar and Admin Taxonomy) */}
-                    <Grid item xs={12} md={3} lg={2.5}>
+            <Container maxWidth={false} sx={{ px: { xs: 1, sm: 1.5, md: 2 }, width: '100%' }}>
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            md: sidePromos.length > 0 ? '220px 1fr' : '220px 1fr',
+                            lg: sidePromos.length > 0 ? '240px 1fr 280px' : '240px 1fr'
+                        },
+                        gap: 1.5,
+                        width: '100%',
+                        alignItems: 'stretch'
+                    }}
+                >
+                    {/* Left Category Navigation Sidebar (Clean typography without redundant icons) */}
+                    <Box sx={{ display: { xs: 'none', md: 'block' }, width: '100%', height: HERO_HEIGHT }}>
                         <Paper
                             elevation={0}
                             sx={{
-                                height: HERO_HEIGHT,
+                                height: '100%',
                                 border: '1px solid',
                                 borderColor: 'divider',
                                 borderRadius: 2,
@@ -84,40 +92,42 @@ export default function MarketplaceHero({ banners = [], sidePromos = [] }) {
                                             component={RouterLink}
                                             to={`/products/${cat.slug || cat.name.toLowerCase()}`}
                                             sx={{
-                                                py: 1.1,
+                                                py: 1.2,
                                                 px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
                                                 '&:hover': {
                                                     backgroundColor: 'rgba(0, 0, 0, 0.04)',
                                                     color: colorValues.primary
                                                 }
                                             }}
                                         >
-                                            <ListItemIcon sx={{ minWidth: 30, color: 'inherit' }}>
-                                                <CategoryIcon fontSize="small" />
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={cat.name}
-                                                primaryTypographyProps={{
+                                            <Typography
+                                                sx={{
                                                     fontSize: '0.85rem',
-                                                    fontWeight: 500
+                                                    fontWeight: 500,
+                                                    color: 'inherit'
                                                 }}
-                                            />
+                                            >
+                                                {cat.name}
+                                            </Typography>
                                             <ChevronRightIcon sx={{ fontSize: '0.95rem', color: colorValues.textSecondary }} />
                                         </ListItemButton>
                                     </ListItem>
                                 ))}
                             </List>
                         </Paper>
-                    </Grid>
+                    </Box>
 
-                    {/* Central Hero Carousel */}
-                    <Grid item xs={12} md={sidePromos.length > 0 ? 6 : 9} lg={sidePromos.length > 0 ? 7 : 9.5}>
+                    {/* Central Hero Carousel (Takes 1fr, expanding to push side promos flush to the right) */}
+                    <Box sx={{ width: '100%', height: HERO_HEIGHT, minWidth: 0 }}>
                         {activeBanner && (
                             <Paper
                                 elevation={0}
                                 sx={{
                                     position: 'relative',
-                                    height: HERO_HEIGHT,
+                                    height: '100%',
                                     width: '100%',
                                     borderRadius: 2,
                                     overflow: 'hidden',
@@ -130,7 +140,7 @@ export default function MarketplaceHero({ banners = [], sidePromos = [] }) {
                                     alignItems: 'center'
                                 }}
                             >
-                                {/* Solid translucent dark overlay for contrast */}
+                                {/* Solid translucent dark overlay for typography contrast */}
                                 <Box
                                     sx={{
                                         position: 'absolute',
@@ -139,7 +149,7 @@ export default function MarketplaceHero({ banners = [], sidePromos = [] }) {
                                     }}
                                 />
 
-                                <Box sx={{ position: 'relative', zIndex: 2, px: { xs: 3, md: 5 }, maxWidth: 580, color: '#ffffff' }}>
+                                <Box sx={{ position: 'relative', zIndex: 2, px: { xs: 3, md: 5 }, maxWidth: 640, color: '#ffffff' }}>
                                     {activeBanner.badge && (
                                         <Chip
                                             label={activeBanner.badge}
@@ -220,73 +230,79 @@ export default function MarketplaceHero({ banners = [], sidePromos = [] }) {
                                 )}
                             </Paper>
                         )}
-                    </Grid>
+                    </Box>
 
-                    {/* Right Hand Promotional Side Tiles */}
+                    {/* Right Hand Promotional Side Tiles (Pushed flush to the right edge) */}
                     {sidePromos.length > 0 && (
-                        <Grid item xs={12} md={3} lg={2.5}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, height: HERO_HEIGHT }}>
-                                {sidePromos.map((promo) => (
-                                    <Paper
-                                        key={promo.id}
-                                        elevation={0}
-                                        component={RouterLink}
-                                        to={promo.link}
+                        <Box
+                            sx={{
+                                display: { xs: 'none', lg: 'flex' },
+                                flexDirection: 'column',
+                                gap: 1.5,
+                                width: '100%',
+                                height: HERO_HEIGHT
+                            }}
+                        >
+                            {sidePromos.map((promo) => (
+                                <Paper
+                                    key={promo.id}
+                                    elevation={0}
+                                    component={RouterLink}
+                                    to={promo.link}
+                                    sx={{
+                                        flex: 1,
+                                        height: (HERO_HEIGHT - 12) / 2,
+                                        borderRadius: 2,
+                                        overflow: 'hidden',
+                                        position: 'relative',
+                                        textDecoration: 'none',
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        backgroundImage: `url(${promo.image})`,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'flex-end',
+                                        p: 2,
+                                        transition: 'transform 0.2s, box-shadow 0.2s',
+                                        '&:hover': {
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 6px 16px rgba(0,0,0,0.1)'
+                                        }
+                                    }}
+                                >
+                                    <Box
                                         sx={{
-                                            flex: 1,
-                                            height: (HERO_HEIGHT - 12) / 2,
-                                            borderRadius: 2,
-                                            overflow: 'hidden',
-                                            position: 'relative',
-                                            textDecoration: 'none',
-                                            border: '1px solid',
-                                            borderColor: 'divider',
-                                            backgroundImage: `url(${promo.image})`,
-                                            backgroundSize: 'cover',
-                                            backgroundPosition: 'center',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            justifyContent: 'flex-end',
-                                            p: 2,
-                                            transition: 'transform 0.2s, box-shadow 0.2s',
-                                            '&:hover': {
-                                                transform: 'translateY(-2px)',
-                                                boxShadow: '0 6px 16px rgba(0,0,0,0.1)'
-                                            }
+                                            position: 'absolute',
+                                            inset: 0,
+                                            backgroundColor: 'rgba(15, 23, 42, 0.55)'
                                         }}
-                                    >
-                                        <Box
+                                    />
+                                    <Box sx={{ position: 'relative', zIndex: 2, color: '#ffffff' }}>
+                                        <Typography
+                                            variant="caption"
                                             sx={{
-                                                position: 'absolute',
-                                                inset: 0,
-                                                backgroundColor: 'rgba(15, 23, 42, 0.55)'
+                                                backgroundColor: colorValues.primary,
+                                                color: '#ffffff',
+                                                px: 1,
+                                                py: 0.3,
+                                                borderRadius: 0.5,
+                                                fontWeight: 700,
+                                                fontSize: '0.72rem'
                                             }}
-                                        />
-                                        <Box sx={{ position: 'relative', zIndex: 2, color: '#ffffff' }}>
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    backgroundColor: colorValues.primary,
-                                                    color: '#ffffff',
-                                                    px: 1,
-                                                    py: 0.3,
-                                                    borderRadius: 0.5,
-                                                    fontWeight: 700,
-                                                    fontSize: '0.72rem'
-                                                }}
-                                            >
-                                                {promo.tag}
-                                            </Typography>
-                                            <Typography variant="subtitle1" sx={{ fontWeight: 800, mt: 0.8, color: '#ffffff', lineHeight: 1.2 }}>
-                                                {promo.title}
-                                            </Typography>
-                                        </Box>
-                                    </Paper>
-                                ))}
-                            </Box>
-                        </Grid>
+                                        >
+                                            {promo.tag}
+                                        </Typography>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mt: 0.8, color: '#ffffff', lineHeight: 1.2 }}>
+                                            {promo.title}
+                                        </Typography>
+                                    </Box>
+                                </Paper>
+                            ))}
+                        </Box>
                     )}
-                </Grid>
+                </Box>
             </Container>
         </Box>
     );

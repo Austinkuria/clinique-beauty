@@ -4,7 +4,7 @@
 
 // API URL configuration
 export const getApiUrl = () => {
-  return import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+  return import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
 };
 
 // M-Pesa configuration
@@ -14,7 +14,7 @@ export const mpesaConfig = {
   
   // Get API URL for M-Pesa requests
   getApiUrl: () => {
-    const baseApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+    const baseApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
     return `${baseApiUrl}/mpesa`;
   },
   

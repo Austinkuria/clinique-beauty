@@ -1,17 +1,18 @@
+// client/src/components/SellerGuard.jsx
+// Security guard: restricts /seller to approved sellers; unauthorized users receive a 404 Not Found response
+
 import React, { useState, useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
 import { useUser, useAuth } from '@clerk/clerk-react';
-import { Box, CircularProgress, Typography, Alert, Button } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import { useSellerApi } from '../data/sellerApi';
+import NotFound from '../pages/NotFound';
 
 const SellerGuard = ({ children }) => {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
-  const location = useLocation();
   const { getSellerById } = useSellerApi();
   const [loading, setLoading] = useState(true);
-  const [sellerStatus, setSellerStatus] = useState(null);
-  const [error, setError] = useState(null);
+  const [isApprovedSeller, setIsApprovedSeller] = useState(false);
 
   // Check if user has seller role in Clerk metadata
   const checkSellerRole = () => {
@@ -19,163 +20,88 @@ const SellerGuard = ({ children }) => {
       return false;
     }
     
-    // Check all possible locations where seller role might be stored
-    const hasSellerRole = 
+    return (
       (user.unsafeMetadata?.role === 'seller') ||
       (user.privateMetadata?.role === 'seller') ||
-      (user.publicMetadata?.role === 'seller');
-      
-    console.log("SellerGuard: Seller role check result:", hasSellerRole);
-    return hasSellerRole;
+      (user.publicMetadata?.role === 'seller')
+    );
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkSellerAccess = async () => {
       if (!isLoaded) return;
       
       if (!isSignedIn || !user) {
-        setLoading(false);
+        if (isMounted) {
+          setIsApprovedSeller(false);
+          setLoading(false);
+        }
         return;
       }
 
       try {
-        console.log('SellerGuard: Checking seller access for user:', user.id);
-        
-        // First check if user has seller role in Clerk metadata
         const hasSellerRole = checkSellerRole();
         
         if (!hasSellerRole) {
-          setError('You do not have seller access. Please apply to become a seller.');
-          setLoading(false);
+          if (isMounted) {
+            setIsApprovedSeller(false);
+            setLoading(false);
+          }
           return;
         }
 
-        // If user has seller role, check their seller status in Supabase
-        try {
-          const sellerData = await getSellerById(user.id);
-          
-          if (!sellerData) {
-            setError('Seller profile not found. Please contact support.');
-            setLoading(false);
-            return;
+        // Verify approved seller record in Supabase
+        const sellerData = await getSellerById(user.id);
+        if (isMounted) {
+          if (sellerData && sellerData.status === 'approved') {
+            setIsApprovedSeller(true);
+          } else {
+            setIsApprovedSeller(false);
           }
-          
-          setSellerStatus(sellerData.status);
-          console.log('SellerGuard: Seller status:', sellerData.status);
-          
-          // Only allow access if seller is approved
-          if (sellerData.status !== 'approved') {
-            setError(`Your seller account is ${sellerData.status}. Please wait for approval or contact support.`);
-          }
-          
-        } catch (sellerError) {
-          console.error('SellerGuard: Error fetching seller profile:', sellerError);
-          setError('Unable to verify seller status. Please try again or contact support.');
         }
-        
-      } catch (error) {
-        console.error('SellerGuard: Error checking seller access:', error);
-        setError('Unable to verify access permissions. Please try again.');
+      } catch (err) {
+        console.warn('Seller access check failed:', err.message);
+        if (isMounted) {
+          setIsApprovedSeller(false);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     checkSellerAccess();
+
+    return () => {
+      isMounted = false;
+    };
   }, [isLoaded, isSignedIn, user, getSellerById]);
 
-  // Show loading spinner while checking authentication and permissions
+  // Show neutral loading indicator without leaking route status
   if (!isLoaded || loading) {
     return (
       <Box 
         sx={{ 
           display: 'flex', 
-          flexDirection: 'column',
           justifyContent: 'center', 
           alignItems: 'center', 
-          height: '100vh',
-          gap: 2
+          minHeight: '60vh'
         }}
       >
-        <CircularProgress size={60} />
-        <Typography variant="h6" color="text.secondary">
-          Verifying seller access...
-        </Typography>
+        <CircularProgress size={32} />
       </Box>
     );
   }
 
-  // Redirect to login if not signed in
-  if (!isSignedIn) {
-    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  // If user is not an approved seller, mask the route behind a 404 Not Found page
+  if (!isApprovedSeller) {
+    return <NotFound />;
   }
 
-  // Show error if user doesn't have seller access or seller not approved
-  if (error || (checkSellerRole() && sellerStatus !== 'approved')) {
-    const hasSellerRole = checkSellerRole();
-    
-    return (
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          flexDirection: 'column',
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          maxWidth: 600,
-          mx: 'auto',
-          p: 3
-        }}
-      >
-        <Alert 
-          severity={hasSellerRole && sellerStatus === 'pending' ? 'warning' : 'error'} 
-          sx={{ mb: 3, width: '100%' }}
-        >
-          <Typography variant="h6" gutterBottom>
-            {hasSellerRole && sellerStatus === 'pending' ? 'Account Pending Approval' : 'Access Denied'}
-          </Typography>
-          <Typography variant="body1">
-            {error || 'You do not have permission to access the seller dashboard.'}
-          </Typography>
-        </Alert>
-        
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <Button 
-            variant="contained" 
-            onClick={() => window.location.href = '/'}
-          >
-            Go to Homepage
-          </Button>
-          
-          {!hasSellerRole && (
-            <Button 
-              variant="outlined" 
-              onClick={() => window.location.href = '/seller/apply'}
-            >
-              Apply to Become a Seller
-            </Button>
-          )}
-          
-          {hasSellerRole && sellerStatus !== 'approved' && (
-            <Button 
-              variant="outlined" 
-              onClick={() => window.location.href = '/seller/status'}
-            >
-              Check Application Status
-            </Button>
-          )}
-        </Box>
-      </Box>
-    );
-  }
-
-  // Allow access for approved sellers
-  if (checkSellerRole() && sellerStatus === 'approved') {
-    return children;
-  }
-
-  // Fallback redirect
-  return <Navigate to="/" replace />;
+  return children;
 };
 
 export default SellerGuard;

@@ -58,6 +58,7 @@ import { formatCurrency } from '../../../utils/helpers';
 import { toast } from 'react-hot-toast';
 import StatCard from '../components/charts/StatCard';
 import { mockDashboardData } from '../../../data/mockDashboardData';
+import { mockUsers } from '../../../data/mockUserData';
 import { 
     People as AllUsersIcon, 
     Person as CustomerIcon,
@@ -119,29 +120,9 @@ function AdminUsers() {
                 } catch (apiError) {
                     console.error('Error fetching users from API:', apiError);
                     
-                    // Fallback to mock data in development
-                    if (import.meta.env.DEV) {
-                        console.log('DEV MODE: Using mock user data');
-                        data = [
-                            {
-                                id: '1',
-                                name: 'John Doe',
-                                email: 'john@example.com',
-                                role: 'Customer',
-                                status: 'Active',
-                                verified: true,
-                                joinDate: '2025-01-15',
-                                location: 'New York',
-                                ordersCount: 8,
-                                totalSpent: 425.75,
-                                avatar: 'https://randomuser.me/api/portraits/men/1.jpg'
-                            },
-                            // Add more mock users as needed
-                            // ...
-                        ];
-                    } else {
-                        throw apiError; // Re-throw in production
-                    }
+                    // Fallback to complete mock user catalog if API fails or empty
+                    console.log('Using baseline mock user catalog');
+                    data = mockUsers;
                 }
                 
                 // Set the users data

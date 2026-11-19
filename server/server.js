@@ -26,6 +26,7 @@ import mpesaRoutes from './routes/mpesaRoutes.js';
 import sellerRoutes from './routes/sellerRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import homepageRoutes from './routes/homepageRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 import { clerkMiddleware } from './middleware/clerkMiddleware.js';
 import { corsMiddleware } from './middleware/corsMiddleware.js';
@@ -170,6 +171,7 @@ v1Router.use('/users', clerkMiddleware, userRoutes);
 v1Router.use('/mpesa', mpesaRoutes);
 v1Router.use('/seller', clerkMiddleware, sellerRoutes);
 v1Router.use('/sellers', clerkMiddleware, sellerRoutes);
+v1Router.use('/admin', clerkMiddleware, adminRoutes);
 v1Router.use('/homepage', homepageRoutes);
 v1Router.use('/', categoryRoutes);
 
@@ -494,8 +496,20 @@ app.get('/api/admin/dashboard', async (req, res) => {
 // Error handling middleware
 app.use(errorMiddleware);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
+
+httpServer.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use by an existing process.`);
+    console.error(`To terminate the lingering process on port ${PORT} in PowerShell, run:`);
+    console.error(`Stop-Process -Id (Get-NetTCPConnection -LocalPort ${PORT}).OwningProcess -Force`);
+    process.exit(1);
+  } else {
+    throw err;
+  }
+});
+
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`🔗 M-Pesa callback URL: ${process.env.MPESA_CALLBACK_URL || 'Not configured'}`);
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`M-Pesa callback URL: ${process.env.MPESA_CALLBACK_URL || 'Not configured'}`);
 });

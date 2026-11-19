@@ -2542,7 +2542,7 @@ function AdminOrders() {
                         onChange={(e) => setRefundAmount(e.target.value)}
                         sx={{ mb: 2 }}
                         InputProps={{
-                            startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                            startAdornment: <InputAdornment position="start">KSh</InputAdornment>,
                         }}
                     />
                     <TextField

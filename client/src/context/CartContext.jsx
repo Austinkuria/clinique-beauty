@@ -865,10 +865,23 @@ const showStockLimitToast = (message) => {
             
             if (isSignedIn) {
                 console.log("[CartContext loadCart] User signed in, fetching from API");
-                // Fetch from API logic
-                const apiCart = await api.getCart();
-                console.log("[CartContext loadCart] API response:", apiCart);
-                rawCartData = Array.isArray(apiCart) ? apiCart : [];
+                try {
+                    const apiCart = await api.getCart();
+                    console.log("[CartContext loadCart] API response:", apiCart);
+                    rawCartData = Array.isArray(apiCart) ? apiCart : [];
+                } catch (apiErr) {
+                    console.warn("[CartContext loadCart] API cart fetch failed, falling back to local storage:", apiErr);
+                    const localCartString = localStorage.getItem('cartItems');
+                    if (localCartString) {
+                        try {
+                            rawCartData = JSON.parse(localCartString);
+                            rawCartData = Array.isArray(rawCartData) ? rawCartData : [];
+                        } catch (parseError) {
+                            console.error("[CartContext loadCart] Error parsing local cart data:", parseError);
+                            rawCartData = [];
+                        }
+                    }
+                }
             } else {
                 console.log("[CartContext loadCart] User not signed in, loading from local storage");
                 // Load from localStorage logic

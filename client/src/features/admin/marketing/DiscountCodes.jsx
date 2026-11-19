@@ -574,7 +574,7 @@ const DiscountCodes = () => {
                 required
                 InputProps={{
                   endAdornment: <InputAdornment position="end">
-                    {newCode.discountType === 'percentage' ? '%' : '$'}
+                    {newCode.discountType === 'percentage' ? '%' : 'KSh'}
                   </InputAdornment>,
                 }}
                 sx={{ mb: 2 }}
@@ -631,7 +631,7 @@ const DiscountCodes = () => {
                 onChange={handleInputChange}
                 fullWidth
                 InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  startAdornment: <InputAdornment position="start">KSh</InputAdornment>,
                 }}
                 sx={{ mb: 2 }}
               />

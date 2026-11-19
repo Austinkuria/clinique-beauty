@@ -231,7 +231,7 @@ export default function FlashSaleSection({ flashSale }) {
                                             <Typography
                                                 variant="body2"
                                                 component={RouterLink}
-                                                to={`/product/${item.id}`}
+                                                to={`/product/${item.slug || item.id}`}
                                                 sx={{
                                                     color: colorValues.textPrimary,
                                                     textDecoration: 'none',

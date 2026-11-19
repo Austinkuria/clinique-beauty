@@ -13,6 +13,8 @@ import Fragrance from './features/products/pages/Fragrance';
 import HairProducts from './features/products/pages/HairProducts';
 import ProductList from './features/products/ProductList.jsx';
 import ProductDetail from './features/products/ProductDetail';
+import Wishlist from './features/wishlist/Wishlist.jsx';
+import NotFound from './pages/NotFound.jsx';
 import CheckoutPage from './features/checkout/Checkout.jsx'; 
 import CheckoutConfirmation from './features/checkout/CheckoutConfirmation.jsx'; 
 import AdminLayout from './features/admin/layout/AdminLayout';
@@ -108,16 +110,20 @@ export const router = createBrowserRouter([
                 errorElement: <RouteErrorElement />,
                 children: [
                     // Routes rendered within MainLayout's Outlet
-                    { index: true, element: <Home /> }, // Use index route for home
-                    { path: '/cart', element: <RequireAuth><Cart /></RequireAuth> },
+                    { index: true, element: <Home /> },
+                    { path: '/cart', element: <Cart /> },
+                    { path: '/wishlist', element: <Wishlist /> },
                     { path: '/products', element: <ProductList /> },
                     { path: '/products/:categoryName', element: <ProductList /> },
-                    { path: '/product/:id', element: <ProductDetail /> },                    // Checkout routes
+                    { path: '/product/:slugOrId', element: <ProductDetail /> },
+                    { path: '/product/:id', element: <ProductDetail /> },
+                    // Checkout routes
                     { path: '/checkout', element: <RequireAuth><CheckoutPage /></RequireAuth> },
                     { path: '/checkout/confirmation', element: <RequireAuth><CheckoutConfirmation /></RequireAuth> },
                     // Seller application routes (public)
                     { path: '/seller/apply', element: <SellerApply /> },
                     { path: '/seller/status', element: <RequireAuth><SellerStatus /></RequireAuth> },
+                    { path: '*', element: <NotFound /> }
                 ]
             },
             // Admin Routes with AdminGuard
@@ -181,6 +187,11 @@ export const router = createBrowserRouter([
                     // { path: 'products/:id/edit', element: <SellerProductEdit /> },
                 ]
             },
+            // Catch-all route for unhandled paths
+            {
+                path: '*',
+                element: <NotFound />
+            }
         ]
     }
 ]);

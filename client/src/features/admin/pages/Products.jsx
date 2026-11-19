@@ -171,7 +171,8 @@ function AdminProducts() {
                 // Fetch data from your API
                 const data = await adminApi.getProducts(); // Using adminApi for admin dashboard
                 if (data) {
-                    setProducts(data);
+                    const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+                    setProducts(list);
                 } else {
                     setProducts([]); // Set to empty array if data is null/undefined
                     console.warn('fetchProducts: Received null or undefined data from adminApi.getProducts()');
@@ -602,8 +603,8 @@ function AdminProducts() {
             handleCloseAddProductDialog();
               // Show success message with SKU info
             const successMessage = productSKU !== newProductData.sku 
-                ? `Product added successfully! Auto-generated SKU: ${productSKU} 🎉`
-                : 'Product added successfully! 🎉';
+                ? `Product added successfully! Auto-generated SKU: ${productSKU}`
+                : 'Product added successfully!';
             
             setSnackbar({
                 open: true,

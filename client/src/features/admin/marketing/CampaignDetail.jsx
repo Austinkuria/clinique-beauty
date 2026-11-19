@@ -308,7 +308,7 @@ const CampaignDetail = () => {
                                     endAdornment: campaign.discountType === 'percentage' ? (
                                         <InputAdornment position="end">%</InputAdornment>
                                     ) : campaign.discountType === 'fixed' ? (
-                                        <InputAdornment position="end">$</InputAdornment>
+                                        <InputAdornment position="end">KSh</InputAdornment>
                                     ) : null
                                 }}
                             />

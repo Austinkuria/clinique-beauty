@@ -1,41 +1,36 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
+// client/src/components/AdminGuard.jsx
+// Security guard: restricts /admin to authorized administrators; non-admins receive a 404 Not Found response
+
+import React from 'react';
 import { useAdmin } from '../context/AdminContext';
 import { CircularProgress, Box, Typography } from '@mui/material';
+import NotFound from '../pages/NotFound';
 
 const AdminGuard = ({ children }) => {
   const { isAdmin, loading } = useAdmin();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!loading && !isAdmin) {
-      console.log("Access denied: User is not an admin");
-      toast.error('Access denied. Admin privileges required.');
-      navigate('/admin-setup', { replace: true }); // Make sure we use '/admin-setup' not '/admin/setup'
-    }
-  }, [isAdmin, loading, navigate]);
-
-  // Show loading while checking admin status
+  // Show neutral loading indicator while resolving credentials without leaking route significance
   if (loading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
-      }}>
-        <CircularProgress size={40} />
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          Verifying admin access...
-        </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh'
+        }}
+      >
+        <CircularProgress size={32} />
       </Box>
     );
   }
 
-  // Only render children if user is admin
-  return isAdmin ? children : null;
+  // If user is not an administrator, mask the route behind a 404 Not Found page
+  if (!isAdmin) {
+    return <NotFound />;
+  }
+
+  return children;
 };
 
 export default AdminGuard;

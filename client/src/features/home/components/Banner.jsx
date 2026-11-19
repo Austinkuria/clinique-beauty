@@ -62,16 +62,9 @@ function Banner() {
                     >
                         <Typography
                             component="span"
-                            sx={{ mr: 1, fontSize: '1rem' }}
-                        >
-                            ✨
-                        </Typography>
-
-                        <Typography
-                            component="span"
                             sx={{
                                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                fontWeight: 500,
+                                fontWeight: 600,
                                 letterSpacing: 0.5,
                             }}
                         >

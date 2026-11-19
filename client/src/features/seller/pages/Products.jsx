@@ -687,8 +687,8 @@ const SellerProducts = () => {
       
       // Show success message with SKU info
       const successMessage = productSKU !== newProductData.sku 
-        ? `Product added successfully! Auto-generated SKU: ${productSKU} 🎉 (Pending approval)`
-        : 'Product added successfully! 🎉 (Pending approval)';
+        ? `Product added successfully! Auto-generated SKU: ${productSKU} (Pending approval)`
+        : 'Product added successfully! (Pending approval)';
       
       setSnackbar({
         open: true,

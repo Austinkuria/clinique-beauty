@@ -16,11 +16,13 @@ import {
     Breadcrumbs,
     Link,
     Tooltip,
-    CircularProgress
+    CircularProgress,
+    Skeleton
 } from "@mui/material";
 import toast from 'react-hot-toast';
 import { ThemeContext } from "../../context/ThemeContext.jsx";
-import { formatCurrency } from "../../utils/helpers";
+import { formatCurrency, slugify } from "../../utils/helpers";
+import mockProducts from "../../data/mockProducts";
 import { useCart } from "../../context/CartContext";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import AddIcon from '@mui/icons-material/Add';
@@ -43,7 +45,7 @@ import {
     EmailShareButton,
 } from "react-share";
 import FacebookIcon from '@mui/icons-material/Facebook';
-import TwitterIcon from '@mui/icons-material/Twitter';
+import XIcon from '@mui/icons-material/X';
 import PinterestIcon from '@mui/icons-material/Pinterest';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import EmailIcon from '@mui/icons-material/Email';
@@ -94,7 +96,8 @@ const parseJsonField = (field) => {
 };
 
 function ProductDetail() {
-    const { id } = useParams();
+    const { id, slug, slugOrId } = useParams();
+    const targetParam = slugOrId || slug || id;
     const navigate = useNavigate();
     const { theme, colorValues } = useContext(ThemeContext);
     const cartContext = useCart();
@@ -157,7 +160,7 @@ function ProductDetail() {
         setCurrentUrl(window.location.href);
 
         const fetchProductData = async () => {
-            console.log(`[Effect ${id}] START`);
+            console.log(`[Effect ${targetParam}] START`);
             setLoading(true);
             setError(null);
             setProduct(null);
@@ -168,13 +171,33 @@ function ProductDetail() {
             setProductImages([]); // Reset product images
 
             try {
-                console.log(`[Effect ${id}] TRY block entered`);
-                const fetchedProduct = await api.getProductById(id);
-                console.log(`[Effect ${id}] Fetched product:`, fetchedProduct);
+                let fetchedProduct = null;
+
+                try {
+                    fetchedProduct = await api.getProductById(targetParam);
+                } catch (apiErr) {
+                    console.warn(`[Effect ${targetParam}] API lookup failed, falling back to local catalog:`, apiErr.message);
+                }
+
+                // If not found from API, check mock products by slug, UUID, id, or slugified name
+                if (!fetchedProduct && Array.isArray(mockProducts)) {
+                    fetchedProduct = mockProducts.find(p =>
+                        p.slug === targetParam ||
+                        p.uuid === targetParam ||
+                        p.id?.toString() === targetParam?.toString() ||
+                        slugify(p.name) === targetParam
+                    );
+                }
 
                 if (!fetchedProduct) {
                     throw new Error('Product not found');
                 }
+
+                // Smoothly migrate numeric ID URLs to SEO-friendly slugs
+                if (fetchedProduct.slug && targetParam !== fetchedProduct.slug && /^\d+$/.test(targetParam)) {
+                    navigate(`/product/${fetchedProduct.slug}`, { replace: true });
+                }
+
                 setProduct(fetchedProduct);
                 
                 // Set the main image
@@ -259,7 +282,7 @@ function ProductDetail() {
         };
 
         fetchProductData();
-    }, [id, api]);
+    }, [targetParam, api]);
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
@@ -403,9 +426,43 @@ function ProductDetail() {
 
     if (loading) {
         return (
-            <Container sx={{ py: 4, minHeight: '60vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Typography>Loading product details...</Typography>
-            </Container>
+            <Box sx={{ backgroundColor: colorValues.bgDefault, py: 4, minHeight: '100vh', width: '100%' }}>
+                <Container maxWidth={false} sx={{ px: { xs: 1.5, sm: 2, md: 4 }, width: '100%' }}>
+                    {/* Breadcrumbs skeleton */}
+                    <Box sx={{ display: 'flex', gap: 1.5, mb: 3, alignItems: 'center' }}>
+                        <Skeleton variant="circular" width={36} height={36} />
+                        <Skeleton variant="text" width={220} height={24} />
+                    </Box>
+
+                    {/* Product Main Section Skeleton */}
+                    <Grid container spacing={4}>
+                        <Grid item xs={12} md={6}>
+                            <Paper elevation={0} sx={{ p: 2, borderRadius: 2, backgroundColor: colorValues.bgPaper, border: '1px solid', borderColor: 'divider' }}>
+                                <Skeleton variant="rectangular" width="100%" height={420} sx={{ borderRadius: 2, mb: 2 }} />
+                                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                                    {[...Array(4)].map((_, i) => (
+                                        <Skeleton key={i} variant="rectangular" width={75} height={75} sx={{ borderRadius: 1 }} />
+                                    ))}
+                                </Box>
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, backgroundColor: colorValues.bgPaper, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                                <Skeleton variant="text" width="70%" height={38} sx={{ mb: 1 }} />
+                                <Skeleton variant="text" width="30%" height={24} sx={{ mb: 2 }} />
+                                <Skeleton variant="text" width="25%" height={34} sx={{ mb: 3 }} />
+                                <Skeleton variant="text" width="100%" height={60} sx={{ mb: 3 }} />
+                                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                                    <Skeleton variant="rectangular" width="50%" height={44} sx={{ borderRadius: 1 }} />
+                                    <Skeleton variant="rectangular" width="50%" height={44} sx={{ borderRadius: 1 }} />
+                                </Box>
+                                <Divider sx={{ my: 2 }} />
+                                <Skeleton variant="text" width="40%" height={24} />
+                            </Paper>
+                        </Grid>
+                    </Grid>
+                </Container>
+            </Box>
         );
     }
 
@@ -459,9 +516,10 @@ function ProductDetail() {
             backgroundColor: colorValues.bgDefault,
             color: colorValues.textPrimary,
             py: 4,
-            minHeight: '100vh'
+            minHeight: '100vh',
+            width: '100%'
         }}>
-            <Container>
+            <Container maxWidth={false} sx={{ px: { xs: 1.5, sm: 2, md: 4 }, width: '100%' }}>
                 {/* Back Button and Breadcrumbs */}
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <IconButton
@@ -904,12 +962,12 @@ function ProductDetail() {
                                     </motion.div>
                                 </Tooltip>
                                 
-                                {/* Twitter Share */}
-                                <Tooltip title="Share on Twitter">
+                                {/* X (formerly Twitter) Share */}
+                                <Tooltip title="Share on X">
                                     <motion.div initial="rest" whileHover="hover" whileTap="tap" variants={shareIconHover}>
                                         <TwitterShareButton url={currentUrl} title={shareTitle}>
                                             <Box sx={{ 
-                                                color: '#1DA1F2', 
+                                                color: colorValues.textPrimary, 
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
@@ -917,7 +975,7 @@ function ProductDetail() {
                                                 borderRadius: '50%',
                                                 '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
                                             }}>
-                                                <TwitterIcon fontSize="small" />
+                                                <XIcon fontSize="small" />
                                             </Box>
                                         </TwitterShareButton>
                                     </motion.div>
@@ -1093,30 +1151,35 @@ function ProductDetail() {
                         <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: colorValues.textPrimary }}>
                             Related Products
                         </Typography>
-                        <Grid container spacing={3}>
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns: {
+                                    xs: 'repeat(2, 1fr)',
+                                    sm: 'repeat(2, 1fr)',
+                                    md: 'repeat(4, 1fr)',
+                                    lg: 'repeat(4, 1fr)'
+                                },
+                                gap: { xs: 1.5, sm: 2, md: 3 },
+                                alignItems: 'stretch'
+                            }}
+                        >
                             {relatedProducts.map((relatedProduct) => (
-                                <Grid item xs={12} sm={6} md={4} lg={3} key={relatedProduct.id}>
-                                    <motion.div
-                                        whileHover={{
-                                            y: -10,
-                                            boxShadow: theme === 'dark' ? '0 12px 20px rgba(0,0,0,0.4)' : '0 10px 15px rgba(0,0,0,0.15)'
-                                        }}
-                                        transition={{ duration: 0.3 }}
-                                    >
-                                        <Paper
-                                            elevation={theme === 'dark' ? 3 : 1}
-                                            sx={{
-                                                backgroundColor: colorValues.bgPaper,
-                                                borderRadius: 2,
-                                                height: '100%',
-                                            }}
-                                        >
-                                            <ProductCard product={relatedProduct} />
-                                        </Paper>
-                                    </motion.div>
-                                </Grid>
+                                <Box
+                                    key={relatedProduct.id || relatedProduct.slug}
+                                    component={motion.div}
+                                    whileHover={{ y: -4 }}
+                                    transition={{ duration: 0.2 }}
+                                    sx={{
+                                        height: '100%',
+                                        display: 'flex',
+                                        width: '100%'
+                                    }}
+                                >
+                                    <ProductCard product={relatedProduct} />
+                                </Box>
                             ))}
-                        </Grid>
+                        </Box>
                     </Box>
                 ) : (
                     !loading && product && (

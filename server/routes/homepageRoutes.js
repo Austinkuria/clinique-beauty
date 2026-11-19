@@ -158,6 +158,23 @@ router.get('/', async (req, res) => {
       verifiedSeller: true
     }));
 
+    let flashSaleEndsAt = getNextFlashSaleEndTime();
+    if (supabase) {
+      try {
+        const { data: flashSetting } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'flash_sale_ends_at')
+          .maybeSingle();
+
+        if (flashSetting?.value && new Date(flashSetting.value).getTime() > Date.now()) {
+          flashSaleEndsAt = flashSetting.value;
+        }
+      } catch (e) {
+        // Fallback to rotating window
+      }
+    }
+
     return res.json({
       success: true,
       data: {
@@ -166,7 +183,7 @@ router.get('/', async (req, res) => {
         hotCategories: DEFAULT_HOT_CATEGORIES,
         flashSale: {
           title: 'Flash Sale',
-          endsAt: getNextFlashSaleEndTime(),
+          endsAt: flashSaleEndsAt,
           items: flashSaleProducts
         },
         newArrivals,

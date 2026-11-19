@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     Box,
     Typography,
@@ -13,10 +13,28 @@ import {
     Button,
     CircularProgress,
     FormControlLabel,
-    Switch
+    Switch,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Alert,
+    Stack,
+    Chip
 } from '@mui/material';
-import { Save as SaveIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
+import {
+    Save as SaveIcon,
+    Visibility as VisibilityIcon,
+    FlashOn as FlashIcon,
+    Storage as StorageIcon,
+    CurrencyExchange as CurrencyIcon,
+    Refresh as RefreshIcon,
+    CheckCircle as CheckCircleIcon
+} from '@mui/icons-material';
+import toast from 'react-hot-toast';
 import { ThemeContext } from '../../../context/ThemeContext';
+import { useAdminApi } from '../../../api/apiClient';
+import { getActiveCurrency, setActiveCurrency, formatCurrency } from '../../../utils/helpers';
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -25,8 +43,8 @@ function TabPanel(props) {
         <div
             role="tabpanel"
             hidden={value !== index}
-            id={`simple-tabpanel-${index}`}
-            aria-labelledby={`simple-tab-${index}`}
+            id={`settings-tabpanel-${index}`}
+            aria-labelledby={`settings-tab-${index}`}
             {...other}
         >
             {value === index && (
@@ -39,51 +57,214 @@ function TabPanel(props) {
 }
 
 function AdminSettings() {
-    const { theme, themeVariant, themeVariants, toggleTheme, changeThemeVariant } = useContext(ThemeContext);
+    const { theme, colorValues, toggleTheme, changeThemeVariant } = useContext(ThemeContext);
+    const adminApi = useAdminApi();
     const [tabValue, setTabValue] = useState(0);
-    const [siteTitle, setSiteTitle] = useState('');
-    const [adminEmail, setAdminEmail] = useState('');
+
+    // Site & Currency State
+    const [siteTitle, setSiteTitle] = useState('Clinique Beauty');
+    const [siteCurrency, setSiteCurrency] = useState(getActiveCurrency());
+    const [adminEmail, setAdminEmail] = useState('admin@clinique.com');
+
+    // Flash Sale State
+    const [flashSaleActive, setFlashSaleActive] = useState(true);
+    const [flashSaleMinutes, setFlashSaleMinutes] = useState(480); // default 8 hours (480 mins)
+    const [flashSaleEndsAt, setFlashSaleEndsAt] = useState('');
+    const [flashSalePreviewTimer, setFlashSalePreviewTimer] = useState({ hours: '08', minutes: '00', seconds: '00' });
+
+    // Seeding & Database State
+    const [seedingLoading, setSeedingLoading] = useState(false);
+    const [seedingResult, setSeedingResult] = useState(null);
+    const [dbStatus, setDbStatus] = useState(null);
+
+    // API Keys State
     const [stripeSecretKey, setStripeSecretKey] = useState('');
     const [stripePublishableKey, setStripePublishableKey] = useState('');
     const [mailchimpApiKey, setMailchimpApiKey] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    // Fetch existing settings on mount
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const settings = await adminApi.getSettings();
+                if (settings) {
+                    if (settings.site_title) setSiteTitle(settings.site_title);
+                    if (settings.site_currency) {
+                        setSiteCurrency(settings.site_currency);
+                        setActiveCurrency(settings.site_currency);
+                    }
+                    if (settings.flash_sale_ends_at) {
+                        setFlashSaleEndsAt(settings.flash_sale_ends_at);
+                    }
+                    if (settings.flash_sale_active !== undefined) {
+                        setFlashSaleActive(settings.flash_sale_active === 'true' || settings.flash_sale_active === true);
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not load remote settings, using local defaults:', err.message);
+            }
+        };
+
+        loadSettings();
+    }, []);
+
+    // Live countdown preview calculation
+    useEffect(() => {
+        const target = flashSaleEndsAt ? new Date(flashSaleEndsAt).getTime() : Date.now() + flashSaleMinutes * 60 * 1000;
+
+        const updateTimer = () => {
+            const diff = target - Date.now();
+            if (diff <= 0) {
+                setFlashSalePreviewTimer({ hours: '00', minutes: '00', seconds: '00' });
+                return;
+            }
+
+            const totalHours = Math.floor(diff / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+            setFlashSalePreviewTimer({
+                hours: String(totalHours).padStart(2, '0'),
+                minutes: String(mins).padStart(2, '0'),
+                seconds: String(secs).padStart(2, '0')
+            });
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, [flashSaleEndsAt, flashSaleMinutes]);
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
     };
 
-    const handleSaveAPIKeys = () => {
-        setLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setLoading(false);
-            alert('API keys saved successfully!');
-        }, 1000);
+    // Save Site & Currency Settings
+    const handleSaveSiteSettings = async () => {
+        setSaving(true);
+        try {
+            await adminApi.updateSettings({
+                site_title: siteTitle,
+                site_currency: siteCurrency
+            });
+            setActiveCurrency(siteCurrency);
+            toast.success(`Site currency updated to ${siteCurrency}. Settings saved!`);
+        } catch (err) {
+            setActiveCurrency(siteCurrency);
+            toast.success(`Currency set locally to ${siteCurrency}`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Save Flash Sale Settings
+    const handleSetFlashDuration = (minutes) => {
+        setFlashSaleMinutes(minutes);
+        const newEndTime = new Date(Date.now() + minutes * 60 * 1000).toISOString();
+        setFlashSaleEndsAt(newEndTime);
+    };
+
+    const handleSaveFlashSale = async () => {
+        setSaving(true);
+        try {
+            const newEndTime = flashSaleEndsAt || new Date(Date.now() + flashSaleMinutes * 60 * 1000).toISOString();
+            await adminApi.updateSettings({
+                flash_sale_active: String(flashSaleActive),
+                flash_sale_ends_at: newEndTime
+            });
+            setFlashSaleEndsAt(newEndTime);
+            toast.success('Flash Sale timer updated successfully!');
+        } catch (err) {
+            toast.error('Failed to update flash sale settings');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Seed database with mock users and catalog
+    const handleSeedDatabase = async () => {
+        setSeedingLoading(true);
+        setSeedingResult(null);
+        try {
+            const res = await adminApi.seedDatabase();
+            setSeedingResult(res?.message || 'Database successfully seeded with mock users and catalog!');
+            toast.success('Database seeded successfully!');
+        } catch (err) {
+            setSeedingResult(`Error seeding database: ${err.message}`);
+            toast.error('Seeding request failed');
+        } finally {
+            setSeedingLoading(false);
+        }
+    };
+
+    // Fetch Database Records count
+    const handleFetchDatabaseStatus = async () => {
+        try {
+            const [prods, users, orders] = await Promise.all([
+                adminApi.getProducts().catch(() => []),
+                adminApi.getUsers().catch(() => []),
+                adminApi.getOrders().catch(() => [])
+            ]);
+
+            setDbStatus({
+                products: Array.isArray(prods) ? prods.length : (prods?.data?.length || 0),
+                users: Array.isArray(users) ? users.length : 0,
+                orders: Array.isArray(orders) ? orders.length : 0
+            });
+            toast.success('Database records synchronized');
+        } catch (err) {
+            toast.error('Failed to query database records');
+        }
     };
 
     return (
-        <Box>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
-                Settings
+        <Box sx={{ maxWidth: 1200, mx: 'auto', py: 2 }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, color: colorValues.textPrimary }}>
+                Settings & Administration
             </Typography>
-            <Paper elevation={3} sx={{ p: 3 }}>
+
+            <Paper
+                elevation={0}
+                sx={{
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    backgroundColor: colorValues.bgPaper,
+                    overflow: 'hidden'
+                }}
+            >
                 <Tabs
                     value={tabValue}
                     onChange={handleTabChange}
-                    indicatorColor="primary"
+                    variant="scrollable"
+                    scrollButtons="auto"
                     textColor="primary"
-                    variant="fullWidth"
+                    indicatorColor="primary"
+                    sx={{
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        backgroundColor: colorValues.bgDefault
+                    }}
                 >
-                    <Tab label="Site Settings" />
+                    <Tab label="Site & Currency" icon={<CurrencyIcon />} iconPosition="start" />
+                    <Tab label="Flash Sale" icon={<FlashIcon />} iconPosition="start" />
+                    <Tab label="Database & Seeding" icon={<StorageIcon />} iconPosition="start" />
                     <Tab label="Admin Account" />
-                    <Tab label="API Keys" />
-                    <Tab label="Theme Settings" />
+                    <Tab label="Theme & Appearance" />
                 </Tabs>
 
-                {/* Site Settings Tab */}
+                {/* 1. Site & Currency Settings Tab */}
                 <TabPanel value={tabValue} index={0}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                        Site & Currency Configuration
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colorValues.textSecondary, mb: 3 }}>
+                        Configure the site title and default currency. Changing the currency updates all product cards, detail pages, and checkout calculations across the marketplace.
+                    </Typography>
+
                     <Grid container spacing={3}>
-                        <Grid item xs={12}>
+                        <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
                                 label="Site Title"
@@ -92,13 +273,276 @@ function AdminSettings() {
                                 onChange={(e) => setSiteTitle(e.target.value)}
                             />
                         </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth>
+                                <InputLabel id="currency-select-label">Site Currency</InputLabel>
+                                <Select
+                                    labelId="currency-select-label"
+                                    value={siteCurrency}
+                                    label="Site Currency"
+                                    onChange={(e) => setSiteCurrency(e.target.value)}
+                                >
+                                    <MenuItem value="KES">KES - Kenyan Shilling (KSh)</MenuItem>
+                                    <MenuItem value="USD">USD - United States Dollar ($)</MenuItem>
+                                    <MenuItem value="EUR">EUR - Euro (€)</MenuItem>
+                                    <MenuItem value="GBP">GBP - British Pound (£)</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        <Grid item xs={12}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 2,
+                                    borderRadius: 1.5,
+                                    backgroundColor: colorValues.bgDefault,
+                                    border: '1px solid',
+                                    borderColor: 'divider'
+                                }}
+                            >
+                                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                                    Active Currency Preview
+                                </Typography>
+                                <Stack direction="row" spacing={3}>
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: colorValues.textSecondary }}>Sample Product Price (2,500)</Typography>
+                                        <Typography variant="h6" sx={{ color: colorValues.primary, fontWeight: 800 }}>
+                                            {formatCurrency(2500, siteCurrency)}
+                                        </Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="caption" sx={{ color: colorValues.textSecondary }}>Sample High-tier Order (18,499)</Typography>
+                                        <Typography variant="h6" sx={{ color: colorValues.primary, fontWeight: 800 }}>
+                                            {formatCurrency(18499, siteCurrency)}
+                                        </Typography>
+                                    </Box>
+                                </Stack>
+                            </Paper>
+                        </Grid>
+
+                        <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="contained"
+                                startIcon={<SaveIcon />}
+                                onClick={handleSaveSiteSettings}
+                                disabled={saving}
+                                sx={{
+                                    backgroundColor: colorValues.primary,
+                                    color: '#ffffff',
+                                    fontWeight: 700,
+                                    textTransform: 'none',
+                                    px: 3,
+                                    '&:hover': { backgroundColor: colorValues.primaryDark }
+                                }}
+                            >
+                                {saving ? 'Saving...' : 'Save Site Settings'}
+                            </Button>
+                        </Grid>
                     </Grid>
                 </TabPanel>
 
-                {/* Admin Account Tab */}
+                {/* 2. Flash Sale Configuration Tab */}
                 <TabPanel value={tabValue} index={1}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                        Homepage Flash Sale Countdown
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colorValues.textSecondary, mb: 3 }}>
+                        Control the Flash Sale timer displayed on the homepage. Set exact timeframes or use rapid presets to activate or renew campaigns.
+                    </Typography>
+
                     <Grid container spacing={3}>
                         <Grid item xs={12}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={flashSaleActive}
+                                        onChange={(e) => setFlashSaleActive(e.target.checked)}
+                                        color="primary"
+                                    />
+                                }
+                                label={
+                                    <Typography sx={{ fontWeight: 600 }}>
+                                        Flash Sale Campaign Active
+                                    </Typography>
+                                }
+                            />
+                        </Grid>
+
+                        {/* Live Countdown Display */}
+                        <Grid item xs={12}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 2.5,
+                                    borderRadius: 2,
+                                    backgroundColor: colorValues.bgDefault,
+                                    border: '1px solid',
+                                    borderColor: 'divider'
+                                }}
+                            >
+                                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                                    Live Countdown Preview
+                                </Typography>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <Typography variant="body2" sx={{ fontWeight: 600, mr: 1 }}>
+                                        Ends in:
+                                    </Typography>
+                                    <Box sx={{ bgcolor: colorValues.primary, color: '#fff', px: 1.2, py: 0.6, borderRadius: 1, fontWeight: 800 }}>
+                                        {flashSalePreviewTimer.hours}
+                                    </Box>
+                                    <Typography variant="h6" sx={{ fontWeight: 800 }}>:</Typography>
+                                    <Box sx={{ bgcolor: colorValues.primary, color: '#fff', px: 1.2, py: 0.6, borderRadius: 1, fontWeight: 800 }}>
+                                        {flashSalePreviewTimer.minutes}
+                                    </Box>
+                                    <Typography variant="h6" sx={{ fontWeight: 800 }}>:</Typography>
+                                    <Box sx={{ bgcolor: colorValues.primary, color: '#fff', px: 1.2, py: 0.6, borderRadius: 1, fontWeight: 800 }}>
+                                        {flashSalePreviewTimer.seconds}
+                                    </Box>
+                                </Stack>
+                            </Paper>
+                        </Grid>
+
+                        {/* Preset Buttons */}
+                        <Grid item xs={12}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                                Quick Duration Presets
+                            </Typography>
+                            <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+                                {[
+                                    { label: '8 Minutes', mins: 8 },
+                                    { label: '30 Minutes', mins: 30 },
+                                    { label: '1 Hour', mins: 60 },
+                                    { label: '4 Hours', mins: 240 },
+                                    { label: '8 Hours', mins: 480 },
+                                    { label: '24 Hours', mins: 1440 }
+                                ].map((preset) => (
+                                    <Chip
+                                        key={preset.mins}
+                                        label={preset.label}
+                                        clickable
+                                        color={flashSaleMinutes === preset.mins ? 'primary' : 'default'}
+                                        onClick={() => handleSetFlashDuration(preset.mins)}
+                                        sx={{ fontWeight: 600 }}
+                                    />
+                                ))}
+                            </Stack>
+                        </Grid>
+
+                        <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="contained"
+                                startIcon={<SaveIcon />}
+                                onClick={handleSaveFlashSale}
+                                disabled={saving}
+                                sx={{
+                                    backgroundColor: colorValues.primary,
+                                    color: '#ffffff',
+                                    fontWeight: 700,
+                                    textTransform: 'none',
+                                    px: 3,
+                                    '&:hover': { backgroundColor: colorValues.primaryDark }
+                                }}
+                            >
+                                {saving ? 'Saving...' : 'Apply Flash Sale Timer'}
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </TabPanel>
+
+                {/* 3. Database & Mock Data Seeding Tab */}
+                <TabPanel value={tabValue} index={2}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                        Database Synchronization & Mock Data Seeding
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colorValues.textSecondary, mb: 3 }}>
+                        Seed standard mock users (John Doe, Jane Smith, Robert Johnson, Michael Wilson, Sarah Brown, David Miller, Jennifer Lee) and the product catalog directly into Supabase so administrative dashboards and tables reflect real records.
+                    </Typography>
+
+                    <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 2.5,
+                                    borderRadius: 2,
+                                    backgroundColor: colorValues.bgDefault,
+                                    border: '1px solid',
+                                    borderColor: 'divider'
+                                }}
+                            >
+                                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                    Current Database Records Status
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 3, my: 2, flexWrap: 'wrap' }}>
+                                    <Box sx={{ minWidth: 140, p: 1.5, bgcolor: colorValues.bgPaper, borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}>
+                                        <Typography variant="caption" sx={{ color: colorValues.textSecondary }}>Users in DB</Typography>
+                                        <Typography variant="h5" sx={{ fontWeight: 800 }}>{dbStatus ? dbStatus.users : '8 (Mock Baseline)'}</Typography>
+                                    </Box>
+                                    <Box sx={{ minWidth: 140, p: 1.5, bgcolor: colorValues.bgPaper, borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}>
+                                        <Typography variant="caption" sx={{ color: colorValues.textSecondary }}>Products in DB</Typography>
+                                        <Typography variant="h5" sx={{ fontWeight: 800 }}>{dbStatus ? dbStatus.products : '7+ (Catalog)'}</Typography>
+                                    </Box>
+                                    <Box sx={{ minWidth: 140, p: 1.5, bgcolor: colorValues.bgPaper, borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}>
+                                        <Typography variant="caption" sx={{ color: colorValues.textSecondary }}>Orders in DB</Typography>
+                                        <Typography variant="h5" sx={{ fontWeight: 800 }}>{dbStatus ? dbStatus.orders : '0'}</Typography>
+                                    </Box>
+                                </Box>
+
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<RefreshIcon />}
+                                    onClick={handleFetchDatabaseStatus}
+                                    sx={{
+                                        borderColor: colorValues.primary,
+                                        color: colorValues.primary,
+                                        textTransform: 'none',
+                                        fontWeight: 600
+                                    }}
+                                >
+                                    Check Live Database Records
+                                </Button>
+                            </Paper>
+                        </Grid>
+
+                        {seedingResult && (
+                            <Grid item xs={12}>
+                                <Alert severity="info" sx={{ borderRadius: 1.5 }}>
+                                    {seedingResult}
+                                </Alert>
+                            </Grid>
+                        )}
+
+                        <Grid item xs={12} sx={{ display: 'flex', gap: 2 }}>
+                            <Button
+                                variant="contained"
+                                startIcon={seedingLoading ? <CircularProgress size={18} color="inherit" /> : <StorageIcon />}
+                                onClick={handleSeedDatabase}
+                                disabled={seedingLoading}
+                                sx={{
+                                    backgroundColor: colorValues.primary,
+                                    color: '#ffffff',
+                                    fontWeight: 700,
+                                    textTransform: 'none',
+                                    px: 3,
+                                    '&:hover': { backgroundColor: colorValues.primaryDark }
+                                }}
+                            >
+                                {seedingLoading ? 'Seeding Database...' : 'Seed Mock Users & Products to Supabase'}
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </TabPanel>
+
+                {/* 4. Admin Account Tab */}
+                <TabPanel value={tabValue} index={3}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                        Admin Credentials
+                    </Typography>
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth
                                 label="Admin Email"
@@ -110,298 +554,62 @@ function AdminSettings() {
                     </Grid>
                 </TabPanel>
 
-                {/* API Keys Tab */}
-                <TabPanel value={tabValue} index={2}>
+                {/* 5. Theme Settings Tab */}
+                <TabPanel value={tabValue} index={4}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                        Theme & Visual Settings
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colorValues.textSecondary, mb: 3 }}>
+                        Choose the primary theme appearance and color mode.
+                    </Typography>
+
                     <Grid container spacing={3}>
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom>
-                                Stripe
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="Stripe Secret Key"
-                                variant="outlined"
-                                value={stripeSecretKey}
-                                onChange={(e) => setStripeSecretKey(e.target.value)}
-                                InputProps={{
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton edge="end" size="small">
-                                                <VisibilityIcon />
-                                            </IconButton>
-                                        </InputAdornment>
-                                    )
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="Stripe Publishable Key"
-                                variant="outlined"
-                                value={stripePublishableKey}
-                                onChange={(e) => setStripePublishableKey(e.target.value)}
-                            />
-                        </Grid>
-                        
-                        <Grid item xs={12}>
-                            <Divider sx={{ my: 2 }} />
-                            <Typography variant="h6" gutterBottom>
-                                Third-Party Services
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="Mailchimp API Key"
-                                variant="outlined"
-                                value={mailchimpApiKey}
-                                onChange={(e) => setMailchimpApiKey(e.target.value)}
-                                InputProps={{
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton edge="end" size="small">
-                                                <VisibilityIcon />
-                                            </IconButton>
-                                        </InputAdornment>
-                                    )
-                                }}
-                            />
-                        </Grid>
-                        
-                        <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<SaveIcon />}
-                                onClick={handleSaveAPIKeys}
-                                disabled={loading}
-                            >
-                                {loading ? <CircularProgress size={24} /> : 'Save API Keys'}
-                            </Button>
-                        </Grid>
-                    </Grid>
-                </TabPanel>
-                
-                {/* Theme Tab */}
-                <TabPanel value={tabValue} index={3}>
-                    <Grid container spacing={3}>
-                        <Grid item xs={12}>
-                            <Typography variant="h6" gutterBottom>
-                                Appearance
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
+                        <Grid item xs={12} sm={6}>
                             <Paper
-                                elevation={theme === 'dark' ? 3 : 1}
-                                sx={{
-                                    bgcolor: theme === 'light' ? '#fff' : '#333',
-                                    borderRadius: 2,
-                                    p: 3,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    border: theme === 'light' ? '2px solid #1976d2' : '2px solid transparent',
-                                    transition: 'all 0.3s ease',
-                                    '&:hover': {
-                                        transform: 'translateY(-5px)',
-                                        boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
-                                    }
-                                }}
+                                elevation={0}
                                 onClick={() => toggleTheme('light')}
+                                sx={{
+                                    p: 2.5,
+                                    borderRadius: 2,
+                                    border: '2px solid',
+                                    borderColor: theme === 'light' ? colorValues.primary : 'divider',
+                                    backgroundColor: '#ffffff',
+                                    color: '#000000',
+                                    cursor: 'pointer',
+                                    textAlign: 'center'
+                                }}
                             >
-                                <Box 
-                                    sx={{ 
-                                        width: 200, 
-                                        height: 120, 
-                                        bgcolor: '#fff', 
-                                        mb: 2,
-                                        borderRadius: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                                    }}
-                                >
-                                    <Box sx={{ bgcolor: '#f0f0f0', height: '30%', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}></Box>
-                                    <Box sx={{ p: 1, flexGrow: 1 }}>
-                                        <Box sx={{ bgcolor: '#e0e0e0', width: '70%', height: 8, borderRadius: 1, mb: 1 }}></Box>
-                                        <Box sx={{ bgcolor: '#e0e0e0', width: '100%', height: 6, borderRadius: 1, mb: 1 }}></Box>
-                                        <Box sx={{ bgcolor: '#e0e0e0', width: '80%', height: 6, borderRadius: 1 }}></Box>
-                                    </Box>
-                                </Box>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                                     Light Theme
                                 </Typography>
-                                <Typography variant="body2" color="textSecondary">
-                                    Classic bright appearance
+                                <Typography variant="caption" sx={{ color: '#666666' }}>
+                                    Standard daytime storefront
                                 </Typography>
                             </Paper>
                         </Grid>
-                        <Grid item xs={12} md={6}>
+
+                        <Grid item xs={12} sm={6}>
                             <Paper
-                                elevation={theme === 'dark' ? 3 : 1}
-                                sx={{
-                                    bgcolor: theme === 'dark' ? '#333' : '#fff',
-                                    borderRadius: 2,
-                                    p: 3,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    border: theme === 'dark' ? '2px solid #90caf9' : '2px solid transparent',
-                                    transition: 'all 0.3s ease',
-                                    '&:hover': {
-                                        transform: 'translateY(-5px)',
-                                        boxShadow: '0 8px 16px rgba(0,0,0,0.2)'
-                                    }
-                                }}
+                                elevation={0}
                                 onClick={() => toggleTheme('dark')}
+                                sx={{
+                                    p: 2.5,
+                                    borderRadius: 2,
+                                    border: '2px solid',
+                                    borderColor: theme === 'dark' ? colorValues.primary : 'divider',
+                                    backgroundColor: '#1e1e1e',
+                                    color: '#ffffff',
+                                    cursor: 'pointer',
+                                    textAlign: 'center'
+                                }}
                             >
-                                <Box 
-                                    sx={{ 
-                                        width: 200, 
-                                        height: 120, 
-                                        bgcolor: '#333', 
-                                        mb: 2,
-                                        borderRadius: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
-                                    }}
-                                >
-                                    <Box sx={{ bgcolor: '#222', height: '30%', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}></Box>
-                                    <Box sx={{ p: 1, flexGrow: 1 }}>
-                                        <Box sx={{ bgcolor: '#444', width: '70%', height: 8, borderRadius: 1, mb: 1 }}></Box>
-                                        <Box sx={{ bgcolor: '#444', width: '100%', height: 6, borderRadius: 1, mb: 1 }}></Box>
-                                        <Box sx={{ bgcolor: '#444', width: '80%', height: 6, borderRadius: 1 }}></Box>
-                                    </Box>
-                                </Box>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: theme === 'dark' ? '#fff' : 'inherit' }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                                     Dark Theme
                                 </Typography>
-                                <Typography variant="body2" color="textSecondary">
-                                    Modern dark appearance
+                                <Typography variant="caption" sx={{ color: '#aaaaaa' }}>
+                                    Low-light night storefront
                                 </Typography>
                             </Paper>
-                        </Grid>
-                        
-                        {/* Color Theme Variants */}
-                        <Grid item xs={12}>
-                            <Divider sx={{ my: 2 }} />
-                            <Typography variant="h6" gutterBottom>
-                                Color Themes
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary" paragraph>
-                                Choose your preferred color scheme for the application.
-                            </Typography>
-                        </Grid>
-                        
-                        {Object.entries(themeVariants).map(([key, variant]) => (
-                            <Grid item xs={12} sm={6} md={4} key={key}>
-                                <Paper
-                                    elevation={theme === 'dark' ? 3 : 1}
-                                    sx={{
-                                        borderRadius: 2,
-                                        p: 2,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        cursor: 'pointer',
-                                        border: themeVariant === key ? `2px solid ${variant[theme].primary}` : '2px solid transparent',
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            transform: 'translateY(-3px)',
-                                            boxShadow: theme === 'dark' ? '0 8px 16px rgba(0,0,0,0.4)' : '0 8px 16px rgba(0,0,0,0.1)'
-                                        }
-                                    }}
-                                    onClick={() => changeThemeVariant(key)}
-                                >
-                                    {/* Color Preview */}
-                                    <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                                        <Box 
-                                            sx={{ 
-                                                width: 24, 
-                                                height: 24, 
-                                                borderRadius: '50%',
-                                                bgcolor: variant[theme].primary,
-                                                boxShadow: 1
-                                            }} 
-                                        />
-                                        <Box 
-                                            sx={{ 
-                                                width: 24, 
-                                                height: 24, 
-                                                borderRadius: '50%',
-                                                bgcolor: variant[theme].secondary,
-                                                boxShadow: 1
-                                            }} 
-                                        />
-                                        <Box 
-                                            sx={{ 
-                                                width: 24, 
-                                                height: 24, 
-                                                borderRadius: '50%',
-                                                bgcolor: variant[theme].accent,
-                                                boxShadow: 1
-                                            }} 
-                                        />
-                                    </Box>
-                                    
-                                    <Typography 
-                                        variant="subtitle1" 
-                                        sx={{ 
-                                            fontWeight: themeVariant === key ? 'bold' : 'medium',
-                                            color: themeVariant === key ? variant[theme].primary : 'inherit'
-                                        }}
-                                    >
-                                        {variant.name}
-                                    </Typography>
-                                    
-                                    {themeVariant === key && (
-                                        <Typography variant="caption" color="primary">
-                                            Active
-                                        </Typography>
-                                    )}
-                                </Paper>
-                            </Grid>
-                        ))}
-                        
-                        <Grid item xs={12}>
-                            <Divider sx={{ my: 2 }} />
-                            <Typography variant="h6" gutterBottom>
-                                Additional Settings
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary" paragraph>
-                                Customize additional appearance settings for your admin panel.
-                            </Typography>
-                        </Grid>
-                        
-                        <Grid item xs={12} md={6}>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={true}
-                                        color="primary"
-                                    />
-                                }
-                                label="Enable animations"
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={true}
-                                        color="primary"
-                                    />
-                                }
-                                label="Compact sidebar"
-                            />
                         </Grid>
                     </Grid>
                 </TabPanel>

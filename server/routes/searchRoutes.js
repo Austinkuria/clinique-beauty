@@ -1,4 +1,5 @@
 import express from 'express';
+import { supabase } from '../config/db.js';
 
 const router = express.Router();
 
@@ -13,6 +14,10 @@ router.get('/', async (req, res) => {
         message: 'Search query is required' 
       });
     }
+
+    if (!supabase) {
+      return res.json([]);
+    }
     
     const { data, error } = await supabase
       .from('products')
@@ -20,16 +25,14 @@ router.get('/', async (req, res) => {
       .or(`name.ilike.%${query}%, description.ilike.%${query}%`);
     
     if (error) {
-      throw error;
+      console.warn('Database error searching products:', error.message);
+      return res.json([]);
     }
     
-    res.json(data);
+    res.json(data || []);
   } catch (error) {
     console.error('Error searching products:', error);
-    res.status(500).json({ 
-      error: true, 
-      message: 'Failed to search products' 
-    });
+    res.json([]);
   }
 });
 

@@ -171,6 +171,25 @@ export const useAdminApi = () => {
     });
   };
 
+  // System Settings API
+  const getSettings = async () => {
+    return fetchWithAuth('/admin/settings');
+  };
+
+  const updateSettings = async (settings) => {
+    return fetchWithAuth('/admin/settings', {
+      method: 'POST',
+      body: JSON.stringify(settings)
+    });
+  };
+
+  // Database Seeding API
+  const seedDatabase = async () => {
+    return fetchWithAuth('/admin/seed', {
+      method: 'POST'
+    });
+  };
+
   return {
     loading,
     error,
@@ -179,16 +198,21 @@ export const useAdminApi = () => {
     // Users
     getUsers,
     getUserDetails,
-    updateUserRole,    // Products
+    updateUserRole,
+    // Products
     getProducts,
-    createProduct, // Use the FormData version
-    importProducts, // Added new import function
+    createProduct,
+    importProducts,
     updateProduct,
     deleteProduct,
     // Orders
     getOrders,
     getOrderDetails,
     updateOrderStatus,
+    // Settings & Seeding
+    getSettings,
+    updateSettings,
+    seedDatabase,
   };
 };
 
@@ -435,7 +459,7 @@ console.log('SUPABASE_FUNCTIONS_BASE value:', SUPABASE_FUNCTIONS_BASE);
 
 // Direct API URL configuration for unified Express backend
 const constructApiBaseUrl = () => {
-  return DIRECT_API_URL || 'http://localhost:5000/api/v1';
+  return DIRECT_API_URL || 'http://localhost:5001/api/v1';
 };
 
 // Use the corrected function to set API_BASE_URL
@@ -607,9 +631,13 @@ const getProducts = async (category = null) => {
     return transformProductsData(data);
 };
 
-const getProductById = async (id) => {
-    const data = await _request('GET', `/products/${id}`, null, false);
+const getProductById = async (idOrSlug) => {
+    const data = await _request('GET', `/products/${encodeURIComponent(idOrSlug)}`, null, false);
     return transformProductData(data);
+};
+
+const getProductBySlug = async (slug) => {
+    return getProductById(slug);
 };
 
 // Add this helper function to track cart item IDs
@@ -1055,6 +1083,7 @@ import mockDashboardData from '../data/mockDashboardData';
 export const api = {
     getProducts,
     getProductById,
+    getProductBySlug,
     createProduct: async (formData) => {
         // The endpoint '/products' will be appended to API_BASE_URL.
         // true indicates that authentication is required.

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../context/ThemeContext.jsx';
 import {
     AppBar,
@@ -21,6 +21,9 @@ import {
     InputAdornment,
     Tooltip,
     ListItemIcon,
+    Paper,
+    ClickAwayListener,
+    Avatar,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -29,12 +32,18 @@ import {
     DarkMode as DarkModeIcon,
     LightMode as LightModeIcon,
     Search as SearchIcon,
+    Close as CloseIcon,
     AdminPanelSettings as AdminPanelSettingsIcon,
     Security as SecurityIcon,
+    FavoriteBorder as WishlistIcon,
 } from '@mui/icons-material';
 import { UserButton, useAuth, useUser } from '@clerk/clerk-react';
 import { CartContext } from '../context/CartContext';
 import { useCategories } from '../context/CategoryContext';
+import { useWishlist } from '../context/WishlistContext';
+import mockProducts from '../data/mockProducts';
+import { formatCurrency } from '../utils/helpers';
+import defaultProductImage from '../assets/images/placeholder.webp';
 
 function Navbar() {
     const { theme, toggleTheme, colors, colorValues } = useContext(ThemeContext);
@@ -49,6 +58,54 @@ function Navbar() {
     const cartContext = useContext(CartContext);
     const itemCount = cartContext?.itemCount || 0;
     const cartLoading = cartContext?.loading || false;
+    const { wishlist = [] } = useWishlist() || {};
+    const navigate = useNavigate();
+
+    // E-commerce Live Autocomplete Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchOpen, setSearchOpen] = useState(false);
+
+    const handleSearchChange = (e) => {
+        const val = e.target.value;
+        setSearchQuery(val);
+        if (!val.trim()) {
+            setSearchResults([]);
+            setSearchOpen(false);
+            return;
+        }
+
+        const q = val.toLowerCase().trim();
+        const matches = (mockProducts || []).filter((p) => {
+            const nameMatch = p.name?.toLowerCase().includes(q);
+            const catMatch = p.category?.toLowerCase().includes(q);
+            const subMatch = p.subcategory?.toLowerCase().includes(q);
+            const descMatch = p.description?.toLowerCase().includes(q);
+            return nameMatch || catMatch || subMatch || descMatch;
+        }).slice(0, 6);
+
+        setSearchResults(matches);
+        setSearchOpen(true);
+    };
+
+    const handleSearchSubmit = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (!searchQuery.trim()) return;
+        setSearchOpen(false);
+        navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    };
+
+    const handleSelectProduct = (product) => {
+        setSearchOpen(false);
+        setSearchQuery('');
+        navigate(`/product/${product.slug || product.id}`);
+    };
+
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        setSearchResults([]);
+        setSearchOpen(false);
+    };
 
     // Dynamic navigation items driven directly by admin-configured categories
     const { categories } = useCategories();
@@ -112,7 +169,37 @@ function Navbar() {
 
     // Mobile drawer content
     const drawer = (
-        <Box sx={{ width: 250 }} role="presentation" className={`${colors.sectionBg}`}>
+        <Box sx={{ width: 280 }} role="presentation" className={`${colors.sectionBg}`}>
+            {/* Mobile Search */}
+            <Box sx={{ p: 2, pb: 1 }}>
+                <TextField
+                    placeholder="Search products..."
+                    size="small"
+                    fullWidth
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            setDrawerOpen(false);
+                            handleSearchSubmit(e);
+                        }
+                    }}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon sx={{ color: colorValues.textSecondary, fontSize: '1.1rem' }} />
+                            </InputAdornment>
+                        ),
+                    }}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: '16px',
+                            backgroundColor: theme === 'dark' ? '#333333' : '#f5f5f5',
+                            fontSize: '0.85rem'
+                        }
+                    }}
+                />
+            </Box>
             <List>
                 {navItems.map((item) => (
                     <ListItem key={item.name} disablePadding>
@@ -239,27 +326,198 @@ function Navbar() {
                 {/* Desktop View */}
                 {!isMobile && (
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {/* Search Bar */}
-                        <TextField
-                            variant="outlined"
-                            placeholder="Search products..."
-                            size="small"
-                            sx={{
-                                width: '250px',
-                                mr: 2,
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: '20px',
-                                    backgroundColor: theme === 'dark' ? '#424242' : '#f5f5f5',
-                                },
-                            }}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{ color: colorValues.textSecondary }} />
-                                    </InputAdornment>
-                                ),
-                            }}
-                        />
+                        {/* Live Search Bar with Instant Autocomplete Dropdown */}
+                        <ClickAwayListener onClickAway={() => setSearchOpen(false)}>
+                            <Box sx={{ position: 'relative', width: { sm: 260, md: 320, lg: 380 }, mr: 2 }}>
+                                <Box component="form" onSubmit={handleSearchSubmit}>
+                                    <TextField
+                                        variant="outlined"
+                                        placeholder="Search products, categories..."
+                                        size="small"
+                                        fullWidth
+                                        value={searchQuery}
+                                        onChange={handleSearchChange}
+                                        onFocus={() => {
+                                            if (searchQuery.trim() && searchResults.length > 0) {
+                                                setSearchOpen(true);
+                                            }
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleSearchSubmit(e);
+                                            } else if (e.key === 'Escape') {
+                                                setSearchOpen(false);
+                                            }
+                                        }}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                borderRadius: '24px',
+                                                backgroundColor: theme === 'dark' ? '#333333' : '#f5f5f5',
+                                                pr: 0.5,
+                                                fontSize: '0.875rem',
+                                                '&:hover': {
+                                                    backgroundColor: theme === 'dark' ? '#3d3d3d' : '#eeeeee',
+                                                },
+                                                '&.Mui-focused': {
+                                                    backgroundColor: theme === 'dark' ? '#333333' : '#ffffff',
+                                                    boxShadow: `0 0 0 2px ${colorValues.primary}33`,
+                                                }
+                                            },
+                                        }}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ color: colorValues.textSecondary, fontSize: '1.2rem', ml: 0.5 }} />
+                                                </InputAdornment>
+                                            ),
+                                            endAdornment: (
+                                                <InputAdornment position="end">
+                                                    {searchQuery && (
+                                                        <IconButton size="small" onClick={handleClearSearch} sx={{ p: 0.5, mr: 0.5 }}>
+                                                            <CloseIcon sx={{ fontSize: '1rem', color: colorValues.textSecondary }} />
+                                                        </IconButton>
+                                                    )}
+                                                    <Button
+                                                        size="small"
+                                                        onClick={handleSearchSubmit}
+                                                        sx={{
+                                                            minWidth: 32,
+                                                            px: 1.5,
+                                                            py: 0.4,
+                                                            borderRadius: '16px',
+                                                            backgroundColor: colorValues.primary,
+                                                            color: '#ffffff',
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 700,
+                                                            textTransform: 'none',
+                                                            '&:hover': {
+                                                                backgroundColor: colorValues.primaryDark,
+                                                            }
+                                                        }}
+                                                    >
+                                                        Search
+                                                    </Button>
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                </Box>
+
+                                {/* Live Search Instant Dropdown Preview */}
+                                {searchOpen && (
+                                    <Paper
+                                        elevation={8}
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 'calc(100% + 8px)',
+                                            left: 0,
+                                            right: 0,
+                                            maxHeight: 440,
+                                            overflowY: 'auto',
+                                            zIndex: 1400,
+                                            borderRadius: 2,
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                            backgroundColor: colorValues.bgPaper,
+                                            boxShadow: theme === 'dark' ? '0 12px 30px rgba(0,0,0,0.6)' : '0 12px 30px rgba(0,0,0,0.12)'
+                                        }}
+                                    >
+                                        {searchResults.length > 0 ? (
+                                            <Box>
+                                                <Box sx={{ px: 2, py: 1, backgroundColor: colorValues.bgDefault, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <Typography variant="caption" sx={{ fontWeight: 700, color: colorValues.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                                        Matching Products ({searchResults.length})
+                                                    </Typography>
+                                                    <Typography
+                                                        variant="caption"
+                                                        sx={{ color: colorValues.primary, fontWeight: 700, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                                                        onClick={handleSearchSubmit}
+                                                    >
+                                                        View all
+                                                    </Typography>
+                                                </Box>
+                                                <List disablePadding>
+                                                    {searchResults.map((product) => (
+                                                        <ListItem
+                                                            key={product.id || product.slug}
+                                                            disablePadding
+                                                            divider
+                                                        >
+                                                            <ListItemButton
+                                                                onClick={() => handleSelectProduct(product)}
+                                                                sx={{
+                                                                    py: 1,
+                                                                    px: 1.5,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 1.5,
+                                                                    '&:hover': {
+                                                                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <Avatar
+                                                                    src={product.image || defaultProductImage}
+                                                                    variant="rounded"
+                                                                    sx={{ width: 44, height: 44, borderRadius: 1 }}
+                                                                    imgProps={{ onError: (e) => { e.currentTarget.src = defaultProductImage; } }}
+                                                                />
+                                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                                    <Typography
+                                                                        variant="body2"
+                                                                        noWrap
+                                                                        sx={{ fontWeight: 600, color: colorValues.textPrimary, fontSize: '0.85rem' }}
+                                                                    >
+                                                                        {product.name}
+                                                                    </Typography>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                        <Typography variant="caption" sx={{ color: colorValues.textSecondary, fontSize: '0.72rem' }}>
+                                                                            {product.category}
+                                                                        </Typography>
+                                                                        {product.rating && (
+                                                                            <Typography variant="caption" sx={{ color: colorValues.primary, fontSize: '0.72rem', fontWeight: 600 }}>
+                                                                                ★ {product.rating}
+                                                                            </Typography>
+                                                                        )}
+                                                                    </Box>
+                                                                </Box>
+                                                                <Typography
+                                                                    variant="subtitle2"
+                                                                    sx={{ fontWeight: 700, color: colorValues.primary, fontSize: '0.9rem', whiteSpace: 'nowrap' }}
+                                                                >
+                                                                    {formatCurrency(product.price)}
+                                                                </Typography>
+                                                            </ListItemButton>
+                                                        </ListItem>
+                                                    ))}
+                                                </List>
+                                                <Box
+                                                    onClick={handleSearchSubmit}
+                                                    sx={{
+                                                        p: 1.2,
+                                                        textAlign: 'center',
+                                                        cursor: 'pointer',
+                                                        backgroundColor: colorValues.bgDefault,
+                                                        color: colorValues.primary,
+                                                        fontWeight: 600,
+                                                        fontSize: '0.8rem',
+                                                        '&:hover': { textDecoration: 'underline' }
+                                                    }}
+                                                >
+                                                    Press Enter to view all results for "{searchQuery}"
+                                                </Box>
+                                            </Box>
+                                        ) : (
+                                            <Box sx={{ p: 2.5, textAlign: 'center' }}>
+                                                <Typography variant="body2" sx={{ color: colorValues.textSecondary, fontSize: '0.85rem' }}>
+                                                    No products found matching "{searchQuery}"
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </Paper>
+                                )}
+                            </Box>
+                        </ClickAwayListener>
 
                         {/* Navigation */}
                         {navItems.map((item) => (
@@ -299,6 +557,35 @@ function Navbar() {
                                 ) : (
                                     <DarkModeIcon />
                                 )}
+                            </IconButton>
+                        </Tooltip>
+
+                        {/* Wishlist */}
+                        <Tooltip title="View Wishlist">
+                            <IconButton
+                                component={RouterLink}
+                                to="/wishlist"
+                                sx={{
+                                    ml: 1,
+                                    color: colorValues.textPrimary,
+                                    '&:hover': {
+                                        color: colorValues.primary,
+                                        backgroundColor: colorValues.buttonHover,
+                                    },
+                                }}
+                                aria-label={`Wishlist with ${wishlist.length} items`}
+                            >
+                                <Badge
+                                    badgeContent={wishlist.length}
+                                    sx={{
+                                        '& .MuiBadge-badge': {
+                                            backgroundColor: colorValues.primary,
+                                            color: 'white',
+                                        },
+                                    }}
+                                >
+                                    <WishlistIcon />
+                                </Badge>
                             </IconButton>
                         </Tooltip>
 
