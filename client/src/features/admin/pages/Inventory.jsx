@@ -21,6 +21,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { useTheme } from '@mui/material/styles';
 import { stockMovements, lowStockAlerts, stockSettings } from '../../../data/mockInventoryData';
+import { useAdminApi } from '../../../api/apiClient';
 import StockAdjustmentTool from '../components/StockAdjustmentTool';
 import AddStockForm from '../components/AddStockForm';
 import ProcessReturnForm from '../components/ProcessReturnForm';
@@ -59,14 +60,42 @@ const Inventory = () => {
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
 
-  // Load initial data
+  const adminApi = useAdminApi();
+
+  // Load dynamic inventory from database with mock fallback
   useEffect(() => {
-    // In a real app, this would fetch from an API
-    setAlerts(lowStockAlerts);
+    let isMounted = true;
+
+    const fetchRealInventory = async () => {
+      try {
+        const res = await adminApi.getInventory();
+        if (isMounted && res && res.data && res.data.length > 0) {
+          const dynamicAlerts = res.data.map((p) => ({
+            id: `LSA-${p.sku || (typeof p.id === 'string' ? p.id.slice(0, 6) : p.id)}`,
+            productId: p.id,
+            productName: p.name,
+            currentStock: p.stock || 0,
+            threshold: 15,
+            status: (p.stock || 0) === 0 ? 'out_of_stock' : 'low_stock',
+            createdAt: new Date().toISOString().slice(0, 10),
+            resolved: false
+          }));
+          setAlerts(dynamicAlerts);
+          setNotificationCount(dynamicAlerts.length);
+        } else if (isMounted) {
+          setAlerts(lowStockAlerts);
+          setNotificationCount(lowStockAlerts.filter(alert => !alert.resolved).length);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setAlerts(lowStockAlerts);
+          setNotificationCount(lowStockAlerts.filter(alert => !alert.resolved).length);
+        }
+      }
+    };
+
+    fetchRealInventory();
     setMovements(stockMovements);
-    
-    // Count unresolved alerts
-    setNotificationCount(lowStockAlerts.filter(alert => !alert.resolved).length);
     
     // Set up real-time updates (simulated)
     const interval = setInterval(() => {

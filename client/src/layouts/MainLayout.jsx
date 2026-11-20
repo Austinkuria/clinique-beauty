@@ -18,6 +18,7 @@ function MainLayout() {
                     display: 'flex',
                     flexDirection: 'column',
                     width: '100%',
+                    minHeight: '75vh',
                     p: 0,
                     pb: { xs: 8, md: 0 } // Bottom padding to prevent bottom nav from covering content on mobile/tablet
                 }}

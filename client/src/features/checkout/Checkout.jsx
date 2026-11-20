@@ -180,6 +180,34 @@ const CheckoutPage = () => {
     agreeToTerms: false
   });
   
+  // Dynamic shipping methods and VAT loaded from admin settings
+  const [shippingMethods, setShippingMethods] = useState(SHIPPING_METHODS);
+  const [vatRate, setVatRate] = useState(0.16);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/settings`);
+        if (res.ok) {
+          const cfg = await res.json();
+          if (cfg) {
+            setShippingMethods([
+              { id: 'standard', name: 'Standard Shipping', price: Number(cfg.standard_shipping_fee ?? 0), estimatedDays: '5-7' },
+              { id: 'express', name: 'Express Shipping', price: Number(cfg.express_shipping_fee ?? 1299), estimatedDays: '2-3' },
+              { id: 'overnight', name: 'Overnight Shipping', price: Number(cfg.overnight_shipping_fee ?? 2499), estimatedDays: '1' }
+            ]);
+            if (cfg.vat_percentage !== undefined) {
+              setVatRate(Number(cfg.vat_percentage) / 100);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load dynamic settings for checkout:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   // Shipping and payment state
   const [selectedShipping, setSelectedShipping] = useState('standard');
   const [selectedPayment, setSelectedPayment] = useState('mpesa');
@@ -200,15 +228,15 @@ const CheckoutPage = () => {
   
   // Format currency helper
   const formatCurrency = (amount) => {
-    return `Ksh${Number(amount).toFixed(2)}`;
+    return `KSh ${Number(amount || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   // Calculate totals
   const calculateTotals = () => {
     const subtotal = cartTotal || 0;
-    const shippingMethod = SHIPPING_METHODS.find(method => method.id === selectedShipping);
+    const shippingMethod = shippingMethods.find(method => method.id === selectedShipping);
     const shippingCost = shippingMethod ? shippingMethod.price : 0;
-    const tax = Math.round(subtotal * 0.16); // 16% VAT for Kenya
+    const tax = Math.round(subtotal * vatRate); // Dynamic VAT calculation
     const total = subtotal + shippingCost + tax;
     
     return {
@@ -862,12 +890,12 @@ const CheckoutPage = () => {
       case 0:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom>
                 Customer Information
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="firstName"
@@ -882,7 +910,7 @@ const CheckoutPage = () => {
                 inputProps={{ maxLength: 50 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="lastName"
@@ -897,7 +925,7 @@ const CheckoutPage = () => {
                 inputProps={{ maxLength: 50 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="email"
@@ -912,7 +940,7 @@ const CheckoutPage = () => {
                 inputProps={{ maxLength: 100 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 required
                 id="phone"
@@ -927,12 +955,12 @@ const CheckoutPage = () => {
                 inputProps={{ maxLength: 15 }}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                 Shipping Address
               </Typography>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 required
                 id="address"
@@ -947,7 +975,7 @@ const CheckoutPage = () => {
                 inputProps={{ maxLength: 100 }}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 id="apartment"
                 name="apartment"
@@ -962,7 +990,7 @@ const CheckoutPage = () => {
               />
             </Grid>
             {/* County dropdown */}
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth required error={!!validationErrors.county}>
                 <InputLabel id="county-label">County</InputLabel>
                 <Select
@@ -984,7 +1012,7 @@ const CheckoutPage = () => {
               </FormControl>
             </Grid>
             {/* City dropdown - dynamically populated based on county */}
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <FormControl fullWidth required disabled={!customerInfo.county} error={!!validationErrors.city}>
                 <InputLabel id="city-label">City</InputLabel>
                 <Select
@@ -1006,7 +1034,7 @@ const CheckoutPage = () => {
               </FormControl>
             </Grid>
             {/* Postal code automatically filled based on city */}
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <TextField
                 required
                 id="postalCode"
@@ -1019,7 +1047,7 @@ const CheckoutPage = () => {
                 helperText="Automatically filled based on city selection"
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -1034,12 +1062,12 @@ const CheckoutPage = () => {
             </Grid>
             {!customerInfo.sameAsBilling && (
               <>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                     Billing Address
                   </Typography>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     required
                     id="billing.firstName"
@@ -1054,7 +1082,7 @@ const CheckoutPage = () => {
                     inputProps={{ maxLength: 50 }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     required
                     id="billing.lastName"
@@ -1069,7 +1097,7 @@ const CheckoutPage = () => {
                     inputProps={{ maxLength: 50 }}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <TextField
                     required
                     id="billing.address"
@@ -1084,7 +1112,7 @@ const CheckoutPage = () => {
                     inputProps={{ maxLength: 100 }}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <TextField
                     id="billing.apartment"
                     name="billing.apartment"
@@ -1099,7 +1127,7 @@ const CheckoutPage = () => {
                   />
                 </Grid>
                 {/* Billing County dropdown */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <FormControl fullWidth required>
                     <InputLabel id="billing-county-label">County</InputLabel>
                     <Select
@@ -1116,7 +1144,7 @@ const CheckoutPage = () => {
                   </FormControl>
                 </Grid>
                 {/* Billing City dropdown */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <FormControl fullWidth required disabled={!customerInfo.billingAddress.county}>
                     <InputLabel id="billing-city-label">City</InputLabel>
                     <Select
@@ -1134,7 +1162,7 @@ const CheckoutPage = () => {
                   </FormControl>
                 </Grid>
                 {/* Billing Postal code automatically filled */}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     required
                     id="billing.postalCode"
@@ -1150,7 +1178,7 @@ const CheckoutPage = () => {
               </>
             )}
                 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 id="orderNotes"
                 name="orderNotes"
@@ -1168,7 +1196,7 @@ const CheckoutPage = () => {
       case 1:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom>
                 Shipping Method
               </Typography>
@@ -1178,7 +1206,7 @@ const CheckoutPage = () => {
                   value={selectedShipping}
                   onChange={handleShippingChange}
                 >
-                  {SHIPPING_METHODS.map((method) => (
+                  {shippingMethods.map((method) => (
                     <Paper
                       key={method.id}
                       elevation={selectedShipping === method.id ? 3 : 1}
@@ -1213,7 +1241,7 @@ const CheckoutPage = () => {
                 </RadioGroup>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
                 Payment Method
               </Typography>
@@ -1247,7 +1275,7 @@ const CheckoutPage = () => {
               </FormControl>
             </Grid>
             {selectedPayment === 'mpesa' && (
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   required
                   id="mpesaNumber"
@@ -1270,7 +1298,7 @@ const CheckoutPage = () => {
                 />
               </Grid>
             )}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -1298,12 +1326,12 @@ const CheckoutPage = () => {
       case 2:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom>
                 Order Review
               </Typography>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="subtitle1" gutterBottom>
                 Customer Information
               </Typography>
@@ -1315,7 +1343,7 @@ const CheckoutPage = () => {
                 <Typography variant="body2">{customerInfo.phone}</Typography>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle1" gutterBottom>
                 Shipping Address
               </Typography>
@@ -1329,7 +1357,7 @@ const CheckoutPage = () => {
                 </Typography>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle1" gutterBottom>
                 Billing Address
               </Typography>
@@ -1352,19 +1380,19 @@ const CheckoutPage = () => {
                 )}
               </Box>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle1" gutterBottom>
                 Shipping Method
               </Typography>
               <Box sx={{ mb: 2 }}>
-                {SHIPPING_METHODS.find(method => method.id === selectedShipping)?.name || ''}
+                {shippingMethods.find(method => method.id === selectedShipping)?.name || ''}
                 {' - '}
                 {selectedShipping === 'standard' ? 'FREE' : formatCurrency(
-                  SHIPPING_METHODS.find(method => method.id === selectedShipping)?.price || 0
+                  shippingMethods.find(method => method.id === selectedShipping)?.price || 0
                 )}
               </Box>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle1" gutterBottom>
                 Payment Method
               </Typography>
@@ -1376,20 +1404,20 @@ const CheckoutPage = () => {
               </Box>
             </Grid>
             {customerInfo.orderNotes && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Typography variant="subtitle1" gutterBottom>
                   Order Notes
                 </Typography>
                 <Typography variant="body2">{customerInfo.orderNotes}</Typography>
               </Grid>
             )}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Divider sx={{ my: 2 }} />
               <Typography variant="h6" gutterBottom>
                 Order Items
               </Typography>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               {cartItems.map((item) => (
                 <Box key={item.id} sx={{ display: 'flex', mb: 2, alignItems: 'center' }}>
                   <Box
@@ -1479,7 +1507,7 @@ const CheckoutPage = () => {
       {!loading && cartItems.length > 0 && (
         <Grid container spacing={4}>
           {/* Left side: Checkout steps */}
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Paper elevation={theme === 'dark' ? 3 : 1} sx={{ p: 3, backgroundColor: colorValues.bgPaper }}>
               <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
                 <Step>
@@ -1535,7 +1563,7 @@ const CheckoutPage = () => {
             </Paper>
           </Grid>
           {/* Right side: Order summary */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card elevation={theme === 'dark' ? 3 : 1} sx={{ backgroundColor: colorValues.bgPaper, position: 'sticky', top: 20 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -1573,7 +1601,7 @@ const CheckoutPage = () => {
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2">VAT (16%)</Typography>
+                  <Typography variant="body2">VAT ({(vatRate * 100).toFixed(0)}%)</Typography>
                   <Typography variant="body2">{formatCurrency(tax)}</Typography>
                 </Box>
                 <Divider sx={{ my: 2 }} />

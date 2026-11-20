@@ -1,0 +1,14 @@
+{
+  "site_title": "Clinique Beauty",
+  "site_currency": "KES",
+  "flash_sale_active": "true",
+  "flash_sale_ends_at": null,
+  "theme_mode": "light",
+  "theme_variant": "pink",
+  "enable_animations": true,
+  "compact_sidebar": false,
+  "mpesa_paybill": "174379",
+  "mpesa_consumer_key": "",
+  "stripe_publishable_key": "pk_test_sample",
+  "mailchimp_api_key": "mc_sample"
+}

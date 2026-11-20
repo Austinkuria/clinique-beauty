@@ -123,16 +123,10 @@ const UserEditDialog = ({ open, onClose, user, onSave }) => {
         
         setIsSubmitting(true);
         try {
-            // In a real app, you would send the data to your API
-            // const result = await api.saveUser(formData);
-            
-            // For now, we'll just simulate a successful save
-            setTimeout(() => {
-                onSave(formData);
-                setIsSubmitting(false);
-            }, 800);
+            await onSave(formData);
         } catch (error) {
-            console.error('Error saving user:', error);
+            console.error('Error saving user in dialog:', error);
+        } finally {
             setIsSubmitting(false);
         }
     };

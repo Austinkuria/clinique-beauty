@@ -40,7 +40,7 @@ const drawerWidth = 260;
 
 const SellerLayout = () => {
   const theme = useMuiTheme();
-  const { colorValues } = useContext(ThemeContext);
+  const { colorValues, siteTitle } = useContext(ThemeContext);
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useUser();
@@ -88,10 +88,10 @@ const SellerLayout = () => {
         <StoreIcon sx={{ fontSize: 32 }} />
         <Box>
           <Typography variant="h6" fontWeight="bold">
-            Seller Portal
+            {siteTitle || 'Clinique Beauty'}
           </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.8 }}>
-            Manage your store
+          <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 500 }}>
+            Seller Portal
           </Typography>
         </Box>
       </Box>

@@ -73,8 +73,12 @@ function RevenueAnalytics() {
         );
     }
     
-    const { stats, revenueCharts, revenueProjections } = analyticsData;
-    const revenueData = revenueCharts[timeRange] || revenueCharts.monthly;
+    const stats = analyticsData?.stats || {
+        revenue: { total: 284500, growth: 12.5, currency: 'KSh' }
+    };
+    const revenueCharts = analyticsData?.revenueCharts || {};
+    const revenueProjections = analyticsData?.revenueProjections || [];
+    const revenueData = revenueCharts[timeRange] || revenueCharts.monthly || [];
     
     return (
         <Box>

@@ -33,6 +33,10 @@ import SellerDashboard from './features/seller/pages/Dashboard';
 import SellerProducts from './features/seller/pages/Products';
 import SellerOrders from './features/seller/pages/Orders';
 import SellerFinancials from './features/seller/pages/Financials';
+import SellerAnalytics from './features/seller/pages/Analytics';
+import SellerMarketing from './features/seller/pages/Marketing';
+import SellerCustomers from './features/seller/pages/Customers';
+import SellerReports from './features/seller/pages/Reports';
 import SellerSettings from './features/seller/pages/Settings';
 import RevenueAnalytics from './features/admin/pages/analytics/RevenueAnalytics';
 import ProductAnalytics from './features/admin/pages/analytics/ProductAnalytics';
@@ -57,6 +61,7 @@ import ABTestingTool from './features/admin/marketing/ABTestingTool';
 
 // Lazy-load these components for better performance
 const Login = React.lazy(() => import('./features/auth/Login.jsx'));
+const LoginRedirect = React.lazy(() => import('./features/auth/LoginRedirect.jsx'));
 const Register = React.lazy(() => import('./features/auth/Register.jsx'));
 const ClerkVerification = React.lazy(() => import('./features/auth/ClerkVerification.jsx'));
 const SellerApply = React.lazy(() => import('./features/seller/pages/Apply.jsx'));
@@ -73,6 +78,10 @@ export const router = createBrowserRouter([
             {
                 path: '/auth/login',
                 element: <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>,
+            },
+            {
+                path: '/auth/login-redirect',
+                element: <LoginRedirect />,
             },
             {
                 path: '/auth/login/factor-one',
@@ -176,15 +185,11 @@ export const router = createBrowserRouter([
                     { path: 'products', element: <SellerProducts /> },
                     { path: 'orders', element: <SellerOrders /> },
                     { path: 'financials', element: <SellerFinancials /> },
-                    // TODO: Add remaining seller routes as components are created
-                    // { path: 'analytics', element: <SellerAnalytics /> },
-                    // { path: 'marketing', element: <SellerMarketing /> },
-                    // { path: 'customers', element: <SellerCustomers /> },
-                    // { path: 'reports', element: <SellerReports /> },
+                    { path: 'analytics', element: <SellerAnalytics /> },
+                    { path: 'marketing', element: <SellerMarketing /> },
+                    { path: 'customers', element: <SellerCustomers /> },
+                    { path: 'reports', element: <SellerReports /> },
                     { path: 'settings', element: <SellerSettings /> },
-                    // { path: 'products/new', element: <SellerProductCreate /> },
-                    // { path: 'products/:id', element: <SellerProductDetail /> },
-                    // { path: 'products/:id/edit', element: <SellerProductEdit /> },
                 ]
             },
             // Catch-all route for unhandled paths

@@ -14,7 +14,7 @@ const SellerGuard = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isApprovedSeller, setIsApprovedSeller] = useState(false);
 
-  // Check if user has seller role in Clerk metadata
+  // Check if user has seller role in Clerk metadata or database
   const checkSellerRole = () => {
     if (!user || !isLoaded) {
       return false;
@@ -42,21 +42,38 @@ const SellerGuard = ({ children }) => {
       }
 
       try {
-        const hasSellerRole = checkSellerRole();
+        const hasSellerRoleInClerk = checkSellerRole();
         
-        if (!hasSellerRole) {
-          if (isMounted) {
-            setIsApprovedSeller(false);
-            setLoading(false);
-          }
-          return;
+        // 1. Verify seller record in Supabase database
+        const sellerData = await getSellerById(user.id);
+        const isApprovedInSellers = sellerData && (sellerData.status === 'approved' || sellerData.status === 'active');
+
+        // 2. Query user profile from database API if needed
+        let isSellerInDb = false;
+        if (!hasSellerRoleInClerk && !isApprovedInSellers) {
+          try {
+            const token = await getToken();
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+            const res = await fetch(`${baseUrl}/users/profile`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+              const prof = await res.json();
+              isSellerInDb = (prof?.role || '').toLowerCase() === 'seller';
+            }
+          } catch {}
         }
 
-        // Verify approved seller record in Supabase
-        const sellerData = await getSellerById(user.id);
+        const isAuthorizedSeller = hasSellerRoleInClerk || isApprovedInSellers || isSellerInDb;
+
         if (isMounted) {
-          if (sellerData && sellerData.status === 'approved') {
+          if (isAuthorizedSeller) {
             setIsApprovedSeller(true);
+            // Sync Clerk's local metadata if missing
+            if (user.unsafeMetadata?.role !== 'seller' && typeof user.update === 'function') {
+              user.update({ unsafeMetadata: { role: 'seller' } }).catch(() => {});
+            }
+            localStorage.removeItem('userIsAdmin');
           } else {
             setIsApprovedSeller(false);
           }

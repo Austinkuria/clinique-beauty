@@ -27,6 +27,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { suppliers, products } from '../../../data/mockInventoryData';
 import { format } from 'date-fns';
+import { useAdminApi } from '../../../api/apiClient';
 
 // Tab panel component
 function TabPanel(props) {
@@ -72,6 +73,7 @@ const generatePurchaseHistory = (supplierId) => {
 };
 
 const Suppliers = () => {
+  const adminApi = useAdminApi();
   const [suppliersList, setSuppliersList] = useState(suppliers);
   const [openDialog, setOpenDialog] = useState(false);
   const [currentSupplier, setCurrentSupplier] = useState(null);
@@ -89,6 +91,18 @@ const Suppliers = () => {
   const [allOrderHistory, setAllOrderHistory] = useState([]);
   // Add state to track which supplier to create an order for from history
   const [createOrderFromHistory, setCreateOrderFromHistory] = useState(false);
+  
+  useEffect(() => {
+    let isMounted = true;
+    adminApi.getSuppliers().then(data => {
+      if (isMounted && Array.isArray(data) && data.length > 0) {
+        setSuppliersList(data);
+      }
+    }).catch(err => {
+      console.warn('Failed to load suppliers from API, using default catalog:', err.message);
+    });
+    return () => { isMounted = false; };
+  }, []);
   
   useEffect(() => {
     // Apply search filter whenever suppliers list or search query changes

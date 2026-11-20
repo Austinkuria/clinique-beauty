@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 
 function Footer() {
-    const { colors } = useContext(ThemeContext);
+    const { colors, siteTitle } = useContext(ThemeContext);
     const currentYear = new Date().getFullYear();
 
     return (
@@ -50,7 +50,7 @@ function Footer() {
                                 fontWeight: 'bold',
                             }}
                         >
-                            Clinique Beauty
+                            {siteTitle || 'Clinique Beauty'}
                         </Typography>
                         <Typography variant="body2" paragraph className={`${colors?.footerText}`}>
                             Premium skincare and beauty products crafted with care for all skin types.
@@ -193,7 +193,7 @@ function Footer() {
                 {/* Copyright Bar */}
                 <Box mt={4} py={2} className={`border-t ${colors?.footerBorder} text-center`}>
                     <Typography variant="body2" className={`${colors?.footerText}`}>
-                        © {currentYear} Clinique Beauty. All rights reserved.
+                        © {currentYear} {siteTitle || 'Clinique Beauty'}. All rights reserved.
                     </Typography>
                     <Box mt={2}>
                         <Button component={RouterLink} to="/terms" color="inherit" className={`${colors?.footerLink} hover:${colors?.footerLinkHover} mr-2`}>

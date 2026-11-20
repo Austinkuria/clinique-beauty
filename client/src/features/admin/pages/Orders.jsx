@@ -177,7 +177,7 @@ function AdminOrders() {
         const fetchOrders = async () => {
             setLoading(true);
             try {
-                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
                 const response = await fetch(`${baseUrl}/orders/admin/all`).catch(() => null);
                 if (response && response.ok) {
                     const resJson = await response.json();

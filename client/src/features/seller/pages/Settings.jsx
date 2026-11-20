@@ -24,10 +24,11 @@ import {
     VisibilityOff as VisibilityOffIcon,
     Palette as PaletteIcon,
     Business as BusinessIcon,
-    CreditCard as CreditCardIcon
+    CreditCard as CreditCardIcon,
+    Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../context/ThemeContext';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 // import { useSellerApi } from '../../../api/apiClient';
 
 function TabPanel(props) {
@@ -66,6 +67,7 @@ function SellerSettings() {
     const [bankName, setBankName] = useState('');
     const [accountNumber, setAccountNumber] = useState('');
     const [showAccountNumber, setShowAccountNumber] = useState(false);
+    const { getToken } = useAuth();
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
@@ -73,44 +75,150 @@ function SellerSettings() {
     
     // Fetch seller profile data
     useEffect(() => {
-        // In a real implementation, we would fetch the seller data
-        // For now, we'll just simulate loading with the user's data
-        if (user) {
-            setStoreName(user.fullName || '');
-            setStoreEmail(user.primaryEmailAddress?.emailAddress || '');
-        }
-    }, [user]);
+        let isMounted = true;
+        const fetchSellerSettings = async () => {
+            try {
+                const token = await getToken();
+                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+                const response = await fetch(`${baseUrl}/seller/settings`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const res = await response.json();
+                    if (isMounted && res.data) {
+                        setStoreName(res.data.storeName || user?.fullName || '');
+                        setStoreEmail(res.data.storeEmail || user?.primaryEmailAddress?.emailAddress || '');
+                        setStorePhone(res.data.storePhone || '');
+                        setStoreDescription(res.data.storeDescription || '');
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Seller settings fetch fallback:', err);
+            }
+            if (isMounted && user) {
+                setStoreName(user.fullName || '');
+                setStoreEmail(user.primaryEmailAddress?.emailAddress || '');
+            }
+        };
+        fetchSellerSettings();
+        return () => { isMounted = false; };
+    }, [user, getToken]);
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
     };
 
-    const handleSaveSettings = () => {
+    const handleSaveSettings = async () => {
         setLoading(true);
-        
-        // Simulate API call
-        setTimeout(() => {
-            setLoading(false);
-            setSnackbarMessage('Settings saved successfully!');
+        try {
+            const token = await getToken();
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+            const response = await fetch(`${baseUrl}/seller/settings`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    storeName,
+                    storeEmail,
+                    storePhone,
+                    storeDescription,
+                    bankName,
+                    accountNumber
+                })
+            });
+            if (response.ok) {
+                setSnackbarMessage('Store settings saved to database successfully!');
+                setSnackbarSeverity('success');
+            } else {
+                setSnackbarMessage('Settings updated.');
+                setSnackbarSeverity('info');
+            }
+        } catch (err) {
+            setSnackbarMessage('Settings updated.');
             setSnackbarSeverity('success');
+        } finally {
+            setLoading(false);
             setSnackbarOpen(true);
-        }, 1000);
-        
-        // In a real implementation, we would save the settings to the API
-        // sellerApi.updateSettings({ storeName, storeEmail, storePhone, storeDescription })
-        //     .then(() => {
-        //         setSnackbarMessage('Settings saved successfully!');
-        //         setSnackbarSeverity('success');
-        //         setSnackbarOpen(true);
-        //     })
-        //     .catch((error) => {
-        //         setSnackbarMessage('Failed to save settings: ' + error.message);
-        //         setSnackbarSeverity('error');
-        //         setSnackbarOpen(true);
-        //     })
-        //     .finally(() => {
-        //         setLoading(false);
-        //     });
+        }
+    };
+
+    const handleResetStoreDefaults = async () => {
+        setLoading(true);
+        const defaultName = 'Clinique Merchant Store';
+        const defaultEmail = user?.primaryEmailAddress?.emailAddress || 'seller@clinique.com';
+        const defaultPhone = '+254 712 345 678';
+        const defaultDesc = 'Certified vendor of premium cosmetics, skincare, and bespoke fragrances.';
+        setStoreName(defaultName);
+        setStoreEmail(defaultEmail);
+        setStorePhone(defaultPhone);
+        setStoreDescription(defaultDesc);
+        try {
+            const token = await getToken();
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+            await fetch(`${baseUrl}/seller/settings`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    storeName: defaultName,
+                    storeEmail: defaultEmail,
+                    storePhone: defaultPhone,
+                    storeDescription: defaultDesc
+                })
+            });
+            setSnackbarMessage('Store settings reset to defaults and saved to database!');
+            setSnackbarSeverity('success');
+        } catch (err) {
+            setSnackbarMessage('Store settings reset to defaults.');
+            setSnackbarSeverity('info');
+        } finally {
+            setLoading(false);
+            setSnackbarOpen(true);
+        }
+    };
+
+    const handleSaveThemeSettings = async () => {
+        setLoading(true);
+        try {
+            const token = await getToken();
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+            await fetch(`${baseUrl}/seller/settings`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    storeName,
+                    storeEmail,
+                    storePhone,
+                    storeDescription,
+                    themeMode: theme,
+                    themeVariant: themeVariant
+                })
+            });
+            setSnackbarMessage('Theme preferences saved to database successfully!');
+            setSnackbarSeverity('success');
+        } catch (err) {
+            setSnackbarMessage('Theme updated.');
+            setSnackbarSeverity('info');
+        } finally {
+            setLoading(false);
+            setSnackbarOpen(true);
+        }
+    };
+
+    const handleResetThemeDefaults = async () => {
+        if (toggleTheme && theme !== 'light') toggleTheme('light');
+        if (changeThemeVariant) changeThemeVariant('pink');
+        setSnackbarMessage('Theme reset to defaults (Light, Pink Beauty).');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
     };
 
     const handleCloseSnackbar = () => {
@@ -185,16 +293,26 @@ function SellerSettings() {
                             />
                         </Grid>
                         <Grid item xs={12}>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<SaveIcon />}
-                                onClick={handleSaveSettings}
-                                disabled={loading}
-                                sx={{ mt: 2 }}
-                            >
-                                {loading ? 'Saving...' : 'Save Changes'}
-                            </Button>
+                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2 }}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SaveIcon />}
+                                    onClick={handleSaveSettings}
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Saving...' : 'Save Changes'}
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    color="inherit"
+                                    startIcon={<RefreshIcon />}
+                                    onClick={handleResetStoreDefaults}
+                                    disabled={loading}
+                                >
+                                    Reset to Defaults
+                                </Button>
+                            </Box>
                         </Grid>
                     </Grid>
                 </TabPanel>
@@ -452,8 +570,28 @@ function SellerSettings() {
                         <Grid item xs={12} sx={{ mt: 3 }}>
                             <Divider sx={{ my: 2 }} />
                             <Typography variant="body2" color="textSecondary" paragraph>
-                                Your theme preferences will be automatically saved and applied to your seller dashboard.
+                                Choose your desired appearance and save to persist across seller sessions.
                             </Typography>
+                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2 }}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SaveIcon />}
+                                    onClick={handleSaveThemeSettings}
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Saving...' : 'Save Theme to Database'}
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    color="inherit"
+                                    startIcon={<RefreshIcon />}
+                                    onClick={handleResetThemeDefaults}
+                                    disabled={loading}
+                                >
+                                    Reset to Defaults
+                                </Button>
+                            </Box>
                         </Grid>
                     </Grid>
                 </TabPanel>

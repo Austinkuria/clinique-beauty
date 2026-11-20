@@ -41,9 +41,9 @@ export const CartProvider = ({ children }) => {
         let total = 0;
         let count = 0;
         for (const item of cartItems) {
-            const price = typeof item.price === 'number' ? item.price : 0;
-            const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
-            total += price * quantity;
+            const rawPrice = typeof item.price === 'number' ? item.price : (parseFloat(item.price) || 0);
+            const quantity = typeof item.quantity === 'number' ? item.quantity : (parseInt(item.quantity, 10) || 0);
+            total += rawPrice * quantity;
             count += quantity;
         }
         return { cartTotal: total, itemCount: count };
@@ -56,17 +56,24 @@ export const CartProvider = ({ children }) => {
             console.error("[CartContext Format] Invalid item structure:", item);
             return null; // Skip invalid items
         }
+        const prod = item.products || item.product || {};
+        const rawPrice = item.price !== undefined && item.price !== null ? item.price : prod.price;
+        const parsedPrice = typeof rawPrice === 'number' ? rawPrice : (parseFloat(rawPrice) || 0);
+        const parsedQuantity = typeof item.quantity === 'number' ? item.quantity : (parseInt(item.quantity, 10) || 1);
+
         // Ensure all necessary fields are present and have defaults
         return {
-            id: item.productId || item.id, // Use productId from API response, fallback to id
-            quantity: item.quantity || 0,
-            name: item.name || 'Unknown Product',
-            price: typeof item.price === 'number' ? item.price : 0,
-            image: item.image || null,
+            id: item.id || item.productId || prod.id,
+            cartItemId: item.cartItemId || item.id,
+            productId: item.productId || item.product_id || prod.id || item.id,
+            quantity: parsedQuantity,
+            name: item.name || prod.name || 'Clinique Product',
+            price: parsedPrice,
+            image: item.image || prod.image || null,
             selectedShade: item.selectedShade || null,
-            description: item.description || '',
-            category: item.category || '',
-            stock: item.stock,
+            description: item.description || prod.description || '',
+            category: item.category || prod.category || '',
+            stock: item.stock !== undefined ? item.stock : (prod.stock ?? 99),
         };
     };
 

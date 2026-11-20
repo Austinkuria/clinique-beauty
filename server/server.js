@@ -45,35 +45,25 @@ const io = new Server(httpServer, {
   cors: {
     origin: process.env.NODE_ENV === 'production' 
       ? ['https://clinique-beauty.vercel.app', 'https://www.clinique-beauty.com'] 
-      : ['http://localhost:3000', 'http://localhost:5173'],
-    methods: ['GET', 'POST'],
+      : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
   }
 });
 
+// Make io accessible to Express route handlers via req.app.get('io')
+app.set('io', io);
+
 // Socket.IO connection handling
-// io.on('connection', (socket) => {
-//   console.log('A user connected to the socket');
+io.on('connection', (socket) => {
+  socket.on('join_admin', () => {
+    socket.join('admin_channel');
+  });
 
-//   socket.on('chat_message', async (msg) => {
-//     console.log('Message received from client:', msg);
-//     try {
-//       const botResponse = await handleChatMessage(msg.text);
-//       socket.emit('chat_message', { text: botResponse, sender: 'bot' });
-//     } catch (error) {
-//       console.error('Error handling chat message:', error);
-//       socket.emit('chat_message', { text: 'Sorry, something went wrong.', sender: 'bot' });
-//     }
-//   });
-
-//   socket.on('typing_start', (data) => {
-//     socket.broadcast.emit('typing_start', data);
-//   });
-
-//   socket.on('disconnect', () => {
-//     console.log('User disconnected from the socket');
-//   });
-// });
+  socket.on('disconnect', () => {
+    // client disconnected
+  });
+});
 
 // Use our custom CORS middleware instead of the cors package
 app.use(corsMiddleware);
@@ -174,6 +164,22 @@ v1Router.use('/sellers', clerkMiddleware, sellerRoutes);
 v1Router.use('/admin', clerkMiddleware, adminRoutes);
 v1Router.use('/homepage', homepageRoutes);
 v1Router.use('/', categoryRoutes);
+
+import settingsService from './services/settingsService.js';
+
+// Public System Settings (site title, currency, flash sale countdown)
+v1Router.get('/settings', async (req, res) => {
+  try {
+    const settings = await settingsService.getSettings();
+    res.json(settings);
+  } catch (error) {
+    res.json({
+      site_currency: 'KES',
+      site_title: 'Clinique Beauty',
+      flash_sale_active: 'true'
+    });
+  }
+});
 
 // Mount versioned API routes
 app.use('/api/v1', v1Router);

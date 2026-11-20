@@ -51,7 +51,7 @@ const SellerOrders = () => {
     setError(null);
     try {
       const token = await getToken();
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
       const response = await fetch(`${baseUrl}/seller/orders`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -80,7 +80,7 @@ const SellerOrders = () => {
     if (!selectedOrder || !newStatus) return;
     try {
       const token = await getToken();
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
       const response = await fetch(`${baseUrl}/seller/orders/${selectedOrder.id}/status`, {
         method: 'PATCH',
         headers: {

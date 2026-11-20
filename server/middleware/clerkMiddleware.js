@@ -1,8 +1,10 @@
 import jwt from 'jsonwebtoken';
+import cache from '../services/cacheService.js';
+import { supabase } from '../config/db.js';
 
 /**
- * Middleware to verify Clerk authentication token and 
- * add the user information to the request
+ * Middleware to verify Clerk authentication token, enforce token blacklist,
+ * and attach the authoritative database role to the request.
  */
 export const clerkMiddleware = async (req, res, next) => {
   try {
@@ -44,14 +46,46 @@ export const clerkMiddleware = async (req, res, next) => {
         }
         throw new Error('Invalid token');
       }
+
+      const userId = decoded.sub;
+      const userEmail = (decoded.email || '').toLowerCase();
+
+      // Enforce token blacklist / revocation on administrative role changes
+      const isRevoked = (userId && await cache.get(`auth:revoked:${userId}`)) || 
+                        (userEmail && await cache.get(`auth:revoked:${userEmail}`));
+      if (isRevoked) {
+        return res.status(401).json({ 
+          error: true, 
+          code: 'TOKEN_REVOKED',
+          message: 'Account role modified by administrator. Please sign in again.'
+        });
+      }
+
+      // Resolve authoritative role from Supabase database (Source of Truth)
+      let activeRole = (decoded.metadata?.role || decoded.public_metadata?.role || 'customer').toLowerCase();
+      if (supabase && (userId || userEmail)) {
+        try {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('role')
+            .or(`clerk_id.eq.${userId},email.eq.${userEmail}`)
+            .maybeSingle();
+
+          if (profile?.role) {
+            activeRole = profile.role.toLowerCase();
+          }
+        } catch {
+          // Fall back to decoded token role
+        }
+      }
       
       // Add user data to request
       req.user = {
-        id: decoded.sub,
-        email: decoded.email,
+        id: userId,
+        email: userEmail,
         firstName: decoded.given_name,
         lastName: decoded.family_name,
-        role: decoded.metadata?.role || decoded.public_metadata?.role || 'admin'
+        role: activeRole
       };
       
       return next();

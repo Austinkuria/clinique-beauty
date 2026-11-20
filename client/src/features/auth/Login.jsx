@@ -8,11 +8,12 @@ const Login = () => {
     
     // Get redirect path from query parameters
     const queryParams = new URLSearchParams(location.search);
-    const redirectPath = queryParams.get('redirect') || '/';
+    const redirectPath = queryParams.get('redirect');
+    const targetUrl = redirectPath || '/auth/login-redirect';
     
     // In your component where you handle successful login
     const handleLoginSuccess = () => {
-        navigate(redirectPath);
+        navigate(targetUrl);
     };
 
     return (
@@ -26,7 +27,8 @@ const Login = () => {
                         path="/auth/login"
                         routing="path"
                         signUpUrl="/auth/register"
-                        fallbackRedirectUrl="/"
+                        fallbackRedirectUrl={targetUrl}
+                        forceRedirectUrl={redirectPath || undefined}
                         onSignIn={handleLoginSuccess}
                     />
                 </Paper>

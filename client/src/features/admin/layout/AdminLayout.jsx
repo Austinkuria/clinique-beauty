@@ -46,7 +46,7 @@ const drawerWidth = 240;
 function AdminLayout() {
     const [open, setOpen] = useState(true);
     const [mobileOpen, setMobileOpen] = useState(false);
-    const { theme, colorValues } = useContext(ThemeContext);
+    const { theme, colorValues, siteTitle } = useContext(ThemeContext);
     const { user } = useUser();
     const { signOut } = useAuth();
     const navigate = useNavigate();
@@ -202,8 +202,8 @@ function AdminLayout() {
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                        Clinique Beauty Admin
+                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 700 }}>
+                        {siteTitle || 'Clinique Beauty'} Admin
                     </Typography>
                     
                     {/* Notifications Icon */}

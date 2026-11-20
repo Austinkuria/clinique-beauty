@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../context/ThemeContext.jsx';
 import {
@@ -41,18 +41,20 @@ import { UserButton, useAuth, useUser } from '@clerk/clerk-react';
 import { CartContext } from '../context/CartContext';
 import { useCategories } from '../context/CategoryContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useApi } from '../api/apiClient';
 import mockProducts from '../data/mockProducts';
 import { formatCurrency } from '../utils/helpers';
 import defaultProductImage from '../assets/images/placeholder.webp';
 
 function Navbar() {
-    const { theme, toggleTheme, colors, colorValues } = useContext(ThemeContext);
+    const { theme, toggleTheme, colors, colorValues, siteTitle } = useContext(ThemeContext);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
     const { isSignedIn } = useAuth();
     const { user } = useUser();
     const isAdmin = isSignedIn && user?.publicMetadata?.role === 'admin';
+    const api = useApi();
     
     // Use cart context directly to avoid hook rule violations
     const cartContext = useContext(CartContext);
@@ -60,6 +62,25 @@ function Navbar() {
     const cartLoading = cartContext?.loading || false;
     const { wishlist = [] } = useWishlist() || {};
     const navigate = useNavigate();
+
+    // Live catalog state including API products and mock fallbacks
+    const [catalogProducts, setCatalogProducts] = useState(mockProducts || []);
+
+    useEffect(() => {
+        let isMounted = true;
+        api.getProducts().then((res) => {
+            const list = Array.isArray(res) ? res : (res?.products || []);
+            if (isMounted && list.length > 0) {
+                const map = new Map();
+                (mockProducts || []).forEach(p => map.set(p.slug || p.id, p));
+                list.forEach(p => map.set(p.slug || p.id, p));
+                setCatalogProducts(Array.from(map.values()));
+            }
+        }).catch((err) => {
+            console.warn('Live catalog search fallback active:', err.message);
+        });
+        return () => { isMounted = false; };
+    }, [api]);
 
     // E-commerce Live Autocomplete Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -75,14 +96,19 @@ function Navbar() {
             return;
         }
 
-        const q = val.toLowerCase().trim();
-        const matches = (mockProducts || []).filter((p) => {
-            const nameMatch = p.name?.toLowerCase().includes(q);
-            const catMatch = p.category?.toLowerCase().includes(q);
-            const subMatch = p.subcategory?.toLowerCase().includes(q);
-            const descMatch = p.description?.toLowerCase().includes(q);
-            return nameMatch || catMatch || subMatch || descMatch;
-        }).slice(0, 6);
+        const terms = val.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        const matches = (catalogProducts || []).filter((p) => {
+            const targetStr = [
+                p.name || '',
+                p.category || '',
+                p.subcategory || '',
+                p.description || '',
+                p.brand || '',
+                ...(Array.isArray(p.tags) ? p.tags : [])
+            ].join(' ').toLowerCase();
+
+            return terms.every(t => targetStr.includes(t));
+        }).slice(0, 8);
 
         setSearchResults(matches);
         setSearchOpen(true);
@@ -200,6 +226,40 @@ function Navbar() {
                     }}
                 />
             </Box>
+            {searchQuery.trim() && searchResults.length > 0 && (
+                <Box sx={{ px: 1.5, pb: 1 }}>
+                    <Typography variant="caption" sx={{ px: 1, fontWeight: 700, color: colorValues.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Search Suggestions
+                    </Typography>
+                    <List dense disablePadding sx={{ mt: 0.5 }}>
+                        {searchResults.slice(0, 4).map((p) => (
+                            <ListItem key={p.id || p.slug} disablePadding sx={{ mb: 0.5 }}>
+                                <ListItemButton
+                                    onClick={() => {
+                                        setDrawerOpen(false);
+                                        handleSelectProduct(p);
+                                    }}
+                                    sx={{ borderRadius: 1.5, py: 0.8, px: 1 }}
+                                >
+                                    <Avatar
+                                        src={p.image || defaultProductImage}
+                                        variant="rounded"
+                                        sx={{ width: 34, height: 34, mr: 1.5 }}
+                                        imgProps={{ onError: (e) => { e.currentTarget.src = defaultProductImage; } }}
+                                    />
+                                    <ListItemText
+                                        primary={p.name}
+                                        secondary={formatCurrency(p.price)}
+                                        primaryTypographyProps={{ noWrap: true, fontSize: '0.82rem', fontWeight: 600 }}
+                                        secondaryTypographyProps={{ fontSize: '0.75rem', color: colorValues.primary, fontWeight: 700 }}
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        ))}
+                    </List>
+                    <Divider sx={{ my: 1 }} />
+                </Box>
+            )}
             <List>
                 {navItems.map((item) => (
                     <ListItem key={item.name} disablePadding>
@@ -304,7 +364,7 @@ function Navbar() {
                 {/* Branding */}
                 <RouterLink
                     to="/"
-                    title="Clinique Beauty Home"
+                    title={`${siteTitle || 'Clinique Beauty'} Home`}
                     style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
                 >
                     <HomeIcon sx={{ mr: 1, color: colorValues.primary, fontSize: '28px' }} />
@@ -317,7 +377,7 @@ function Navbar() {
                             letterSpacing: '0.5px',
                         }}
                     >
-                        Clinique Beauty
+                        {siteTitle || 'Clinique Beauty'}
                     </Typography>
                 </RouterLink>
 

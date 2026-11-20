@@ -17,9 +17,49 @@ import { CategoryProvider } from './context/CategoryContext';
 function App() {
   const { muiTheme } = useContext(ThemeContext);
   const { isLoaded, isSignedIn, user } = useUser();
-  const { session } = useClerk();
+  const { session, signOut } = useClerk();
 
   useInitializeApi();
+
+  // Real-time session invalidation / token blacklist listener
+  useEffect(() => {
+    let socket;
+    try {
+      const socketBase = import.meta.env.VITE_API_URL 
+        ? new URL(import.meta.env.VITE_API_URL).origin 
+        : 'http://localhost:5001';
+
+      import('socket.io-client').then(({ io }) => {
+        socket = io(socketBase, { withCredentials: true });
+        socket.on('auth:role_revoked', (data) => {
+          if (!user) return;
+          const userEmail = (user.primaryEmailAddress?.emailAddress || '').toLowerCase();
+          const targetEmail = (data?.email || '').toLowerCase();
+          const targetId = data?.userId;
+
+          if ((targetId && targetId === user.id) || (targetEmail && targetEmail === userEmail)) {
+            toast.error(
+              `Your account role was updated to ${data.newRole || 'new role'}. Signing out to refresh permissions...`,
+              { duration: 5000 }
+            );
+            localStorage.removeItem('userIsAdmin');
+            setTimeout(async () => {
+              try {
+                if (signOut) await signOut();
+                window.location.href = '/auth/login';
+              } catch {
+                window.location.reload();
+              }
+            }, 1200);
+          }
+        });
+      }).catch(() => {});
+    } catch {}
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, [user, signOut]);
 
   // Sync user to Supabase when they sign in
   useEffect(() => {
@@ -31,6 +71,19 @@ function App() {
           
           if (result && result.success) {
             console.log("App: User sync complete");
+            const userRole = (result.user?.role || localStorage.getItem('userRole') || '').toLowerCase();
+            const currentPath = window.location.pathname;
+
+            // Automatically navigate admins and sellers to their dashboards when signing in
+            if (currentPath.startsWith('/auth/login') || currentPath.startsWith('/auth/register') || currentPath === '/auth/sso-callback' || currentPath === '/auth/login-redirect') {
+              if (userRole === 'admin') {
+                window.location.href = '/admin';
+              } else if (userRole === 'seller') {
+                window.location.href = '/seller';
+              } else {
+                window.location.href = '/';
+              }
+            }
           } else {
             console.log("App: User sync completed with warnings - app will continue");
           }

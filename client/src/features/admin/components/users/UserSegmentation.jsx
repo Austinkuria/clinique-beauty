@@ -68,16 +68,16 @@ const UserSegmentation = ({ open, onClose, users }) => {
         const fetchSavedSegments = async () => {
             setLoading(true);
             try {
-                // In a real app, fetch from API
-                // const data = await api.getSavedSegments();
-                
-                // Use the imported mock data
-                setTimeout(() => {
+                const data = await api.getUserSegments();
+                if (Array.isArray(data) && data.length > 0) {
+                    setSavedSegments(data);
+                } else {
                     setSavedSegments(initialMockSegments);
-                    setLoading(false);
-                }, 800);
+                }
             } catch (error) {
                 console.error('Error fetching saved segments:', error);
+                setSavedSegments(initialMockSegments);
+            } finally {
                 setLoading(false);
             }
         };

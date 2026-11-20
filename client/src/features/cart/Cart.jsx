@@ -236,7 +236,7 @@ function Cart() {
         {!loading && !error && !isEmpty && (
           <Grid container spacing={4}>
             {/* Cart Items List */}
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               {cartItems.map((item) => (
                 <Paper key={`${item.id}-${item.selectedShade?.name || 'nosha'}`} sx={{ display: 'flex', alignItems: 'center', mb: 2, p: 2, backgroundColor: colorValues.bgPaper }}>
                   <Box
@@ -248,12 +248,12 @@ function Cart() {
                     sx={{ width: 80, height: 80, objectFit: 'contain', mr: 2, borderRadius: 1 }}
                     onError={(e) => { e.target.onerror = null; e.target.src = defaultProductImage; }} // Use correct fallback
                   />
-                  <Box sx={{ flexGrow: 1 }}>
+                  <Box sx={{ flexGrow: 1, pr: 2 }}>
                     {/* Access name directly from item */}
-                    <Typography variant="h6" component="div">{item.name || 'Product Name Unavailable'}</Typography>
+                    <Typography variant="h6" component="div">{item.name || 'Clinique Product'}</Typography>
                     <Typography variant="body2" color={colorValues.textSecondary}>
                       {/* Access price directly from item */}
-                      Price: Ksh{typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
+                      Price: KSh {typeof item.price === 'number' ? item.price.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                     </Typography>
                     {/* Display selected shade if available */}
                     {item.selectedShade && (
@@ -342,16 +342,16 @@ function Cart() {
             </Grid>
 
             {/* Cart Summary */}
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Paper sx={{ p: 3, backgroundColor: colorValues.bgPaper }}>
                 <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
                   Order Summary
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   {/* Use itemCount from context */}
-                  <Typography>Subtotal ({itemCount} items)</Typography>
+                  <Typography>Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</Typography>
                   {/* Use cartTotal from context */}
-                  <Typography sx={{ fontWeight: 500 }}>Ksh{cartTotal.toFixed(2)}</Typography>
+                  <Typography sx={{ fontWeight: 500 }}>KSh {cartTotal.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography>Shipping</Typography>
@@ -361,7 +361,7 @@ function Cart() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, mb: 3 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>Total</Typography>
                   {/* Use cartTotal from context */}
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Ksh{cartTotal.toFixed(2)}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>KSh {cartTotal.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                 </Box>
                 <Button
                   variant="contained"

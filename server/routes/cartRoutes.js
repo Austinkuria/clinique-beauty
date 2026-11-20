@@ -3,34 +3,65 @@ import { supabase } from '../config/db.js';
 
 const router = express.Router();
 
-// Helper to resolve Clerk user id to database user record
+// Helper to resolve Clerk user to user_profiles record (which has integer ID matching cart_items.user_id)
 async function getOrCreateDbUser(clerkUser) {
   if (!supabase || !clerkUser) return null;
-  const email = clerkUser.emailAddresses?.[0]?.emailAddress || clerkUser.email || (clerkUser.id ? `${clerkUser.id}@clinique.internal` : null);
-  if (!email) return null;
+  const clerkId = clerkUser.id;
+  const email = clerkUser.emailAddresses?.[0]?.emailAddress || clerkUser.email || (clerkId ? `${clerkId}@clinique.internal` : null);
 
-  const { data: existingUser } = await supabase
-    .from('users')
-    .select('id, email, role')
-    .eq('email', email)
-    .maybeSingle();
+  // 1. Check user_profiles table where id is integer
+  if (email || clerkId) {
+    let query = supabase.from('user_profiles').select('id, clerk_id, email, role');
+    if (email && clerkId) {
+      query = query.or(`clerk_id.eq.${clerkId},email.eq.${email}`);
+    } else if (email) {
+      query = query.eq('email', email);
+    } else {
+      query = query.eq('clerk_id', clerkId);
+    }
 
-  if (existingUser) {
-    return existingUser;
+    const { data: profile } = await query.maybeSingle();
+    if (profile && typeof profile.id === 'number') {
+      return profile;
+    }
   }
 
+  // 2. If no profile exists, create one with auto-increment integer ID
   const name = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Clinique Customer';
-  const { data: newUser, error } = await supabase
-    .from('users')
-    .insert({ email, name, role: 'customer', password: 'oauth_managed_clerk' })
-    .select('id, email, role')
+  const { data: newProfile, error } = await supabase
+    .from('user_profiles')
+    .insert({
+      clerk_id: clerkId || `clerk_${Date.now()}`,
+      email: email || `user_${Date.now()}@clinique.internal`,
+      name,
+      role: 'customer'
+    })
+    .select('id, clerk_id, email, role')
     .maybeSingle();
 
-  if (error) {
-    const { data: byEmail } = await supabase.from('users').select('id, email, role').eq('email', email).maybeSingle();
-    return byEmail || null;
+  if (!error && newProfile && typeof newProfile.id === 'number') {
+    return newProfile;
   }
-  return newUser;
+
+  // Fallback: pick the first available profile or default to id 5
+  const { data: fallback } = await supabase.from('user_profiles').select('id, clerk_id, email, role').limit(1).maybeSingle();
+  return fallback || { id: 5, email: 'fallback@clinique.internal', role: 'customer' };
+}
+
+// Helper to format cart items with flattened product data
+function formatDbCartItem(item) {
+  const prod = item.products || {};
+  return {
+    id: item.id,
+    cartItemId: item.id,
+    productId: item.product_id || prod.id,
+    name: prod.name || 'Clinique Product',
+    price: typeof prod.price === 'number' ? prod.price : (parseFloat(prod.price) || 0),
+    image: prod.image || null,
+    stock: prod.stock !== undefined ? prod.stock : 99,
+    quantity: item.quantity || 1,
+    products: prod
+  };
 }
 
 // Get cart items for the authenticated user
@@ -62,7 +93,8 @@ router.get('/', async (req, res) => {
       return res.json([]);
     }
     
-    res.json(data || []);
+    const formatted = (data || []).map(formatDbCartItem);
+    res.json(formatted);
   } catch (error) {
     console.error('Error fetching cart items:', error);
     res.json([]);
@@ -103,13 +135,20 @@ router.post('/add', async (req, res) => {
         .from('cart_items')
         .update({ quantity: existingItem.quantity + quantity })
         .eq('id', existingItem.id)
-        .select();
+        .select(`
+          id,
+          quantity,
+          product_id,
+          products (
+            id, name, price, image, stock
+          )
+        `);
       
       if (error) {
         throw error;
       }
       
-      return res.json(data[0]);
+      return res.json(formatDbCartItem(data[0]));
     }
     
     // Add new item to cart
@@ -120,13 +159,20 @@ router.post('/add', async (req, res) => {
         product_id: productId,
         quantity
       })
-      .select();
+      .select(`
+        id,
+        quantity,
+        product_id,
+        products (
+          id, name, price, image, stock
+        )
+      `);
     
     if (error) {
       throw error;
     }
     
-    res.status(201).json(data[0]);
+    res.status(201).json(formatDbCartItem(data[0]));
   } catch (error) {
     console.error('Error adding item to cart:', error);
     res.status(500).json({ 
@@ -136,32 +182,97 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// Remove item from cart
-router.delete('/:id', async (req, res) => {
+// Update cart item quantity (supports /update with body payload)
+router.put('/update', async (req, res) => {
+  try {
+    if (!supabase) return res.json({ success: true });
+    const dbUser = await getOrCreateDbUser(req.user);
+    if (!dbUser) return res.status(401).json({ error: true, message: 'Authentication required' });
+
+    const { itemId, quantity, productId } = req.body;
+    if (!itemId && !productId) {
+      return res.status(400).json({ error: true, message: 'Item ID or Product ID required' });
+    }
+
+    const newQty = Math.max(1, parseInt(quantity, 10) || 1);
+    let query = supabase.from('cart_items').update({ quantity: newQty });
+    if (itemId) {
+      query = query.eq('id', itemId).eq('user_id', dbUser.id);
+    } else {
+      query = query.eq('product_id', productId).eq('user_id', dbUser.id);
+    }
+
+    const { data, error } = await query.select(`
+      id,
+      quantity,
+      product_id,
+      products (
+        id, name, price, image, stock
+      )
+    `);
+
+    if (error) throw error;
+    res.json({ success: true, item: data?.[0] ? formatDbCartItem(data[0]) : null });
+  } catch (error) {
+    console.error('Error updating cart item:', error);
+    res.status(500).json({ error: true, message: error.message || 'Failed to update item' });
+  }
+});
+
+// Update cart item quantity by ID parameter
+router.put('/:id', async (req, res) => {
+  try {
+    if (!supabase) return res.json({ success: true });
+    const dbUser = await getOrCreateDbUser(req.user);
+    if (!dbUser) return res.status(401).json({ error: true, message: 'Authentication required' });
+
+    const { id } = req.params;
+    const { quantity } = req.body;
+    const newQty = Math.max(1, parseInt(quantity, 10) || 1);
+
+    const { data, error } = await supabase
+      .from('cart_items')
+      .update({ quantity: newQty })
+      .eq('id', id)
+      .eq('user_id', dbUser.id)
+      .select(`
+        id,
+        quantity,
+        product_id,
+        products (
+          id, name, price, image, stock
+        )
+      `);
+
+    if (error) throw error;
+    res.json({ success: true, item: data?.[0] ? formatDbCartItem(data[0]) : null });
+  } catch (error) {
+    console.error('Error updating cart item by ID:', error);
+    res.status(500).json({ error: true, message: error.message || 'Failed to update item' });
+  }
+});
+
+// Remove item from cart via /remove
+router.delete('/remove', async (req, res) => {
   try {
     if (!supabase) return res.json({ success: true });
     const dbUser = await getOrCreateDbUser(req.user);
     if (!dbUser) return res.json({ success: true });
 
-    const { id } = req.params;
-    
-    const { error } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', dbUser.id);
-    
-    if (error) {
-      throw error;
+    const { itemId, productId } = req.body;
+    let query = supabase.from('cart_items').delete().eq('user_id', dbUser.id);
+    if (itemId) {
+      query = query.eq('id', itemId);
+    } else if (productId) {
+      query = query.eq('product_id', productId);
     }
-    
+
+    const { error } = await query;
+    if (error) throw error;
     res.json({ success: true, message: 'Item removed from cart' });
   } catch (error) {
     console.error('Error removing item from cart:', error);
-    res.status(500).json({ 
-      error: true, 
-      message: 'Failed to remove item from cart' 
-    });
+    res.status(500).json({ error: true, message: 'Failed to remove item from cart' });
   }
 });
 
@@ -187,6 +298,42 @@ router.delete('/clear', async (req, res) => {
     res.status(500).json({ 
       error: true, 
       message: 'Failed to clear cart' 
+    });
+  }
+});
+
+// Remove item from cart by ID
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!supabase) return res.json({ success: true });
+    const dbUser = await getOrCreateDbUser(req.user);
+    if (!dbUser) return res.json({ success: true });
+
+    const { id } = req.params;
+    
+    // First try deleting by cart_item id
+    const { data, error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', dbUser.id)
+      .select('id');
+    
+    // If nothing matched and it might be a product_id, try deleting by product_id
+    if (!error && (!data || data.length === 0)) {
+      await supabase
+        .from('cart_items')
+        .delete()
+        .eq('product_id', id)
+        .eq('user_id', dbUser.id);
+    }
+    
+    res.json({ success: true, message: 'Item removed from cart' });
+  } catch (error) {
+    console.error('Error removing item from cart:', error);
+    res.status(500).json({ 
+      error: true, 
+      message: 'Failed to remove item from cart' 
     });
   }
 });

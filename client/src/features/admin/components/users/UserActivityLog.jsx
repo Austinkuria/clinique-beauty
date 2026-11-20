@@ -52,18 +52,20 @@ const UserActivityLog = ({ open, onClose, userId, userName }) => {
         const fetchUserActivity = async () => {
             setLoading(true);
             try {
-                // In a real app, fetch from API
-                // const data = await api.getUserActivity(userId);
-                
-                // For now, use mock data
-                const mockData = generateMockActivityData(userId);
-                
-                setTimeout(() => {
-                    setActivities(mockData);
-                    setLoading(false);
-                }, 800);
+                const res = await api.getUserActivity(userId);
+                if (res && Array.isArray(res.activities)) {
+                    setActivities(res.activities);
+                } else if (Array.isArray(res)) {
+                    setActivities(res);
+                } else {
+                    const fallbackData = generateMockActivityData(userId);
+                    setActivities(fallbackData);
+                }
             } catch (error) {
                 console.error('Error fetching user activity:', error);
+                const fallbackData = generateMockActivityData(userId);
+                setActivities(fallbackData);
+            } finally {
                 setLoading(false);
             }
         };
@@ -101,25 +103,27 @@ const UserActivityLog = ({ open, onClose, userId, userName }) => {
     
     // Get a human-readable activity description
     const getActivityDescription = (activity) => {
+        if (activity.description) return activity.description;
         const { type, details } = activity;
+        if (!details) return 'Recorded activity event';
         
         switch (type) {
             case 'login':
-                return `Logged in using ${details.device}`;
+                return `Logged in using ${details.device || 'web client'}`;
             case 'product_view':
-                return `Viewed product: ${details.productName}`;
+                return `Viewed product: ${details.productName || 'Catalog Item'}`;
             case 'cart_add':
-                return `Added ${details.productName} to cart`;
+                return `Added ${details.productName || 'Item'} to cart`;
             case 'purchase':
-                return `Made a purchase of $${details.total} (Order ${details.orderId})`;
+                return `Made a purchase of KSh ${details.total || 0} (Order ${details.orderId || ''})`;
             case 'profile_update':
-                return `Updated profile information: ${details.fields.join(', ')}`;
+                return `Updated profile information: ${(details.fields || []).join(', ')}`;
             case 'wishlist_add':
-                return `Added ${details.productName} to wishlist`;
+                return `Added ${details.productName || 'Item'} to wishlist`;
             case 'review':
-                return `Reviewed ${details.productName} with ${details.rating} stars`;
+                return `Reviewed ${details.productName || 'Product'} with ${details.rating || 5} stars`;
             case 'email_open':
-                return `Opened email: ${details.subject}`;
+                return `Opened email: ${details.subject || 'Notification'}`;
             default:
                 return 'Performed an action';
         }
@@ -250,7 +254,7 @@ const UserActivityLog = ({ open, onClose, userId, userName }) => {
                                                     <Typography variant="body2" color="text.secondary">
                                                         {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                                                     </Typography>
-                                                    {activity.type === 'login' && (
+                                                    {activity.type === 'login' && activity.details?.ipAddress && (
                                                         <Typography variant="body2" color="text.secondary">
                                                             IP: {activity.details.ipAddress}
                                                         </Typography>

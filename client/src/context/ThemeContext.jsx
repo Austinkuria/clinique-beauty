@@ -259,6 +259,97 @@ export const ThemeProvider = ({ children }) => {
         },
     });
 
+    // Site Title state with localStorage persistence and document.title synchronization
+    const [siteTitle, setSiteTitle] = useState(() => {
+        return localStorage.getItem('siteTitle') || 'Clinique Beauty';
+    });
+
+    useEffect(() => {
+        document.title = siteTitle;
+        localStorage.setItem('siteTitle', siteTitle);
+    }, [siteTitle]);
+
+    // Load persisted system settings from backend and subscribe to real-time updates
+    useEffect(() => {
+        let isMounted = true;
+        let socket = null;
+
+        const applyReceivedSettings = (data) => {
+            if (!data) return;
+            if (data.site_title) {
+                setSiteTitle(data.site_title);
+                document.title = data.site_title;
+                localStorage.setItem('siteTitle', data.site_title);
+            }
+            if (data.theme_mode && (data.theme_mode === 'light' || data.theme_mode === 'dark')) {
+                setMode(data.theme_mode);
+                localStorage.setItem('themeMode', data.theme_mode);
+            }
+            if (data.theme_variant && themeVariants[data.theme_variant]) {
+                setThemeVariant(data.theme_variant);
+                localStorage.setItem('themeVariant', data.theme_variant);
+            }
+        };
+
+        const fetchSettings = async () => {
+            try {
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+                const res = await fetch(`${apiUrl}/settings`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (isMounted) {
+                        applyReceivedSettings(data);
+                    }
+                }
+            } catch (err) {
+                // Silently maintain local storage or default title
+            }
+        };
+
+        fetchSettings();
+
+        // Connect Socket.IO for live system-wide title & appearance updates
+        try {
+            const socketBase = import.meta.env.VITE_API_URL 
+                ? new URL(import.meta.env.VITE_API_URL).origin 
+                : 'http://localhost:5001';
+
+            import('socket.io-client').then(({ io }) => {
+                if (!isMounted) return;
+                socket = io(socketBase, { withCredentials: true });
+                socket.on('admin:settings_updated', (updatedSettings) => {
+                    if (isMounted) {
+                        applyReceivedSettings(updatedSettings);
+                    }
+                });
+            }).catch(() => {});
+        } catch {}
+
+        return () => { 
+            isMounted = false;
+            if (socket) socket.disconnect();
+        };
+    }, []);
+
+    const updateSiteTitle = (newTitle) => {
+        if (!newTitle || typeof newTitle !== 'string') return;
+        const trimmed = newTitle.trim();
+        setSiteTitle(trimmed);
+        localStorage.setItem('siteTitle', trimmed);
+        document.title = trimmed;
+    };
+
+    const applyThemeSettings = (newMode, newVariant) => {
+        if (newMode && (newMode === 'light' || newMode === 'dark')) {
+            setMode(newMode);
+            localStorage.setItem('themeMode', newMode);
+        }
+        if (newVariant && themeVariants[newVariant]) {
+            setThemeVariant(newVariant);
+            localStorage.setItem('themeVariant', newVariant);
+        }
+    };
+
     // Load saved theme from localStorage
     useEffect(() => {
         const savedMode = localStorage.getItem('themeMode') || 'light';
@@ -291,6 +382,12 @@ export const ThemeProvider = ({ children }) => {
                 theme: mode,
                 themeVariant,
                 themeVariants,
+                siteTitle,
+                setSiteTitle,
+                updateSiteTitle,
+                applyThemeSettings,
+                setThemeMode: setMode,
+                setThemeVariant,
                 colors: tailwindThemes[mode],
                 colorValues: colorPalette[mode], // Provide direct color values for MUI styling
                 toggleTheme,

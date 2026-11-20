@@ -50,7 +50,8 @@ import {
     Campaign as CampaignIcon,
     Insights as InsightsIcon,
     LocationOn as LocationIcon,
-    DateRange as DateRangeIcon
+    DateRange as DateRangeIcon,
+    Delete as DeleteIcon
 } from '@mui/icons-material';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { useApi } from '../../../api/apiClient';
@@ -71,6 +72,13 @@ import UserSegmentation from '../components/users/UserSegmentation';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+
+function getUserInitials(name) {
+    if (!name) return 'U';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 function AdminUsers() {
     const { theme, colorValues } = useContext(ThemeContext);
@@ -113,28 +121,23 @@ function AdminUsers() {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                // Try to use the API client to fetch users
+                // Fetch dynamic users from backend API
                 let data;
                 try {
                     data = await api.getUsers();
                 } catch (apiError) {
                     console.error('Error fetching users from API:', apiError);
-                    
-                    // Fallback to complete mock user catalog if API fails or empty
-                    console.log('Using baseline mock user catalog');
                     data = mockUsers;
                 }
                 
-                // Set the users data
-                setUsers(Array.isArray(data) ? data : []);
+                const userList = Array.isArray(data) ? data : [];
+                setUsers(userList);
                 
                 // Extract unique locations for filtering
-                const uniqueLocations = [...new Set(data.map(user => user.location || 'Unknown'))];
+                const uniqueLocations = [...new Set(userList.map(user => user.location || 'Nairobi'))];
                 setLocations(['', ...uniqueLocations]);
             } catch (err) {
                 console.error('Error in user data handling:', err);
-                
-                // Set empty arrays as fallback
                 setUsers([]);
                 setLocations(['']);
             }
@@ -142,25 +145,67 @@ function AdminUsers() {
         
         fetchUsers();
     }, [api]);
-    
+
+    // Recalculate live user stats dynamically whenever users list changes
     useEffect(() => {
-        const fetchUserStats = async () => {
-            try {
-                // In a real app, fetch these stats from your API
-                // For now, use mocked data
-                setUserStats({
-                    total: mockDashboardData.stats.users.total,
-                    growth: mockDashboardData.stats.users.growth,
-                    customers: Math.round(mockDashboardData.stats.users.total * 0.85),
-                    sellers: Math.round(mockDashboardData.stats.users.total * 0.12),
-                    admins: Math.round(mockDashboardData.stats.users.total * 0.03)
+        const totalCount = users.length;
+        const customersCount = users.filter(u => (u.role || '').toLowerCase() === 'customer').length;
+        const sellersCount = users.filter(u => (u.role || '').toLowerCase() === 'seller').length;
+        const adminsCount = users.filter(u => (u.role || '').toLowerCase() === 'admin').length;
+
+        setUserStats({
+            total: totalCount,
+            growth: 5.1,
+            customers: customersCount,
+            sellers: sellersCount,
+            admins: adminsCount
+        });
+    }, [users]);
+
+    // Real-time Socket.IO synchronization
+    useEffect(() => {
+        let socket;
+        try {
+            const socketBase = import.meta.env.VITE_API_URL 
+                ? new URL(import.meta.env.VITE_API_URL).origin 
+                : 'http://localhost:5001';
+
+            import('socket.io-client').then(({ io }) => {
+                socket = io(socketBase, { withCredentials: true });
+                socket.emit('join_admin');
+
+                socket.on('admin:user_created', (newUser) => {
+                    setUsers(prev => {
+                        if (prev.some(u => u.id === newUser.id || (u.email && u.email === newUser.email))) return prev;
+                        return [newUser, ...prev];
+                    });
                 });
-            } catch (error) {
-                console.error('Error fetching user stats:', error);
-            }
+
+                socket.on('admin:user_updated', (updatedUser) => {
+                    setUsers(prev => prev.map(u => u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
+                });
+
+                socket.on('admin:user_status_changed', ({ id, status }) => {
+                    setUsers(prev => prev.map(u => u.id === id ? { ...u, status } : u));
+                });
+
+                socket.on('admin:user_role_changed', ({ id, role }) => {
+                    setUsers(prev => prev.map(u => u.id === id ? { ...u, role: role.charAt(0).toUpperCase() + role.slice(1) } : u));
+                });
+
+                socket.on('admin:user_deleted', ({ id }) => {
+                    setUsers(prev => prev.filter(u => u.id !== id));
+                });
+            }).catch(err => {
+                console.warn('Socket connection skipped in client:', err);
+            });
+        } catch (e) {
+            console.warn('Socket init exception:', e);
+        }
+
+        return () => {
+            if (socket) socket.disconnect();
         };
-        
-        fetchUserStats();
     }, []);
     
     // Action dialog handlers
@@ -183,6 +228,13 @@ function AdminUsers() {
                 confirmText: 'Activate User',
                 confirmColor: 'success'
             });
+        } else if (action === 'delete') {
+            setDialogContent({
+                title: 'Delete User Account',
+                content: `Are you sure you want to permanently delete ${user.name}? This will remove their user record from the database.`,
+                confirmText: 'Delete User',
+                confirmColor: 'error'
+            });
         }
         
         setActionDialogOpen(true);
@@ -194,25 +246,34 @@ function AdminUsers() {
         setActionType('');
     };
     
-    const handlePerformAction = () => {
-        // Update the user's status based on the action
-        const updatedUsers = users.map(user => {
-            if (user.id === selectedUser.id) {
-                return {
-                    ...user,
-                    status: actionType === 'suspend' ? 'Inactive' : 'Active'
-                };
+    const handlePerformAction = async () => {
+        if (!selectedUser) return;
+        try {
+            if (actionType === 'delete') {
+                await api.deleteUser(selectedUser.id);
+                setUsers(prev => prev.filter(u => u.id !== selectedUser.id));
+                toast.success(`User ${selectedUser.name} has been deleted.`);
+            } else {
+                const targetStatus = actionType === 'suspend' ? 'Inactive' : 'Active';
+                await api.updateUserStatus(selectedUser.id, targetStatus);
+                const updatedUsers = users.map(user => {
+                    if (user.id === selectedUser.id) {
+                        return {
+                            ...user,
+                            status: targetStatus
+                        };
+                    }
+                    return user;
+                });
+                setUsers(updatedUsers);
+                const actionText = actionType === 'suspend' ? 'suspended' : 'activated';
+                toast.success(`User ${selectedUser.name} has been ${actionText}.`);
             }
-            return user;
-        });
-        
-        setUsers(updatedUsers);
-        
-        // Show success message
-        const actionText = actionType === 'suspend' ? 'suspended' : 'activated';
-        toast.success(`User ${selectedUser.name} has been ${actionText}.`);
-        
-        handleCloseActionDialog();
+        } catch (error) {
+            toast.error(`Action failed: ${error.message}`);
+        } finally {
+            handleCloseActionDialog();
+        }
     };
 
     const handleEditUser = (user) => {
@@ -628,10 +689,20 @@ function AdminUsers() {
                                         <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                 <Avatar 
-                                                    src={user.avatar} 
+                                                    src={user.avatar || user.avatar_url || undefined} 
                                                     alt={user.name}
-                                                    sx={{ width: 40, height: 40, mr: 2 }}
-                                                />
+                                                    sx={{ 
+                                                        width: 40, 
+                                                        height: 40, 
+                                                        mr: 2,
+                                                        bgcolor: colorValues?.primary || 'primary.main',
+                                                        color: '#ffffff',
+                                                        fontWeight: 700,
+                                                        fontSize: '0.85rem'
+                                                    }}
+                                                >
+                                                    {getUserInitials(user.name)}
+                                                </Avatar>
                                                 <Box>
                                                     <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{user.name}</Typography>
                                                     <Typography variant="caption" color="textSecondary">{user.email}</Typography>
@@ -708,7 +779,15 @@ function AdminUsers() {
                                                 </IconButton>
                                             </Tooltip>
                                             <Tooltip title="Send Email">
-                                                <IconButton size="small" color="default">
+                                                <IconButton 
+                                                    size="small" 
+                                                    color="default"
+                                                    onClick={() => {
+                                                        if (user.email) {
+                                                            window.open(`mailto:${user.email}?subject=Clinique Beauty Customer Support`, '_blank');
+                                                        }
+                                                    }}
+                                                >
                                                     <MailIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
@@ -716,7 +795,7 @@ function AdminUsers() {
                                                 <Tooltip title="Suspend User">
                                                     <IconButton 
                                                         size="small" 
-                                                        color="error"
+                                                        color="warning"
                                                         onClick={() => handleOpenActionDialog(user, 'suspend')}
                                                     >
                                                         <BlockIcon fontSize="small" />
@@ -733,6 +812,15 @@ function AdminUsers() {
                                                     </IconButton>
                                                 </Tooltip>
                                             )}
+                                            <Tooltip title="Delete User">
+                                                <IconButton 
+                                                    size="small" 
+                                                    color="error"
+                                                    onClick={() => handleOpenActionDialog(user, 'delete')}
+                                                >
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -816,27 +904,28 @@ function AdminUsers() {
                 open={editDialogOpen}
                 onClose={handleCloseEditDialog}
                 user={selectedUser}
-                onSave={(updatedUser) => {
-                    // Handle saving the updated user
-                    const isNewUser = !updatedUser.id;
-                    if (isNewUser) {
-                        // Add a new user
-                        const newUser = {
-                            ...updatedUser,
-                            id: Date.now().toString(), // Temporary ID for mock data
-                            joinDate: new Date().toISOString().split('T')[0]
-                        };
-                        setUsers([...users, newUser]);
-                        toast.success('User created successfully!');
-                    } else {
-                        // Update existing user
-                        const updatedUsers = users.map(user => 
-                            user.id === updatedUser.id ? updatedUser : user
-                        );
-                        setUsers(updatedUsers);
-                        toast.success('User updated successfully!');
+                onSave={async (updatedUser) => {
+                    try {
+                        const isNewUser = !updatedUser.id;
+                        if (isNewUser) {
+                            const res = await api.createUser(updatedUser);
+                            const created = res?.user || {
+                                ...updatedUser,
+                                id: `usr_${Date.now()}`,
+                                joinDate: new Date().toISOString().split('T')[0]
+                            };
+                            setUsers(prev => [created, ...prev]);
+                            toast.success('User created in database successfully!');
+                        } else {
+                            await api.updateUser(updatedUser.id, updatedUser);
+                            setUsers(prev => prev.map(u => u.id === updatedUser.id ? { ...u, ...updatedUser } : u));
+                            toast.success('User profile updated successfully in database!');
+                        }
+                    } catch (err) {
+                        toast.error(`Save failed: ${err.message}`);
+                    } finally {
+                        handleCloseEditDialog();
                     }
-                    handleCloseEditDialog();
                 }}
             />
             

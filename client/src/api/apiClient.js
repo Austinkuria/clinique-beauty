@@ -84,12 +84,47 @@ export const useAdminApi = () => {
   const getUserDetails = async (userId) => {
     return fetchWithAuth(`/admin/users/${userId}`);
   };
+
+  const createUser = async (userData) => {
+    return fetchWithAuth('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+  };
+
+  const updateUser = async (userId, userData) => {
+    return fetchWithAuth(`/admin/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData)
+    });
+  };
+
+  const updateUserStatus = async (userId, status) => {
+    return fetchWithAuth(`/admin/users/${userId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+  };
   
   const updateUserRole = async (userId, role) => {
     return fetchWithAuth(`/admin/users/${userId}/role`, {
       method: 'PUT',
       body: JSON.stringify({ role })
     });
+  };
+
+  const deleteUser = async (userId) => {
+    return fetchWithAuth(`/admin/users/${userId}`, {
+      method: 'DELETE'
+    });
+  };
+
+  const getUserActivity = async (userId) => {
+    return fetchWithAuth(`/admin/users/${userId}/activity`);
+  };
+
+  const getUserSegments = async () => {
+    return fetchWithAuth('/admin/users/segments');
   };// Products API
   const getProducts = async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
@@ -183,11 +218,26 @@ export const useAdminApi = () => {
     });
   };
 
+  const resetSettings = async () => {
+    return fetchWithAuth('/admin/settings/reset', {
+      method: 'POST'
+    });
+  };
+
   // Database Seeding API
   const seedDatabase = async () => {
     return fetchWithAuth('/admin/seed', {
       method: 'POST'
     });
+  };
+
+  // Inventory & Suppliers API
+  const getInventory = async () => {
+    return fetchWithAuth('/admin/inventory');
+  };
+
+  const getSuppliers = async () => {
+    return fetchWithAuth('/admin/suppliers');
   };
 
   return {
@@ -198,7 +248,13 @@ export const useAdminApi = () => {
     // Users
     getUsers,
     getUserDetails,
+    createUser,
+    updateUser,
+    updateUserStatus,
     updateUserRole,
+    deleteUser,
+    getUserActivity,
+    getUserSegments,
     // Products
     getProducts,
     createProduct,
@@ -209,9 +265,13 @@ export const useAdminApi = () => {
     getOrders,
     getOrderDetails,
     updateOrderStatus,
+    // Inventory & Suppliers
+    getInventory,
+    getSuppliers,
     // Settings & Seeding
     getSettings,
     updateSettings,
+    resetSettings,
     seedDatabase,
   };
 };
@@ -950,13 +1010,6 @@ const syncUser = async (userData) => {
   console.log("Syncing user data to Supabase:", userData);
   
   try {
-    // Use the _request method which uses API_BASE_URL (Supabase functions)
-    console.log("Using Supabase function for user sync");
-    
-    // Delay a bit to ensure Clerk token is ready
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Try the request with explicit token
     const token = await clerkGetToken();
     const supabaseApiUrl = `${API_BASE_URL}/users/sync`;
     console.log(`Making direct fetch to ${supabaseApiUrl} with token`);
@@ -975,37 +1028,15 @@ const syncUser = async (userData) => {
       console.log("User sync successful with direct fetch:", data);
       return data;
     } else {
-      console.error(`User sync failed with status ${response.status}`);
-      try {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-      } catch {
-        console.error("Could not parse error response");
-      }
-      throw new Error(`User sync failed with status ${response.status}`);
+      const errorText = await response.text();
+      console.error(`User sync failed with status ${response.status}:`, errorText);
+      return { success: false, message: errorText };
     }
   } catch (error) {
     console.error("User sync failed:", error);
-    
-    // In development, return a simulated success response
-    if (import.meta.env.DEV) {
-      console.log("DEV MODE: Returning simulated success response after error");
-      return {
-        success: true,
-        data: {
-          id: "simulated-id",
-          clerk_id: userData.clerkId,
-          email: userData.email,
-          name: userData.name,
-          simulated: true
-        }
-      };
-    }
-    
-    // For production, return a partial success
     return { 
       success: false, 
-      message: "User sync failed, but app will continue to function",
+      message: "User sync failed",
       error: error.message
     };
   }
@@ -1137,13 +1168,19 @@ export const api = {
         const queryParams = new URLSearchParams(filters).toString();
         const response = await _request('GET', `/admin/users?${queryParams}`, null, true);
         
-        // For development mode, provide mock data if the API isn't available
-        if (import.meta.env.DEV && (!response || !response.data)) {
-          console.log('DEV MODE: Returning mock user data');
+        // Handle array response directly or nested data property
+        const userList = Array.isArray(response) ? response : (Array.isArray(response?.data) ? response.data : null);
+        if (userList) {
+          return userList;
+        }
+        
+        // Fallback to mock users only if response is truly empty in dev mode
+        if (import.meta.env.DEV) {
+          console.log('DEV MODE: Returning mock user data as fallback');
           return getMockUsers();
         }
         
-        return response.data || [];
+        return [];
       } catch (error) {
         console.error('Error fetching users:', error);
         
@@ -1155,25 +1192,38 @@ export const api = {
         throw error;
       }
     },
-    getUserDetails: async () => {
-      // Implementation for getting a specific user's details
-      // TODO: Implement user details fetching
-      throw new Error("getUserDetails not implemented yet");
+    getUserDetails: async (userId) => {
+      return await _request('GET', `/admin/users/${userId}`, null, true);
     },
-    verifyUser: async () => {
-      // Implementation for verifying a user
-      // TODO: Implement user verification
-      throw new Error("verifyUser not implemented yet");
+    createUser: async (userData) => {
+      return await _request('POST', '/admin/users', userData, true);
     },
-    suspendUser: async () => {
-      // Implementation for suspending a user
-      // TODO: Implement user suspension
-      throw new Error("suspendUser not implemented yet");
+    updateUser: async (userId, userData) => {
+      return await _request('PUT', `/admin/users/${userId}`, userData, true);
     },
-    activateUser: async () => {
-      // Implementation for activating a user
-      // TODO: Implement user activation
-      throw new Error("activateUser not implemented yet");
+    updateUserStatus: async (userId, status) => {
+      return await _request('PUT', `/admin/users/${userId}/status`, { status }, true);
+    },
+    updateUserRole: async (userId, role) => {
+      return await _request('PUT', `/admin/users/${userId}/role`, { role }, true);
+    },
+    deleteUser: async (userId) => {
+      return await _request('DELETE', `/admin/users/${userId}`, null, true);
+    },
+    getUserActivity: async (userId) => {
+      return await _request('GET', `/admin/users/${userId}/activity`, null, true);
+    },
+    getUserSegments: async () => {
+      return await _request('GET', '/admin/users/segments', null, true);
+    },
+    verifyUser: async (userId) => {
+      return await _request('PUT', `/admin/users/${userId}`, { verified: true }, true);
+    },
+    suspendUser: async (userId) => {
+      return await _request('PUT', `/admin/users/${userId}/status`, { status: 'Inactive' }, true);
+    },
+    activateUser: async (userId) => {
+      return await _request('PUT', `/admin/users/${userId}/status`, { status: 'Active' }, true);
     },
     importProducts: async (formData) => { // Exposing importProducts via global api object as well
         if (!(formData instanceof FormData)) {

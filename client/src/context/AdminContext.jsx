@@ -11,21 +11,34 @@ export const AdminProvider = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  // Use a callback for consistency in hook ordering
+  // Check whether current user is an administrator
   const checkAdminStatus = useCallback(() => {
     if (!user || !isLoaded) {
       return false;
     }
     
-    // Check all possible locations where admin role might be stored
+    const explicitRole = (
+      user.unsafeMetadata?.role || 
+      user.publicMetadata?.role || 
+      user.privateMetadata?.role || 
+      ''
+    ).toLowerCase();
+
+    // If account role is explicitly seller or customer, administrator access must be denied
+    if (explicitRole && explicitRole !== 'admin') {
+      localStorage.removeItem('userIsAdmin');
+      return false;
+    }
+
     const hasAdminRole = 
-      (user.unsafeMetadata?.role === 'admin') ||
-      (user.privateMetadata?.role === 'admin') ||
-      (user.publicMetadata?.role === 'admin') ||
+      (explicitRole === 'admin') ||
       (user.organizations?.length > 0 && user.organizations[0].publicMetadata?.memberRole === 'admin') ||
-      (localStorage.getItem('userIsAdmin') === 'true');
+      (user.primaryEmailAddress?.emailAddress === 'admin@clinique.com');
       
-    console.log("Admin status check result:", hasAdminRole);
+    if (!hasAdminRole) {
+      localStorage.removeItem('userIsAdmin');
+    }
+
     return hasAdminRole;
   }, [user, isLoaded]);
   

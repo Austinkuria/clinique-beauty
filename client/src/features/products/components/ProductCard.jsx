@@ -71,17 +71,20 @@ function ProductCard({ product }) {
         navigate(`/product/${productIdentifier}`);
     };
 
-    const numericId = typeof product.id === 'number'
-        ? product.id
-        : (typeof product.id === 'string' && !isNaN(Number(product.id)))
-            ? Number(product.id)
+    const rawId = product.id;
+    const numericId = (typeof rawId === 'number' && !isNaN(rawId))
+        ? rawId
+        : (typeof rawId === 'string' && !isNaN(Number(rawId)) && rawId.trim() !== '')
+            ? Number(rawId)
             : Math.abs(String(product.slug || product.uuid || product.name || '1').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0));
 
     const isOfficial = numericId % 2 === 0;
     const ratingValue = (!isNaN(Number(product.rating)) && Number(product.rating) > 0) ? Number(product.rating) : 4.5;
-    const reviewCount = (!isNaN(Number(product.reviews_count)) && Number(product.reviews_count) > 0)
-        ? Number(product.reviews_count)
-        : (10 + (numericId * 7) % 85);
+    const rawReviews = product.reviews_count ?? product.num_reviews ?? product.reviewsCount;
+    const parsedReviews = Number(rawReviews);
+    const reviewCount = (!isNaN(parsedReviews) && parsedReviews > 0)
+        ? parsedReviews
+        : (10 + (Math.abs(numericId || 1) * 7) % 85);
 
     return (
         <Card
@@ -92,6 +95,7 @@ function ProductCard({ product }) {
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
+                justifyContent: 'space-between',
                 border: '1px solid',
                 borderColor: 'divider',
                 borderRadius: 2,
@@ -109,16 +113,13 @@ function ProductCard({ product }) {
                 }
             }}
         >
-            <Box sx={{ position: 'relative', width: '100%', pt: '100%', backgroundColor: colorValues.bgDefault }}>
+            <Box sx={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', backgroundColor: colorValues.bgDefault, overflow: 'hidden' }}>
                 <CardMedia
                     component="img"
                     image={product.image || defaultProductImage}
                     alt={product.name}
                     onError={handleImageError}
                     sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover'
@@ -158,7 +159,7 @@ function ProductCard({ product }) {
 
             <CardContent sx={{ flexGrow: 1, p: 1.5, display: 'flex', flexDirection: 'column' }}>
                 {/* Vendor Trust Badge */}
-                <Box sx={{ mb: 0.8 }}>
+                <Box sx={{ mb: 0.8, minHeight: 22, display: 'flex', alignItems: 'center' }}>
                     {isOfficial ? (
                         <Chip
                             label="Official Store"
@@ -198,8 +199,8 @@ function ProductCard({ product }) {
                         lineHeight: 1.3,
                         mb: 0.8,
                         color: colorValues.textPrimary,
-                        minHeight: 38,
-                        maxHeight: 38,
+                        minHeight: 40,
+                        maxHeight: 40,
                         overflow: 'hidden',
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
@@ -211,7 +212,7 @@ function ProductCard({ product }) {
                 </Typography>
 
                 {/* Rating Stars and Count */}
-                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1 }}>
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1, minHeight: 20 }}>
                     <Rating
                         value={ratingValue}
                         precision={0.1}
@@ -220,23 +221,23 @@ function ProductCard({ product }) {
                         sx={{ fontSize: '0.85rem', color: colorValues.primary }}
                     />
                     <Typography variant="caption" sx={{ color: colorValues.textSecondary, fontSize: '0.72rem' }}>
-                        ({reviewCount})
+                        ({!isNaN(reviewCount) && reviewCount > 0 ? reviewCount : 18})
                     </Typography>
                 </Stack>
 
                 {/* Price */}
-                <Box sx={{ mt: 'auto', pt: 0.5 }}>
+                <Box sx={{ mt: 'auto', pt: 0.5, minHeight: 28, display: 'flex', alignItems: 'center' }}>
                     <Typography variant="h6" sx={{ fontWeight: 800, color: colorValues.primary, fontSize: '1.05rem' }}>
                         {formatCurrency(product.price)}
                     </Typography>
                 </Box>
             </CardContent>
 
-            <CardActions sx={{ p: 1.5, pt: 0, gap: 1, display: 'flex' }}>
+            <CardActions sx={{ p: 1.5, pt: 0, gap: 1, display: 'flex', width: '100%', mt: 'auto' }}>
                 <Button
                     variant="outlined"
                     size="small"
-                    startIcon={!isAddingToCart && <ShoppingCartIcon sx={{ fontSize: '0.8rem !important' }} />}
+                    startIcon={!isAddingToCart }
                     onClick={handleAddToCartClick}
                     disabled={isAddingToCart || isBuying}
                     sx={{

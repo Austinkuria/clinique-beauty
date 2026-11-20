@@ -427,7 +427,7 @@ function ProductDetail() {
     if (loading) {
         return (
             <Box sx={{ backgroundColor: colorValues.bgDefault, py: 4, minHeight: '100vh', width: '100%' }}>
-                <Container maxWidth={false} sx={{ px: { xs: 1.5, sm: 2, md: 4 }, width: '100%' }}>
+                <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4, lg: 6 }, width: '100%' }}>
                     {/* Breadcrumbs skeleton */}
                     <Box sx={{ display: 'flex', gap: 1.5, mb: 3, alignItems: 'center' }}>
                         <Skeleton variant="circular" width={36} height={36} />
@@ -438,7 +438,7 @@ function ProductDetail() {
                     <Grid container spacing={4}>
                         <Grid item xs={12} md={6}>
                             <Paper elevation={0} sx={{ p: 2, borderRadius: 2, backgroundColor: colorValues.bgPaper, border: '1px solid', borderColor: 'divider' }}>
-                                <Skeleton variant="rectangular" width="100%" height={420} sx={{ borderRadius: 2, mb: 2 }} />
+                                <Skeleton variant="rectangular" width="100%" height={460} sx={{ borderRadius: 2, mb: 2 }} />
                                 <Box sx={{ display: 'flex', gap: 1.5 }}>
                                     {[...Array(4)].map((_, i) => (
                                         <Skeleton key={i} variant="rectangular" width={75} height={75} sx={{ borderRadius: 1 }} />
@@ -461,6 +461,32 @@ function ProductDetail() {
                             </Paper>
                         </Grid>
                     </Grid>
+
+                    {/* Related Products Skeleton */}
+                    <Box sx={{ mt: 6, width: '100%' }}>
+                        <Skeleton variant="text" width={200} height={32} sx={{ mb: 3 }} />
+                        <Box sx={{
+                            display: 'grid',
+                            gridTemplateColumns: {
+                                xs: 'repeat(1, 1fr)',
+                                sm: 'repeat(2, 1fr)',
+                                md: 'repeat(4, 1fr)',
+                                lg: 'repeat(4, 1fr)'
+                            },
+                            gap: { xs: 2, sm: 2.5, md: 3 }
+                        }}>
+                            {[...Array(4)].map((_, i) => (
+                                <Paper key={i} elevation={0} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                                    <Skeleton variant="rectangular" width="100%" sx={{ aspectRatio: '1 / 1', borderRadius: 1, mb: 1.5 }} />
+                                    <Skeleton variant="text" width="40%" height={16} sx={{ mb: 0.8 }} />
+                                    <Skeleton variant="text" width="90%" height={22} sx={{ mb: 0.8 }} />
+                                    <Skeleton variant="text" width="50%" height={18} sx={{ mb: 1 }} />
+                                    <Skeleton variant="text" width="35%" height={24} sx={{ mb: 1.5 }} />
+                                    <Skeleton variant="rectangular" width="100%" height={36} sx={{ borderRadius: 1 }} />
+                                </Paper>
+                            ))}
+                        </Box>
+                    </Box>
                 </Container>
             </Box>
         );
@@ -519,7 +545,7 @@ function ProductDetail() {
             minHeight: '100vh',
             width: '100%'
         }}>
-            <Container maxWidth={false} sx={{ px: { xs: 1.5, sm: 2, md: 4 }, width: '100%' }}>
+            <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4, lg: 6 }, width: '100%' }}>
                 {/* Back Button and Breadcrumbs */}
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <IconButton
@@ -561,7 +587,7 @@ function ProductDetail() {
                                 alignItems: 'center',
                                 position: 'relative',
                                 overflow: 'hidden',
-                                minHeight: 400,
+                                minHeight: { xs: 320, md: 460 },
                                 width: '100%',
                             }}
                             ref={imageContainerRef}
@@ -587,7 +613,8 @@ function ProductDetail() {
                             <Box
                                 sx={{
                                     width: '100%',
-                                    maxHeight: '350px',
+                                    minHeight: { xs: 280, sm: 360, md: 440 },
+                                    maxHeight: { xs: 340, sm: 440, md: 520 },
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -748,9 +775,9 @@ function ProductDetail() {
                             </Box>
 
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Rating value={product.rating} precision={0.1} readOnly />
+                                <Rating value={!isNaN(Number(product.rating)) && Number(product.rating) > 0 ? Number(product.rating) : 4.5} precision={0.1} readOnly />
                                 <Typography variant="body2" sx={{ ml: 1, color: colorValues.textSecondary }}>
-                                    ({product.rating} stars)
+                                    ({!isNaN(Number(product.rating)) && Number(product.rating) > 0 ? Number(product.rating) : 4.5} stars)
                                 </Typography>
                             </Box>
 
@@ -1147,20 +1174,21 @@ function ProductDetail() {
                 </Paper>
 
                 {relatedProducts.length > 0 ? (
-                    <Box sx={{ mt: 6 }}>
-                        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: colorValues.textPrimary }}>
+                    <Box sx={{ mt: 6, width: '100%' }}>
+                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, color: colorValues.textPrimary }}>
                             Related Products
                         </Typography>
                         <Box
                             sx={{
                                 display: 'grid',
                                 gridTemplateColumns: {
-                                    xs: 'repeat(2, 1fr)',
+                                    xs: 'repeat(1, 1fr)',
                                     sm: 'repeat(2, 1fr)',
                                     md: 'repeat(4, 1fr)',
                                     lg: 'repeat(4, 1fr)'
                                 },
-                                gap: { xs: 1.5, sm: 2, md: 3 },
+                                gap: { xs: 2, sm: 2.5, md: 3 },
+                                width: '100%',
                                 alignItems: 'stretch'
                             }}
                         >

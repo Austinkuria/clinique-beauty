@@ -19,22 +19,24 @@ export async function syncUserToSupabase(user, getToken) {
         }
 
         // Enhanced user data to include role information from all possible metadata locations
+        const rawRole = user.unsafeMetadata?.role || 
+                        user.privateMetadata?.role || 
+                        user.publicMetadata?.role ||
+                        (user.organizations?.length > 0 && 
+                         user.organizations[0].publicMetadata?.memberRole === 'admin' ? 'admin' : null) ||
+                        (user.primaryEmailAddress?.emailAddress?.includes('admin') ? 'admin' : 'customer');
+
         const userData = {
             clerkId: user.id,
             email: user.primaryEmailAddress?.emailAddress,
-            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || user.fullName || 'Clinique User',
             avatarUrl: user.imageUrl,
-            // Check all possible metadata locations for role
-            role: user.unsafeMetadata?.role || 
-                  user.privateMetadata?.role || 
-                  user.publicMetadata?.role ||
-                  (user.organizations?.length > 0 && 
-                   user.organizations[0].publicMetadata?.memberRole === 'admin' ? 'admin' : null)
+            role: rawRole
         };
 
         console.log("Syncing user data with role:", userData.role);
         
-        // Force synchronization with direct API call first for reliability
+        // Direct API call to Express server
         try {
             console.log("Attempting direct API call to ensure user exists in database");
             const response = await fetch(`${getApiBaseUrl()}/users/sync`, {
@@ -49,7 +51,26 @@ export async function syncUserToSupabase(user, getToken) {
             if (response.ok) {
                 const result = await response.json();
                 console.log("Direct user sync successful:", result);
+                
+                const dbRole = (result.user?.role || '').toLowerCase();
+                if (dbRole) {
+                    if (user.unsafeMetadata?.role !== dbRole && typeof user.update === 'function') {
+                        try {
+                            await user.update({ unsafeMetadata: { role: dbRole } });
+                        } catch (uErr) {
+                            console.warn("Could not sync role to Clerk unsafeMetadata:", uErr);
+                        }
+                    }
+                    if (dbRole !== 'admin') {
+                        localStorage.removeItem('userIsAdmin');
+                    } else {
+                        localStorage.setItem('userIsAdmin', 'true');
+                    }
+                }
                 return result;
+            } else {
+                const errText = await response.text();
+                console.warn(`Direct user sync responded with ${response.status}:`, errText);
             }
         } catch (directError) {
             console.warn("Direct sync failed, falling back to standard API:", directError);
@@ -59,32 +80,18 @@ export async function syncUserToSupabase(user, getToken) {
         const response = await api.syncUser(userData);
         
         // Log sync result
-        if (response.success) {
-            console.log("User sync successful:", response.data?.id || "unknown");
+        if (response && response.success) {
+            console.log("User sync successful:", response.user?.id || response.data?.id || "saved");
         } else {
-            console.warn("User sync returned an error but app will continue:", response);
+            console.warn("User sync returned an error:", response);
         }
         
         return response;
     } catch (error) {
         console.error("Error syncing user:", error);
-        
-        // In development, always return a success response to prevent blocking the app
-        if (import.meta.env.DEV) {
-            return { 
-                success: true, 
-                data: {
-                    id: "simulated-id", 
-                    name: user?.firstName || "User",
-                    simulated: true
-                }
-            };
-        }
-        
-        // Return partial success instead of throwing
         return { 
             success: false, 
-            message: "User sync failed, but app will continue to function",
+            message: "User sync failed",
             error: error.message
         };
     }
@@ -92,21 +99,7 @@ export async function syncUserToSupabase(user, getToken) {
 
 // Helper to construct API URL
 const getApiBaseUrl = () => {
-  const SUPABASE_FUNCTIONS_BASE = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
-  
-  if (!SUPABASE_FUNCTIONS_BASE) {
-    return 'http://localhost:5000/api'; // Fallback to Express server
-  }
-  
-  // Remove trailing slash if present
-  const baseUrl = SUPABASE_FUNCTIONS_BASE.replace(/\/$/, '');
-  
-  // Check if the URL already contains "functions/v1"
-  if (baseUrl.includes('/functions/v1')) {
-    return `${baseUrl}/api`;
-  } else {
-    return `${baseUrl}/functions/v1/api`;
-  }
+  return import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
 };
 
 // For development: Simulate admin verification
