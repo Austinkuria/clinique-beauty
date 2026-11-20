@@ -16,7 +16,7 @@ import {
 import {
     Instagram,
     Facebook,
-    Twitter,
+    X as XIcon,
     Pinterest,
     Email,
     Phone,
@@ -62,8 +62,8 @@ function Footer() {
                             <IconButton color="inherit" aria-label="facebook" href="https://facebook.com" className={`${colors?.footerSocial}`}>
                                 <Facebook />
                             </IconButton>
-                            <IconButton color="inherit" aria-label="twitter" href="https://twitter.com" className={`${colors?.footerSocial}`}>
-                                <Twitter />
+                            <IconButton color="inherit" aria-label="x" href="https://x.com" className={`${colors?.footerSocial}`}>
+                                <XIcon />
                             </IconButton>
                             <IconButton color="inherit" aria-label="pinterest" href="https://pinterest.com" className={`${colors?.footerSocial}`}>
                                 <Pinterest />

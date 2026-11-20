@@ -452,10 +452,10 @@ router.post('/seed', async (req, res) => {
       const { data: existing } = await supabase.from('users').select('id').eq('email', u.email).maybeSingle();
       if (!existing) {
         await supabase.from('users').insert({
-          clerk_id: clerkId,
           email: u.email,
           name: u.name,
-          role: u.role.toLowerCase()
+          role: u.role.toLowerCase(),
+          password: 'mock_password_hash'
         });
         seededUsers++;
       }

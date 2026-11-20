@@ -202,7 +202,7 @@ const SellerDashboard = () => {
       {/* Welcome Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Welcome back, {user?.firstName || 'Seller'}! 👋
+          Welcome back, {user?.firstName || 'Seller'}!
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Here's what's happening with your store today.

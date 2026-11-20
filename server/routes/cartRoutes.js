@@ -5,29 +5,29 @@ const router = express.Router();
 
 // Helper to resolve Clerk user id to database user record
 async function getOrCreateDbUser(clerkUser) {
-  if (!supabase || !clerkUser?.id) return null;
-  const clerkId = clerkUser.id;
-  const email = clerkUser.emailAddresses?.[0]?.emailAddress || clerkUser.email || `${clerkId}@clinique.internal`;
-  const name = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Clinique Customer';
+  if (!supabase || !clerkUser) return null;
+  const email = clerkUser.emailAddresses?.[0]?.emailAddress || clerkUser.email || (clerkUser.id ? `${clerkUser.id}@clinique.internal` : null);
+  if (!email) return null;
 
   const { data: existingUser } = await supabase
     .from('users')
-    .select('id, clerk_id, email, role')
-    .eq('clerk_id', clerkId)
+    .select('id, email, role')
+    .eq('email', email)
     .maybeSingle();
 
   if (existingUser) {
     return existingUser;
   }
 
+  const name = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Clinique Customer';
   const { data: newUser, error } = await supabase
     .from('users')
-    .insert({ clerk_id: clerkId, email, name, role: 'customer' })
-    .select('id, clerk_id, email, role')
+    .insert({ email, name, role: 'customer', password: 'oauth_managed_clerk' })
+    .select('id, email, role')
     .maybeSingle();
 
   if (error) {
-    const { data: byEmail } = await supabase.from('users').select('id, clerk_id, email, role').eq('email', email).maybeSingle();
+    const { data: byEmail } = await supabase.from('users').select('id, email, role').eq('email', email).maybeSingle();
     return byEmail || null;
   }
   return newUser;

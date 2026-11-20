@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -98,6 +99,7 @@ function TabPanel(props) {
 }
 
 function AdminProducts() {
+    const navigate = useNavigate();
     const { theme, colorValues } = useContext(ThemeContext);
     const adminApi = useAdminApi();
     const [loading, setLoading] = useState(false);
@@ -1108,12 +1110,17 @@ function AdminProducts() {
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>                                                        <Avatar 
-                                                            src={product.image} 
+                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        <Avatar 
+                                                            src={product.image || product.images?.[0] || product.image_url || product.thumbnail || defaultProductImage} 
                                                             alt={product.name || 'Product'}
                                                             variant="rounded"
-                                                            sx={{ width: 40, height: 40, mr: 2 }}
-                                                            onError={(e) => { e.target.src = defaultProductImage; }}
+                                                            sx={{ width: 44, height: 44, mr: 2, bgcolor: 'grey.100', border: '1px solid', borderColor: 'divider' }}
+                                                            imgProps={{
+                                                                onError: (e) => {
+                                                                    e.currentTarget.src = defaultProductImage;
+                                                                }
+                                                            }}
                                                         />
                                                         <Box>
                                                             <Typography variant="body2">{product.name || 'Unnamed Product'}</Typography>
@@ -1736,6 +1743,131 @@ function AdminProducts() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseApprovalDialog}>Cancel</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* View Product Dialog */}
+            <Dialog 
+                open={viewProductDialogOpen} 
+                onClose={handleCloseViewDialog} 
+                maxWidth="md" 
+                fullWidth
+            >
+                <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
+                    Product Details: {selectedProduct?.name || 'Product'}
+                </DialogTitle>
+                <DialogContent dividers>
+                    {selectedProduct && (
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} sm={4}>
+                                <Box
+                                    component="img"
+                                    src={selectedProduct.image || selectedProduct.images?.[0] || selectedProduct.image_url || defaultProductImage}
+                                    alt={selectedProduct.name}
+                                    onError={(e) => { e.currentTarget.src = defaultProductImage; }}
+                                    sx={{
+                                        width: '100%',
+                                        height: 220,
+                                        objectFit: 'cover',
+                                        borderRadius: 2,
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        backgroundColor: 'grey.100'
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={8}>
+                                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: colorValues.primary }}>
+                                    {selectedProduct.name}
+                                </Typography>
+                                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1.5, color: colorValues.textPrimary }}>
+                                    {formatCurrency(selectedProduct.price)}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                                    <Chip 
+                                        label={`Category: ${selectedProduct.category || 'General'}`} 
+                                        size="small" 
+                                        variant="outlined" 
+                                    />
+                                    {selectedProduct.subcategory && (
+                                        <Chip 
+                                            label={`Subcategory: ${selectedProduct.subcategory}`} 
+                                            size="small" 
+                                            variant="outlined" 
+                                        />
+                                    )}
+                                    <Chip 
+                                        label={`Status: ${selectedProduct.status || 'Active'}`} 
+                                        size="small" 
+                                        color={selectedProduct.status === 'Active' ? 'success' : 'default'} 
+                                    />
+                                    <Chip 
+                                        label={`Stock: ${selectedProduct.stock ?? selectedProduct.stock_quantity ?? 0}`} 
+                                        size="small" 
+                                        color={(selectedProduct.stock ?? selectedProduct.stock_quantity ?? 0) > 0 ? 'info' : 'error'} 
+                                    />
+                                    {selectedProduct.sku && (
+                                        <Chip 
+                                            label={`SKU: ${selectedProduct.sku}`} 
+                                            size="small" 
+                                        />
+                                    )}
+                                    {selectedProduct.featured && (
+                                        <Chip 
+                                            label="Featured" 
+                                            size="small" 
+                                            color="secondary" 
+                                        />
+                                    )}
+                                </Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                    Description:
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+                                    {selectedProduct.description || 'No description provided.'}
+                                </Typography>
+                                {selectedProduct.tags && selectedProduct.tags.length > 0 && (
+                                    <Box sx={{ mt: 1 }}>
+                                        <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>
+                                            Tags:
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                            {selectedProduct.tags.map((tag, idx) => (
+                                                <Chip key={idx} label={tag} size="small" />
+                                            ))}
+                                        </Box>
+                                    </Box>
+                                )}
+                            </Grid>
+                        </Grid>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button 
+                        variant="outlined"
+                        onClick={() => {
+                            const target = selectedProduct?.slug || selectedProduct?.id;
+                            if (target) {
+                                window.open(`/product/${target}`, '_blank');
+                            }
+                        }}
+                    >
+                        View in Store
+                    </Button>
+                    <Button 
+                        variant="contained" 
+                        color="primary"
+                        onClick={() => {
+                            const p = selectedProduct;
+                            handleCloseViewDialog();
+                            if (p) handleOpenEditDialog(p);
+                        }}
+                    >
+                        Edit Product
+                    </Button>
+                    <Button onClick={handleCloseViewDialog}>
+                        Close
+                    </Button>
                 </DialogActions>
             </Dialog>
 
